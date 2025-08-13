@@ -1,0 +1,22 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="32" height="32" rx="4" fill="#4338ca"/>
+  
+  <!-- 3x3 grid of tiles -->
+  <g>
+    <!-- Row 1 -->
+    <rect x="3" y="3" width="8" height="8" rx="1" fill="#f87171"/>
+    <rect x="12" y="3" width="8" height="8" rx="1" fill="#60a5fa"/>
+    <rect x="21" y="3" width="8" height="8" rx="1" fill="#f87171"/>
+    
+    <!-- Row 2 -->
+    <rect x="3" y="12" width="8" height="8" rx="1" fill="#60a5fa"/>
+    <rect x="12" y="12" width="8" height="8" rx="1" fill="#93c5fd"/>
+    <rect x="21" y="12" width="8" height="8" rx="1" fill="#60a5fa"/>
+    
+    <!-- Row 3 -->
+    <rect x="3" y="21" width="8" height="8" rx="1" fill="#f87171"/>
+    <rect x="12" y="21" width="8" height="8" rx="1" fill="#60a5fa"/>
+    <rect x="21" y="21" width="8" height="8" rx="1" fill="#f87171"/>
+  </g>
+</svg>

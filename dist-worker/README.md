@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "color-me-same" generated at 2025-07-24T08:08:20.416Z.

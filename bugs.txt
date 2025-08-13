@@ -1,0 +1,61 @@
+COLOR ME SAME - UI BUGS REPORT
+==============================
+
+CRITICAL BUGS:
+
+1. TUTORIAL MODAL AUTO-OPENS
+   - Severity: CRITICAL
+   - Impact: Blocks entire game, cannot play
+   - Affects: All viewports
+   - Fix: Remove auto-open behavior, only show on user request
+
+2. GAME BOARD NOT VISIBLE
+   - Severity: CRITICAL  
+   - Impact: Cannot verify if game fits on any viewport
+   - Cause: Tutorial modal blocks view
+   - Fix: After fixing #1, verify game board sizing
+
+3. PAGESHELL NOT SCROLLABLE
+   - Severity: HIGH
+   - Current: overflow-hidden prevents scrolling
+   - Impact: Content may be inaccessible on small screens
+   - Fix: Change to overflow-auto
+
+4. RESPONSIVE TILE SIZING MISSING
+   - Severity: HIGH
+   - Impact: Large boards (6x6, 7x7) likely don't fit on mobile
+   - Fix: Calculate tile size based on viewport dimensions
+
+5. MODAL HEIGHT ISSUES
+   - Severity: MEDIUM
+   - Impact: Modals may exceed viewport height
+   - Fix: Add max-height: 90vh and overflow-y: auto
+
+6. DASHBOARD TOO LARGE ON MOBILE
+   - Severity: MEDIUM
+   - Impact: Takes too much vertical space
+   - Fix: Reduce padding, use smaller fonts on mobile
+
+7. NO CLOSE BUTTON ON MODALS
+   - Severity: MEDIUM
+   - Impact: Users may get stuck if modal too large
+   - Fix: Ensure X button always visible, add ESC key handler
+
+8. PROGRESS BAR SPACING
+   - Severity: LOW
+   - Impact: Uses too much vertical space
+   - Fix: Further reduce padding on mobile
+
+AFFECTED VIEWPORTS:
+- iPhone SE (375x667) - Most critical
+- iPhone 12 (390x844) - Critical
+- iPad (768x1024) - Medium impact
+- Laptop (1366x768) - Low impact
+- Desktop (1920x1080) - No issues
+
+UNABLE TO TEST DUE TO TUTORIAL BLOCKING:
+- Actual game board visibility
+- PowerUps panel placement
+- Victory modal sizing
+- Achievement modal sizing
+- Extreme/Impossible difficulty layouts

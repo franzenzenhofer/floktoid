@@ -1,0 +1,9 @@
+{
+  "name": "color-me-same-unit-tests",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
+  }
+}

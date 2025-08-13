@@ -1,0 +1,158 @@
+# Based on .gitignore but also excludes unit test folder
+
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+coverage/
+playwright-report/
+test-results/
+unit-tests/
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.test.js
+**/*.test.jsx
+**/test/
+**/tests/
+vitest.config.js
+playwright.config.ts
+
+# Production & Build artifacts
+dist/
+build/
+.vite/
+.cache/
+out/
+.next/
+.nuxt/
+.output/
+.parcel-cache/
+
+# Misc
+.DS_Store
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Typescript
+*.tsbuildinfo
+
+# Wrangler
+.wrangler/
+
+# Deployment artifacts
+.vercel
+.netlify
+
+# Generated files
+src/version.json
+
+# OS files
+Thumbs.db
+
+# Screenshots
+screenshots/
+
+# Test reports
+*.json
+
+# Temporary files
+/tmp/
+*.tmp
+
+# Folders starting with double underscore
+__*/
+**/__*/
+
+# Tickets folder
+tickets/
+**/tickets/
+
+# Documentation and non-source files
+docs/
+*.md
+!README.md
+!CLAUDE.md
+LICENSE
+CHANGELOG*
+*.txt
+*.pdf
+*.doc
+*.docx
+
+# CI/CD and config files
+.github/
+.circleci/
+.gitlab/
+.travis.yml
+.drone.yml
+jenkins/
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+.yarn/
+.pnp.*
+
+# Scripts and tools
+scripts/
+bin/
+tools/
+
+# Public assets (except essential)
+public/
+!public/index.html
+!public/favicon.ico
+
+# Generated and compiled files
+*.min.js
+*.min.css
+*.map
+*.bundle.js
+*.chunk.js
