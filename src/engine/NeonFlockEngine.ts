@@ -477,10 +477,12 @@ export class NeonFlockEngine {
       });
     }
     
-    // Check for game over - all dots stolen and no respawn timers
+    // Check for game over - all dots stolen, no falling dots, and no birds carrying dots
     const finalAvailableDots = this.energyDots.filter(d => !d.stolen);
-    if (finalAvailableDots.length === 0 && this.fallingDots.length === 0 && this.dotRespawnTimers.size === 0) {
-      console.log('[GAME] GAME OVER - All energy lost with no recovery!');
+    const birdsWithDots = this.boids.filter(b => b.hasDot).length;
+    
+    if (finalAvailableDots.length === 0 && this.fallingDots.length === 0 && birdsWithDots === 0) {
+      console.log('[GAME] GAME OVER - All energy lost! No dots available, falling, or carried by birds!');
       this.onGameOver?.();
       return;
     }
