@@ -24,7 +24,7 @@ export const GameConfig = {
   AST_SPEED: 500,
   AST_GROWTH_RATE: 20, // pixels per second while holding
   AST_MAX_CHARGE: 100, // max size from charging
-  AST_SLOWNESS_FACTOR: 0.4, // much slower for bigger asteroids (was 0.7)
+  AST_SLOWNESS_FACTOR: 0.3, // BIG asteroids are 70% slower! (was 0.7, then 0.4)
   
   // Progression - More gradual increase with more stages
   BIRDS_PER_WAVE: [
