@@ -10,6 +10,7 @@ export function Game() {
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameover'>('menu');
   const [score, setScore] = useState(0);
   const [wave, setWave] = useState(1);
+  const [energyCritical, setEnergyCritical] = useState(false);
   const [highScore, setHighScore] = useState(() => {
     const saved = localStorage.getItem('floktoid-highscore');
     return saved ? parseInt(saved) : 0;
@@ -31,6 +32,7 @@ export function Game() {
           };
           
           engine.onWaveUpdate = setWave;
+          engine.onEnergyStatus = (critical: boolean) => setEnergyCritical(critical);
           engine.onGameOver = () => setGameState('gameover');
           
           engine.start();
@@ -75,7 +77,7 @@ export function Game() {
       {gameState === 'playing' && (
         <>
           <div ref={canvasRef} className="fixed inset-0 w-full h-full" />
-          <HUD score={score} wave={wave} />
+          <HUD score={score} wave={wave} energyCritical={energyCritical} />
         </>
       )}
       

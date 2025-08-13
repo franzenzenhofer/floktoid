@@ -39,6 +39,7 @@ export class NeonFlockEngine {
   
   public onScoreUpdate?: (score: number) => void;
   public onWaveUpdate?: (wave: number) => void;
+  public onEnergyStatus?: (critical: boolean) => void;
   public onGameOver?: () => void;
   
   private gridOverlay!: PIXI.Graphics;
@@ -457,6 +458,11 @@ export class NeonFlockEngine {
     const availableDots = this.energyDots.filter(d => !d.stolen);
     const allDotsStolen = availableDots.length === 0;
     
+    // Report critical energy status
+    const birdsWithDots = this.boids.filter(b => b.hasDot).length;
+    const criticalState = allDotsStolen && this.fallingDots.length === 0 && birdsWithDots === 0;
+    this.onEnergyStatus?.(criticalState);
+    
     // Only process respawn timers if not all dots are stolen
     if (!allDotsStolen) {
       // Process individual dot respawn timers
@@ -479,9 +485,9 @@ export class NeonFlockEngine {
     
     // Check for game over - all dots stolen, no falling dots, and no birds carrying dots
     const finalAvailableDots = this.energyDots.filter(d => !d.stolen);
-    const birdsWithDots = this.boids.filter(b => b.hasDot).length;
+    const finalBirdsWithDots = this.boids.filter(b => b.hasDot).length;
     
-    if (finalAvailableDots.length === 0 && this.fallingDots.length === 0 && birdsWithDots === 0) {
+    if (finalAvailableDots.length === 0 && this.fallingDots.length === 0 && finalBirdsWithDots === 0) {
       console.log('[GAME] GAME OVER - All energy lost! No dots available, falling, or carried by birds!');
       this.onGameOver?.();
       return;

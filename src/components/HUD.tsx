@@ -1,11 +1,11 @@
 
-
 interface HUDProps {
   score: number;
   wave: number;
+  energyCritical?: boolean;
 }
 
-export function HUD({ score, wave }: HUDProps) {
+export function HUD({ score, wave, energyCritical }: HUDProps) {
   return (
     <>
       <div className="fixed top-2 sm:top-3 md:top-5 left-2 sm:left-3 md:left-5 font-bold text-2xl sm:text-3xl md:text-5xl neon-text select-none pointer-events-none">
@@ -14,6 +14,16 @@ export function HUD({ score, wave }: HUDProps) {
       <div className="fixed top-2 sm:top-3 md:top-5 right-2 sm:right-3 md:right-5 font-bold text-xl sm:text-2xl md:text-3xl neon-pink select-none pointer-events-none">
         WAVE {wave}
       </div>
+      {energyCritical && (
+        <div className="fixed top-1/4 left-1/2 transform -translate-x-1/2 font-bold text-3xl sm:text-4xl md:text-6xl text-red-500 animate-pulse select-none pointer-events-none">
+          <div className="text-center">
+            ⚠️ ENERGY CRITICAL ⚠️
+            <div className="text-xl sm:text-2xl md:text-3xl mt-2">
+              ALL DOTS STOLEN!
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

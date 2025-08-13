@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-08-13T20:10:59.555Z",
-  "duration": "58.57s",
+  "timestamp": "2025-08-13T20:13:28.707Z",
+  "duration": "79.56s",
   "deployment": {
-    "id": "7def2fc1-dda9-4b9d-8a53-7953aa65db71",
+    "id": "3e705652-bd34-4f31-96d5-52bf01099836",
     "url": "https://floktoid.franzai.com",
-    "timestamp": "2025-08-13T20:10:36.282Z"
+    "timestamp": "2025-08-13T20:13:04.457Z"
   },
   "url": "https://floktoid.franzai.com",
   "checks": {
@@ -28,9 +28,9 @@
       "size": "704K"
     },
     "deployment": {
-      "id": "7def2fc1-dda9-4b9d-8a53-7953aa65db71",
+      "id": "3e705652-bd34-4f31-96d5-52bf01099836",
       "url": "https://floktoid.franzai.com",
-      "timestamp": "2025-08-13T20:10:36.282Z"
+      "timestamp": "2025-08-13T20:13:04.457Z"
     },
     "verification": {
       "http": {
@@ -40,32 +40,32 @@
           "alt-svc": "h3=\":443\"; ma=86400",
           "cache-control": "public, max-age=0, must-revalidate",
           "cf-cache-status": "HIT",
-          "cf-ray": "96eadb5aacc3996f-FRA",
+          "cf-ray": "96eadef8caabdc8a-FRA",
           "connection": "keep-alive",
           "content-encoding": "br",
           "content-type": "text/html",
-          "date": "Wed, 13 Aug 2025 20:10:36 GMT",
+          "date": "Wed, 13 Aug 2025 20:13:04 GMT",
           "nel": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}",
-          "report-to": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=s5O2wECShWLIl6V9GfWTM3XSbqqmQ%2FhM%2BQ49q9sosNDTU6sUbnXYaKr6aBlv7XoeSI%2Fu%2BZnXNNCLCPFbA7sa0xunnkodJZFX8gG2BGYKtK%2F0RBYKBCX6nqw2XC73TPvkL3mXZN7xM5A913eEZyBLisn6NA%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+          "report-to": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=s1AJSGBOXNGby98OVzkCZ9Zk1xkMGQXBgw%2F91B%2FmL7ErqWNvqZpTlhO6M%2FVp3JaffaoYLg6NlT3tMl%2FWPHZkFoI%2BPt7zcoNDTXo1qtNjsNqtaDQV3Ik0zWyZP0z2fM87CCkTrshu%2FIN%2FHV1Kokr9UWFqdQ%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
           "server": "cloudflare",
-          "server-timing": "cfL4;desc=\"?proto=TCP&rtt=5398&min_rtt=5397&rtt_var=2026&sent=3&recv=5&lost=0&retrans=0&sent_bytes=219&recv_bytes=865&delivery_rate=249306&cwnd=250&unsent_bytes=0&cid=e04ee3f2a983393c&ts=56&x=0\"",
+          "server-timing": "cfL4;desc=\"?proto=TCP&rtt=5446&min_rtt=5415&rtt_var=2053&sent=2&recv=5&lost=0&retrans=0&sent_bytes=219&recv_bytes=865&delivery_rate=248938&cwnd=250&unsent_bytes=0&cid=df7e1bba120ace83&ts=41&x=0\"",
           "speculation-rules": "\"/cdn-cgi/speculation\"",
           "transfer-encoding": "chunked",
           "vary": "Accept-Encoding"
         }
       },
       "performance": {
-        "loadTime": 1618,
+        "loadTime": 1779,
         "metrics": {
-          "firstPaint": 328,
-          "firstContentfulPaint": 1100,
-          "domContentLoaded": 1028,
-          "loadComplete": 1028
+          "firstPaint": 368,
+          "firstContentfulPaint": 1288,
+          "domContentLoaded": 1184,
+          "loadComplete": 1184
         },
         "consoleErrors": []
       },
       "lighthouse": {
-        "performance": 93,
+        "performance": 94,
         "accessibility": 75
       }
     },
