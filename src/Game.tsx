@@ -55,14 +55,14 @@ export function Game() {
   };
 
   return (
-    <div className="relative w-full h-full bg-black">
+    <div className="fixed inset-0 w-screen h-screen bg-black overflow-hidden">
       {gameState === 'menu' && (
         <StartScreen onStart={handleStart} highScore={highScore} />
       )}
       
       {gameState === 'playing' && (
         <>
-          <div ref={canvasRef} className="absolute inset-0" />
+          <div ref={canvasRef} className="fixed inset-0 w-full h-full" />
           <HUD score={score} wave={wave} />
         </>
       )}
