@@ -26,6 +26,12 @@ html, body {
   /* Prevent elastic scrolling on iOS */
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+  /* Prevent pinch zoom */
+  -ms-touch-action: none;
+  /* Disable pull-to-refresh */
+  overscroll-behavior-y: contain;
+  /* Prevent text selection highlight */
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
