@@ -97,11 +97,13 @@ export class InputManager {
       // Draw charge indicator
       this.chargeIndicator.clear();
       const hue = (performance.now() / 10) % 360;
-      const color = PIXI.utils.rgb2hex([
-        Math.cos(hue * Math.PI / 180) * 0.5 + 0.5,
-        Math.sin(hue * Math.PI / 180) * 0.5 + 0.5,
-        Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5
-      ]);
+      const color = Math.floor(
+        (Math.cos(hue * Math.PI / 180) * 0.5 + 0.5) * 255
+      ) << 16 | Math.floor(
+        (Math.sin(hue * Math.PI / 180) * 0.5 + 0.5) * 255
+      ) << 8 | Math.floor(
+        (Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
+      );
       
       this.chargeIndicator.lineStyle(2, color, 1);
       this.chargeIndicator.beginFill(color, 0.2);

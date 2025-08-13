@@ -1,5 +1,4 @@
 import * as PIXI from 'pixi.js';
-import { GameConfig } from '../GameConfig';
 
 export class Asteroid {
   public x: number;
@@ -38,11 +37,13 @@ export class Asteroid {
   }
   
   private draw() {
-    const color = PIXI.utils.rgb2hex([
-      Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5,
-      Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5,
-      Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5
-    ]);
+    const color = Math.floor(
+      (Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+    ) << 16 | Math.floor(
+      (Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+    ) << 8 | Math.floor(
+      (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
+    );
     
     this.sprite.clear();
     this.sprite.lineStyle(2, color, 1);
@@ -68,7 +69,7 @@ export class Asteroid {
     this.sprite.closePath();
     
     // Add glow filter
-    this.sprite.filters = [new PIXI.filters.BlurFilter(2)];
+    this.sprite.filters = [new PIXI.BlurFilter(2)];
   }
   
   public update(dt: number) {

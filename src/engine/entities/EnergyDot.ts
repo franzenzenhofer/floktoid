@@ -36,11 +36,13 @@ export class EnergyDot {
       return;
     }
     
-    const color = PIXI.utils.rgb2hex([
-      Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5,
-      Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5,
-      Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5
-    ]);
+    const color = Math.floor(
+      (Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+    ) << 16 | Math.floor(
+      (Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+    ) << 8 | Math.floor(
+      (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
+    );
     
     const pulse = Math.sin(performance.now() / 1000 * 5 + this.pulsePhase) * 0.3 + 0.7;
     

@@ -42,11 +42,13 @@ export class Boid {
   }
   
   private draw() {
-    const color = PIXI.utils.rgb2hex([
-      Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5,
-      Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5,
-      Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5
-    ]);
+    const color = Math.floor(
+      (Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+    ) << 16 | Math.floor(
+      (Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+    ) << 8 | Math.floor(
+      (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
+    );
     
     this.sprite.clear();
     this.sprite.lineStyle(2, color, 1);
@@ -82,7 +84,7 @@ export class Boid {
     }
   }
   
-  public moveToTop(dt: number) {
+  public moveToTop(_dt: number) {
     this.vy = -GameConfig.BASE_SPEED * 1.5 * (this.maxSpeed / GameConfig.BASE_SPEED);
     this.vx *= 0.95;
   }
@@ -111,11 +113,13 @@ export class Boid {
     // Draw trail
     this.trailGraphics.clear();
     if (this.trail.length > 1) {
-      const color = PIXI.utils.rgb2hex([
-        Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5,
-        Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5,
-        Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5
-      ]);
+      const color = Math.floor(
+        (Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+      ) << 16 | Math.floor(
+        (Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+      ) << 8 | Math.floor(
+        (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
+      );
       
       for (let i = 1; i < this.trail.length; i++) {
         const alpha = (i / this.trail.length) * 0.5;

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NeonFlockEngine } from './engine/NeonFlockEngine';
 import { HUD } from './components/HUD';
 import { StartScreen } from './components/StartScreen';

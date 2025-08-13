@@ -38,11 +38,13 @@ export class ParticleSystem {
   }
   
   createPickup(x: number, y: number, hue: number) {
-    const color = PIXI.utils.rgb2hex([
-      Math.cos(hue * Math.PI / 180) * 0.5 + 0.5,
-      Math.sin(hue * Math.PI / 180) * 0.5 + 0.5,
-      Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5
-    ]);
+    const color = Math.floor(
+      (Math.cos(hue * Math.PI / 180) * 0.5 + 0.5) * 255
+    ) << 16 | Math.floor(
+      (Math.sin(hue * Math.PI / 180) * 0.5 + 0.5) * 255
+    ) << 8 | Math.floor(
+      (Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
+    );
     
     for (let i = 0; i < 10; i++) {
       this.addParticle(

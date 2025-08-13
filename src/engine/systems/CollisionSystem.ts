@@ -7,7 +7,7 @@ export class CollisionSystem {
   checkCollisions(
     boids: Boid[],
     asteroids: Asteroid[],
-    energyDots: EnergyDot[],
+    _energyDots: EnergyDot[],
     onBoidHit: (boid: Boid) => void,
     onAsteroidHit: (asteroid: Asteroid) => boolean
   ) {

@@ -10,7 +10,6 @@ import { GameConfig } from './GameConfig';
 
 export class NeonFlockEngine {
   private app: PIXI.Application;
-  private container: HTMLDivElement;
   
   private boids: Boid[] = [];
   private energyDots: EnergyDot[] = [];
@@ -31,11 +30,10 @@ export class NeonFlockEngine {
   public onWaveUpdate?: (wave: number) => void;
   public onGameOver?: () => void;
   
-  private gridOverlay: PIXI.Graphics;
-  private backgroundStars: PIXI.Container;
+  private gridOverlay!: PIXI.Graphics;
+  private backgroundStars!: PIXI.Container;
 
   constructor(container: HTMLDivElement) {
-    this.container = container;
     
     this.app = new PIXI.Application({
       width: window.innerWidth,
@@ -109,7 +107,7 @@ export class NeonFlockEngine {
   private initializeGame() {
     this.spawnEnergyDots();
     this.startWave();
-    this.app.ticker.add(this.gameLoop);
+    this.app.ticker.add(() => this.gameLoop(this.app.ticker.deltaTime));
   }
   
   private spawnEnergyDots() {
@@ -297,7 +295,7 @@ export class NeonFlockEngine {
   
   public destroy() {
     window.removeEventListener('resize', this.handleResize);
-    this.app.ticker.remove(this.gameLoop);
+    this.app.ticker.stop();
     this.boids.forEach(b => b.destroy());
     this.energyDots.forEach(d => d.destroy());
     this.asteroids.forEach(a => a.destroy());
