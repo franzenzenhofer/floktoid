@@ -22,6 +22,8 @@ export class NeonFlockEngine {
     targetSlot: number;
     sprite: PIXI.Graphics;
     originalDot: EnergyDot;
+    trail: PIXI.Graphics[];
+    trailPositions: { x: number, y: number }[];
   }> = [];
   
   private particleSystem!: ParticleSystem;
@@ -163,6 +165,15 @@ export class NeonFlockEngine {
     const birdSpeed = GameConfig.BASE_SPEED * this.speedMultiplier;
     const fallSpeed = birdSpeed * 0.1; // Only 10% of bird speed
     
+    // Create trail graphics for falling dot
+    const trail: PIXI.Graphics[] = [];
+    for (let i = 0; i < 5; i++) {
+      const trailSegment = new PIXI.Graphics();
+      trailSegment.alpha = 0.3 * (1 - i / 5);
+      this.app.stage.addChild(trailSegment);
+      trail.push(trailSegment);
+    }
+    
     this.fallingDots.push({
       x,
       y,
@@ -170,7 +181,9 @@ export class NeonFlockEngine {
       vy: fallSpeed, // Ultra slow fall speed
       targetSlot,
       sprite,
-      originalDot
+      originalDot,
+      trail,
+      trailPositions: []
     });
   }
   
@@ -404,6 +417,30 @@ export class NeonFlockEngine {
       dot.sprite.x = dot.x;
       dot.sprite.y = dot.y;
       
+      // Update trail positions
+      dot.trailPositions.unshift({ x: dot.x, y: dot.y });
+      if (dot.trailPositions.length > 5) {
+        dot.trailPositions.pop();
+      }
+      
+      // Draw glowing trail
+      dot.trail.forEach((segment, i) => {
+        segment.clear();
+        if (i < dot.trailPositions.length) {
+          const pos = dot.trailPositions[i];
+          const size = GameConfig.ENERGY_RADIUS * (1 - i * 0.15);
+          const color = dot.originalDot.hue;
+          
+          // Outer glow
+          segment.circle(pos.x, pos.y, size * 1.5);
+          segment.fill({ color, alpha: 0.1 * (1 - i / 5) });
+          
+          // Inner core
+          segment.circle(pos.x, pos.y, size);
+          segment.fill({ color, alpha: 0.3 * (1 - i / 5) });
+        }
+      });
+      
       // Check if birds can catch falling dot
       for (const boid of this.boids) {
         if (!boid.hasDot && boid.alive) {
@@ -414,9 +451,13 @@ export class NeonFlockEngine {
             boid.targetDot = dot.originalDot;
             this.particleSystem.createPickup(dot.x, dot.y, dot.originalDot.hue);
             
-            // Remove falling dot
+            // Remove falling dot and trail
             this.app.stage.removeChild(dot.sprite);
             dot.sprite.destroy();
+            dot.trail.forEach(t => {
+              this.app.stage.removeChild(t);
+              t.destroy();
+            });
             return false;
           }
         }
@@ -429,9 +470,13 @@ export class NeonFlockEngine {
         dot.originalDot.restore();
         this.particleSystem.createPickup(dot.x, targetY, dot.originalDot.hue);
         
-        // Remove falling dot
+        // Remove falling dot and trail
         this.app.stage.removeChild(dot.sprite);
         dot.sprite.destroy();
+        dot.trail.forEach(t => {
+          this.app.stage.removeChild(t);
+          t.destroy();
+        });
         return false;
       }
       
