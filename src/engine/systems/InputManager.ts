@@ -13,6 +13,7 @@ export class InputManager {
   private aimLine: PIXI.Graphics;
   private cursor: PIXI.Graphics;
   private currentPos: { x: number; y: number } = { x: 0, y: 0 };
+  private asteroidShape: { vertices: number[], roughness: number[] } | null = null;
 
   constructor(app: PIXI.Application, engine: NeonFlockEngine) {
     this.app = app;
@@ -56,6 +57,18 @@ export class InputManager {
     this.chargeSize = GameConfig.AST_MIN;
     this.chargeStartTime = performance.now();
     this.currentPos = { x, y };
+    
+    // Generate asteroid shape once when starting charge
+    const points = 12 + Math.floor(Math.random() * 4);
+    const roughness: number[] = [];
+    const vertices: number[] = [];
+    
+    for (let i = 0; i < points; i++) {
+      roughness.push(0.4 + Math.random() * 0.6);
+      vertices.push(i * 100 + Math.random() * 100); // Random vertex data
+    }
+    
+    this.asteroidShape = { vertices, roughness };
   };
   
   private handlePointerMove = (e: PointerEvent) => {
@@ -103,13 +116,15 @@ export class InputManager {
         targetX,
         targetY,
         this.chargeSize,
-        slownessFactor
+        slownessFactor,
+        this.asteroidShape
       );
     }
     
     this.charging = false;
     this.chargeIndicator.clear();
     this.aimLine.clear();
+    this.asteroidShape = null;
   };
   
   private updateVisuals = () => {
@@ -145,30 +160,29 @@ export class InputManager {
         (Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
       );
       
-      // Show actual asteroid shape preview while charging
+      // Show actual asteroid shape preview using the generated shape
       const pulse = Math.sin(performance.now() / 100) * 0.05 + 1;
       const asteroidSize = this.chargeSize * pulse;
       
-      // Draw irregular asteroid preview (matching Asteroid.ts shape)
-      const points = 12;
-      const angleStep = (Math.PI * 2) / points;
-      const vertices: number[] = [];
-      
-      // Use consistent randomness based on charge start position
-      const seed = this.chargeStart.x + this.chargeStart.y;
-      const getRandom = (i: number) => {
-        const x = Math.sin(seed * (i + 1)) * 10000;
-        return x - Math.floor(x);
-      };
-      
-      for (let i = 0; i <= points; i++) {
-        const idx = i % points;
-        const angle = i * angleStep + (getRandom(i) - 0.5) * angleStep * 0.3;
-        const r = asteroidSize * (0.4 + getRandom(i + 100) * 0.6);
-        vertices.push(
-          this.chargeStart.x + Math.cos(angle) * r,
-          this.chargeStart.y + Math.sin(angle) * r
-        );
+      if (this.asteroidShape) {
+        const points = this.asteroidShape.roughness.length;
+        const angleStep = (Math.PI * 2) / points;
+        const vertices: number[] = [];
+        
+        for (let i = 0; i <= points; i++) {
+          const idx = i % points;
+          const angle = i * angleStep + (this.asteroidShape.vertices[idx] * 0.01 - 0.5) * angleStep * 0.3;
+          const r = asteroidSize * this.asteroidShape.roughness[idx];
+          vertices.push(
+            this.chargeStart.x + Math.cos(angle) * r,
+            this.chargeStart.y + Math.sin(angle) * r
+          );
+        }
+        
+        // Draw the asteroid preview with same shape
+        this.chargeIndicator.poly(vertices);
+        this.chargeIndicator.stroke({ width: 3, color, alpha: 0.8 });
+        this.chargeIndicator.fill({ color, alpha: 0.15 });
       }
       
       // Draw the asteroid preview

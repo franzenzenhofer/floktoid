@@ -172,7 +172,15 @@ export class NeonFlockEngine {
     this.boids.push(boid);
   }
   
-  public launchAsteroid(startX: number, startY: number, targetX: number, targetY: number, size: number, slownessFactor = 1) {
+  public launchAsteroid(
+    startX: number, 
+    startY: number, 
+    targetX: number, 
+    targetY: number, 
+    size: number, 
+    slownessFactor = 1,
+    shapeData?: { vertices: number[], roughness: number[] } | null
+  ) {
     const dx = targetX - startX;
     const dy = targetY - startY;
     const dist = Math.hypot(dx, dy);
@@ -185,7 +193,8 @@ export class NeonFlockEngine {
         startY,
         (dx / dist) * speed,
         (dy / dist) * speed,
-        size
+        size,
+        shapeData || undefined
       );
       this.asteroids.push(asteroid);
       

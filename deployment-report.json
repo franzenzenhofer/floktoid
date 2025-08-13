@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-08-13T12:51:57.271Z",
-  "duration": "54.75s",
+  "timestamp": "2025-08-13T13:00:08.827Z",
+  "duration": "56.88s",
   "deployment": {
-    "id": "b35da2a7-e588-4590-b087-48c3ede8d4d7",
+    "id": "7e56b886-a69c-46e5-8f96-5db985b45efa",
     "url": "https://floktoid.franzai.com",
-    "timestamp": "2025-08-13T12:51:35.745Z"
+    "timestamp": "2025-08-13T12:59:46.934Z"
   },
   "url": "https://floktoid.franzai.com",
   "checks": {
@@ -28,9 +28,9 @@
       "size": "696K"
     },
     "deployment": {
-      "id": "b35da2a7-e588-4590-b087-48c3ede8d4d7",
+      "id": "7e56b886-a69c-46e5-8f96-5db985b45efa",
       "url": "https://floktoid.franzai.com",
-      "timestamp": "2025-08-13T12:51:35.745Z"
+      "timestamp": "2025-08-13T12:59:46.934Z"
     },
     "verification": {
       "http": {
@@ -40,27 +40,27 @@
           "alt-svc": "h3=\":443\"; ma=86400",
           "cache-control": "public, max-age=0, must-revalidate",
           "cf-cache-status": "HIT",
-          "cf-ray": "96e858466bb99957-FRA",
+          "cf-ray": "96e864448fd9882b-FRA",
           "connection": "keep-alive",
           "content-encoding": "br",
           "content-type": "text/html",
-          "date": "Wed, 13 Aug 2025 12:51:36 GMT",
+          "date": "Wed, 13 Aug 2025 12:59:47 GMT",
           "nel": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}",
-          "report-to": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=FaAp6WHZe3jXqZ8L4IHiIw7eJx1TuhIgLLiy1svDlCTkheEizfw%2FRj3cqOqfGRlnw%2Bd9SpDdSLOVKMHymJxnRzaRhs5crhBYrrtNPUDlSyahkG1sO8Bd01zKXnGiKFXMHSkruffyBMCm7R360nTohBFjNA%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+          "report-to": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=QIScCTyGNjCOdjQ%2F3WfeDBWQXcaKtEq6IMzr%2BJH%2FRC29AUmYJ34Y5CIAYnS9enBhc3GsUbo31F6TUEuLkwaOIeANEOeYC6vGjbhLXss54BsT9onFO2PdBTBRk4oM0%2Fa9GX4kUZ2vMHghrQIsDtHXSfrTXQ%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
           "server": "cloudflare",
-          "server-timing": "cfL4;desc=\"?proto=TCP&rtt=5423&min_rtt=5423&rtt_var=2034&sent=2&recv=5&lost=0&retrans=0&sent_bytes=219&recv_bytes=865&delivery_rate=248433&cwnd=250&unsent_bytes=0&cid=4bdf17eb175516b9&ts=47&x=0\"",
+          "server-timing": "cfL4;desc=\"?proto=TCP&rtt=5537&min_rtt=5479&rtt_var=2096&sent=2&recv=5&lost=0&retrans=0&sent_bytes=219&recv_bytes=865&delivery_rate=246030&cwnd=250&unsent_bytes=0&cid=8ef1d8037e91ce79&ts=39&x=0\"",
           "speculation-rules": "\"/cdn-cgi/speculation\"",
           "transfer-encoding": "chunked",
           "vary": "Accept-Encoding"
         }
       },
       "performance": {
-        "loadTime": 1407,
+        "loadTime": 1630,
         "metrics": {
-          "firstPaint": 408,
-          "firstContentfulPaint": 936,
-          "domContentLoaded": 832,
-          "loadComplete": 832
+          "firstPaint": 256,
+          "firstContentfulPaint": 1144,
+          "domContentLoaded": 1038,
+          "loadComplete": 1038
         },
         "consoleErrors": [
           "Failed to load resource: the server responded with a status of 500 ()"
