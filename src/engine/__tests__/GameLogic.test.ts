@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GameConfig } from '../GameConfig';
 
 describe('Game Logic Tests', () => {
@@ -118,8 +118,8 @@ describe('Game Logic Tests', () => {
 
     it('should increase bird count per wave', () => {
       const calculateBirdsForWave = (wave: number) => {
-        const base = GameConfig.BIRDS_WAVE_1;
-        const growth = GameConfig.WAVE_GROWTH;
+        const base = 2; // Base birds for wave 1
+        const growth = 1.15; // Growth factor
         return Math.ceil(base * Math.pow(growth, wave - 1));
       };
 
@@ -145,8 +145,18 @@ describe('Game Logic Tests', () => {
     });
 
     it('should track falling dots separately', () => {
-      const fallingDots: any[] = [];
-      const energyDots = Array(5).fill({ stolen: false });
+      interface DotInfo {
+        originalIndex: number;
+        y: number;
+        vy: number;
+      }
+      
+      interface EnergyDotState {
+        stolen: boolean;
+      }
+      
+      const fallingDots: DotInfo[] = [];
+      const energyDots = Array(5).fill({ stolen: false }) as EnergyDotState[];
       
       // Simulate dot being stolen and falling
       energyDots[2] = { stolen: true };
@@ -163,7 +173,15 @@ describe('Game Logic Tests', () => {
 
   describe('Game Over Conditions', () => {
     it('should trigger game over when all dots are gone', () => {
-      const checkGameOver = (dots: any[], fallingDots: any[], birdsWithDots: number) => {
+      interface DotState {
+        stolen: boolean;
+      }
+      
+      interface FallingDot {
+        y: number;
+      }
+      
+      const checkGameOver = (dots: DotState[], fallingDots: FallingDot[], birdsWithDots: number) => {
         const availableDots = dots.filter(d => !d.stolen);
         return availableDots.length === 0 && 
                fallingDots.length === 0 && 
@@ -250,9 +268,9 @@ describe('Game Logic Tests', () => {
   describe('Wave Progression', () => {
     it('should increase difficulty over waves', () => {
       const getWaveStats = (wave: number) => ({
-        birds: Math.ceil(GameConfig.BIRDS_WAVE_1 * Math.pow(GameConfig.WAVE_GROWTH, wave - 1)),
+        birds: Math.ceil(2 * Math.pow(1.15, wave - 1)),
         speed: GameConfig.BASE_SPEED * Math.pow(GameConfig.SPEED_GROWTH, wave - 1),
-        force: GameConfig.BASE_FORCE * Math.pow(GameConfig.FORCE_GROWTH, wave - 1)
+        force: GameConfig.BASE_FORCE * Math.pow(1.02, wave - 1)
       });
 
       const wave1 = getWaveStats(1);

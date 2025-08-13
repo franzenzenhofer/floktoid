@@ -569,12 +569,14 @@ export class NeonFlockEngine {
         fontFamily: 'Arial',
         fontSize: 24 + this.comboCount * 2,
         fill: [0x00ffff, 0xff00ff],
-        stroke: 0x000000,
-        strokeThickness: 4,
-        dropShadow: true,
-        dropShadowDistance: 2,
-        dropShadowBlur: 4,
-        dropShadowColor: 0x00ffff
+        stroke: { color: 0x000000, width: 4 },
+        dropShadow: {
+          color: 0x00ffff,
+          blur: 4,
+          distance: 2,
+          angle: Math.PI / 4,
+          alpha: 0.8
+        }
       });
       
       comboText.anchor.set(0.5);
@@ -585,12 +587,12 @@ export class NeonFlockEngine {
       // Animate and remove
       let alpha = 1;
       let scale = 1;
-      const ticker = (delta: number) => {
-        alpha -= delta * 0.02;
-        scale += delta * 0.01;
+      const ticker = () => {
+        alpha -= 0.02;
+        scale += 0.01;
         comboText.alpha = alpha;
         comboText.scale.set(scale);
-        comboText.y -= delta * 2;
+        comboText.y -= 2;
         
         if (alpha <= 0) {
           this.app.ticker.remove(ticker);

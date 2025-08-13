@@ -105,6 +105,7 @@ export class InputManager {
     // Clear all visuals immediately before launch
     this.chargeIndicator.clear();
     this.aimLine.clear();
+    this.cursor.clear(); // CRITICAL FIX: Clear cursor to remove red circle
     
     const dx = targetX - this.chargeStart.x;
     const dy = targetY - this.chargeStart.y;
