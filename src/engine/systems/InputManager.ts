@@ -110,11 +110,12 @@ export class InputManager {
     const dy = targetY - this.chargeStart.y;
     const dist = Math.hypot(dx, dy);
     
-    // Calculate angle from horizontal (upward shots have negative dy)
-    const angle = Math.atan2(-dy, Math.abs(dx)) * (180 / Math.PI);
+    // Calculate angle from horizontal
+    // 0 degrees = horizontal, 90 degrees = straight up
+    const angle = Math.abs(Math.atan2(dy, dx) * (180 / Math.PI));
     
-    // Only launch if distance > 20 and angle between 15 and 70 degrees from horizontal
-    if (dist > 20 && angle >= 15 && angle <= 70) {
+    // Only launch if distance > 20 and angle NOT between 0-15 or 165-180 degrees (prevent horizontal shots)
+    if (dist > 20 && angle > 15 && angle < 165) {
       // Apply slowness factor for bigger asteroids
       const slownessFactor = 1 - ((this.chargeSize - GameConfig.AST_MIN) / (GameConfig.AST_MAX_CHARGE - GameConfig.AST_MIN)) * (1 - GameConfig.AST_SLOWNESS_FACTOR);
       
@@ -207,9 +208,9 @@ export class InputManager {
       const dx = (this.currentPos.x - this.chargeStart.x) / segments;
       const dy = (this.currentPos.y - this.chargeStart.y) / segments;
       
-      // Check if angle is valid (between 15 and 70 degrees from horizontal)
-      const angle = Math.atan2(-dy * segments, Math.abs(dx * segments)) * (180 / Math.PI);
-      const validAngle = angle >= 15 && angle <= 70;
+      // Check if angle is valid (not too horizontal)
+      const angle = Math.abs(Math.atan2(dy * segments, dx * segments) * (180 / Math.PI));
+      const validAngle = angle > 15 && angle < 165;
       const lineColor = validAngle ? color : 0x808080; // Gray if invalid angle
       
       for (let i = 0; i < segments; i += 2) {
