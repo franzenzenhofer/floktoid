@@ -358,21 +358,27 @@ export class NeonFlockEngine {
     // Queue for new asteroids to add after collision processing
     const newAsteroids: Asteroid[] = [];
     
+    // Queue for visual effects to process after collision checking
+    const visualEffects: (() => void)[] = [];
+    
     // Check collisions
     this.collisionSystem.checkCollisions(
       this.boids,
       this.asteroids,
       this.energyDots,
       (boid) => {
-        // Create 3-line explosion with bird's color
-        this.particleSystem.createBirdExplosion(boid.x, boid.y, boid.hue, boid.vx, boid.vy);
-        this.updateScore(GameConfig.SCORE_HIT);
-        
-        // If bird had a dot, make it fall
-        if (boid.hasDot && boid.targetDot) {
-          this.createFallingDot(boid.x, boid.y, boid.targetDot);
-          boid.targetDot = null;
-        }
+        // Queue visual effects instead of executing immediately
+        visualEffects.push(() => {
+          // Create 3-line explosion with bird's color
+          this.particleSystem.createBirdExplosion(boid.x, boid.y, boid.hue, boid.vx, boid.vy);
+          this.updateScore(GameConfig.SCORE_HIT);
+          
+          // If bird had a dot, make it fall
+          if (boid.hasDot && boid.targetDot) {
+            this.createFallingDot(boid.x, boid.y, boid.targetDot);
+            boid.targetDot = null;
+          }
+        });
       },
       (asteroid) => {
         if (asteroid.size < 10) {
@@ -408,6 +414,11 @@ export class NeonFlockEngine {
     
     // Add new fragments after collision processing is complete
     this.asteroids.push(...newAsteroids);
+    
+    // Process all queued visual effects after collision processing
+    for (const effect of visualEffects) {
+      effect();
+    }
     
     // Update falling dots
     this.fallingDots = this.fallingDots.filter(dot => {
@@ -584,10 +595,15 @@ export class NeonFlockEngine {
       comboText.y = this.app.screen.height * 0.3;
       this.app.stage.addChild(comboText);
       
-      // Animate and remove
+      // Animate and remove safely
       let alpha = 1;
       let scale = 1;
       const ticker = () => {
+        if (!comboText || comboText.destroyed) {
+          this.app.ticker.remove(ticker);
+          return;
+        }
+        
         alpha -= 0.02;
         scale += 0.01;
         comboText.alpha = alpha;
@@ -596,7 +612,9 @@ export class NeonFlockEngine {
         
         if (alpha <= 0) {
           this.app.ticker.remove(ticker);
-          comboText.destroy();
+          if (!comboText.destroyed) {
+            comboText.destroy();
+          }
         }
       };
       this.app.ticker.add(ticker);

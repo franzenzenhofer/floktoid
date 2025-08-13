@@ -72,12 +72,11 @@ export class CollisionSystem {
         
         // More precise collision - reduce detection radius slightly
         if (dist < (ast.size * 0.9) + (GameConfig.BOID_SIZE * 0.8)) {
-          // Hit! Don't restore dot immediately - let it fall
-          // The falling dot is created in the onBoidHit callback
-          
-          onBoidHit(boid);
-          boid.destroy();
+          // Mark for removal first, don't destroy yet
           boidsToRemove.add(j);
+          
+          // Callback will handle visual effects
+          onBoidHit(boid);
           
           // Shrink or destroy asteroid
           if (onAsteroidHit(ast)) {
@@ -90,6 +89,8 @@ export class CollisionSystem {
     // Remove marked boids and asteroids
     const sortedBoidIndices = Array.from(boidsToRemove).sort((a, b) => b - a);
     for (const idx of sortedBoidIndices) {
+      const boid = boids[idx];
+      boid.destroy(); // Destroy AFTER marking, not during collision loop
       boids.splice(idx, 1);
     }
     
