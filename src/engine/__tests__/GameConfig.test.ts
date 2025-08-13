@@ -9,8 +9,10 @@ describe('GameConfig', () => {
   });
 
   it('should have valid progression parameters', () => {
-    expect(GameConfig.BIRDS_WAVE_1).toBeGreaterThan(0);
-    expect(GameConfig.WAVE_GROWTH).toBeGreaterThan(1);
+    expect(GameConfig.BIRDS_PER_WAVE).toBeDefined();
+    expect(GameConfig.BIRDS_PER_WAVE[0]).toBe(2);
+    expect(GameConfig.BIRDS_PER_WAVE[1]).toBe(4);
+    expect(GameConfig.BIRDS_PER_WAVE[2]).toBe(8);
     expect(GameConfig.SPEED_GROWTH).toBeGreaterThan(1);
     expect(GameConfig.SPAWN_BURST).toBeGreaterThan(0);
   });

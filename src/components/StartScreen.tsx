@@ -1,4 +1,4 @@
-
+import { VERSION_INFO } from '../version';
 
 interface StartScreenProps {
   onStart: () => void;
@@ -43,8 +43,9 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
           START GAME
         </button>
         
-        <div className="text-xs sm:text-sm text-gray-600 mt-4 md:mt-8">
-          Built with TypeScript + Pixi.js + Vite
+        <div className="text-xs sm:text-sm text-gray-600 mt-4 md:mt-8 space-y-1">
+          <div>Built with TypeScript + Pixi.js + Vite</div>
+          <div className="text-cyan-400 font-mono">{VERSION_INFO.displayVersion}</div>
         </div>
       </div>
     </div>

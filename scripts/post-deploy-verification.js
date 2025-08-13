@@ -6,6 +6,10 @@ import fetch from 'node-fetch';
 import fs from 'fs/promises';
 import path from 'path';
 import puppeteer from 'puppeteer';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const execAsync = promisify(exec);
 
@@ -20,7 +24,8 @@ const CHECKS = {
   MOBILE: '📱 Mobile Tests',
   SECURITY: '🔒 Security',
   WRANGLER: '☁️ Wrangler Logs',
-  AI_ANALYSIS: '🤖 AI Analysis'
+  AI_ANALYSIS: '🤖 AI Analysis',
+  VERSION: '🏷️ Version Check'
 };
 
 class PostDeploymentVerifier {
@@ -35,6 +40,7 @@ class PostDeploymentVerifier {
     console.log('=' .repeat(50));
     
     await this.httpHealthCheck();
+    await this.versionCheck();
     await this.performanceCheck();
     await this.lighthouseCheck();
     await this.browserChecks();
@@ -94,7 +100,66 @@ class PostDeploymentVerifier {
     }
   }
 
-  // 2. Performance Metrics
+  // 2. Version Check
+  async versionCheck() {
+    console.log(`\n${CHECKS.VERSION}`);
+    
+    try {
+      // Read local package.json version
+      const packagePath = path.join(__dirname, '..', 'package.json');
+      const packageContent = await fs.readFile(packagePath, 'utf8');
+      const packageJson = JSON.parse(packageContent);
+      const localVersion = packageJson.version;
+      
+      // Read version.ts
+      const versionPath = path.join(__dirname, '..', 'src', 'version.ts');
+      const versionContent = await fs.readFile(versionPath, 'utf8');
+      const versionMatch = versionContent.match(/"version":\s*"([^"]+)"/);
+      const buildVersion = versionMatch ? versionMatch[1] : null;
+      
+      // Get version from live site
+      if (!this.browser) {
+        this.browser = await puppeteer.launch({ 
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+      }
+      
+      const page = await this.browser.newPage();
+      await page.goto(DEPLOYMENT_URL, { waitUntil: 'networkidle2' });
+      
+      const liveVersion = await page.evaluate(() => {
+        const versionElement = document.querySelector('.font-mono.text-cyan-400');
+        return versionElement ? versionElement.textContent : null;
+      });
+      
+      await page.close();
+      
+      this.results.version = {
+        local: localVersion,
+        build: buildVersion,
+        live: liveVersion ? liveVersion.replace('v', '') : null,
+        match: localVersion === buildVersion && buildVersion === (liveVersion ? liveVersion.replace('v', '') : null)
+      };
+      
+      console.log(`  📦 Local version: ${localVersion}`);
+      console.log(`  🔨 Build version: ${buildVersion}`);
+      console.log(`  🌐 Live version: ${liveVersion}`);
+      
+      if (this.results.version.match) {
+        console.log(`  ✅ All versions match!`);
+      } else {
+        console.log(`  ⚠️ Version mismatch detected!`);
+        this.errors.push({ check: 'Version', error: 'Version mismatch between local/build/live' });
+      }
+      
+    } catch (error) {
+      this.errors.push({ check: 'Version', error: error.message });
+      console.log(`  ❌ Version Check Failed: ${error.message}`);
+    }
+  }
+
+  // 3. Performance Metrics
   async performanceCheck() {
     console.log(`\n${CHECKS.PERFORMANCE}`);
     
@@ -212,6 +277,17 @@ class PostDeploymentVerifier {
       // Navigate and interact with the page
       await page.goto(DEPLOYMENT_URL, { waitUntil: 'networkidle2' });
       await page.waitForTimeout(2000);
+      
+      // Extract version from page
+      const displayedVersion = await page.evaluate(() => {
+        const versionElement = document.querySelector('.font-mono.text-cyan-400');
+        return versionElement ? versionElement.textContent : null;
+      });
+      
+      if (displayedVersion) {
+        console.log(`  ℹ️ Detected version on page: ${displayedVersion}`);
+        this.results.displayedVersion = displayedVersion;
+      }
       
       // Click start game
       const startButton = await page.$('button:has-text("START GAME")');

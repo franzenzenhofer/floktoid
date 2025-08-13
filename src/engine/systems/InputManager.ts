@@ -46,8 +46,8 @@ export class InputManager {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Only allow spawning in lower 20% of screen
-    if (y < this.app.screen.height * 0.8) {
+    // Only allow spawning in bottom third of screen
+    if (y < this.app.screen.height * 0.67) {
       return;
     }
     
@@ -98,9 +98,9 @@ export class InputManager {
     this.cursor.clear();
     const cursorColor = this.charging ? 0xffff00 : 0x00ffff;
     // Show spawn zone indicator
-    if (this.currentPos.y < this.app.screen.height * 0.8) {
+    if (this.currentPos.y < this.app.screen.height * 0.67) {
       this.cursor.circle(this.currentPos.x, this.currentPos.y, 10);
-      this.cursor.stroke({ width: 2, color: 0xff0000, alpha: 0.5 }); // Red when out of zone
+      this.cursor.stroke({ width: 2, color: 0xff0000, alpha: 0.5 }); // Red when out of spawn zone (top 2/3)
     } else {
       this.cursor.circle(this.currentPos.x, this.currentPos.y, 10);
       this.cursor.stroke({ width: 2, color: cursorColor, alpha: 1 });

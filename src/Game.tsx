@@ -47,7 +47,8 @@ export function Game() {
         engineRef.current = null;
       };
     }
-  }, [gameState]); // Remove highScore from deps - it was causing engine to reset!
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState]); // Intentionally exclude highScore - it was causing engine to reset!
 
   const handleStart = () => {
     setScore(0);
