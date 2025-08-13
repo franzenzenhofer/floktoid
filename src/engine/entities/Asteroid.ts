@@ -47,19 +47,40 @@ export class Asteroid {
     
     this.sprite.clear();
     
-    // Draw irregular asteroid shape
-    const points = 8;
+    // Draw VERY irregular asteroid shape with jagged edges
+    const points = 12 + Math.floor(Math.random() * 4); // 12-15 points for more detail
     const angleStep = (Math.PI * 2) / points;
     const vertices: number[] = [];
     
+    // Generate random roughness for each vertex
+    const roughness = [];
+    for (let i = 0; i < points; i++) {
+      roughness.push(0.4 + Math.random() * 0.6); // 40-100% of radius
+    }
+    
     for (let i = 0; i <= points; i++) {
-      const angle = i * angleStep;
-      const r = this.size * (0.8 + Math.sin(i * 2.7) * 0.2);
+      const idx = i % points;
+      const angle = i * angleStep + (Math.random() - 0.5) * angleStep * 0.3; // Vary angle slightly
+      const r = this.size * roughness[idx];
       vertices.push(Math.cos(angle) * r, Math.sin(angle) * r);
     }
     
     this.sprite.poly(vertices);
     this.sprite.stroke({ width: 2, color, alpha: 1 });
+    
+    // Add some craters/details
+    const craterCount = Math.floor(this.size / 20);
+    for (let i = 0; i < craterCount; i++) {
+      const craterAngle = Math.random() * Math.PI * 2;
+      const craterDist = Math.random() * this.size * 0.5;
+      const craterSize = 3 + Math.random() * 5;
+      this.sprite.circle(
+        Math.cos(craterAngle) * craterDist,
+        Math.sin(craterAngle) * craterDist,
+        craterSize
+      );
+      this.sprite.stroke({ width: 1, color, alpha: 0.3 });
+    }
     
     // Add glow filter
     this.sprite.filters = [new PIXI.BlurFilter(2)];

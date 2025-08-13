@@ -70,8 +70,27 @@ export class InputManager {
     if (e) e.preventDefault();
     if (!this.charging) return;
     
-    const dx = this.currentPos.x - this.chargeStart.x;
-    const dy = this.currentPos.y - this.chargeStart.y;
+    // If dragged out of spawn zone, clamp target to spawn zone boundary
+    let targetX = this.currentPos.x;
+    let targetY = this.currentPos.y;
+    
+    const spawnBoundary = this.app.screen.height * 0.67;
+    if (targetY < spawnBoundary) {
+      // Calculate angle and project to boundary
+      const dx = targetX - this.chargeStart.x;
+      const dy = targetY - this.chargeStart.y;
+      const angle = Math.atan2(dy, dx);
+      
+      // Project to spawn boundary
+      const distToBoundary = (spawnBoundary - this.chargeStart.y) / Math.sin(angle);
+      if (distToBoundary > 0) {
+        targetX = this.chargeStart.x + Math.cos(angle) * Math.abs(distToBoundary);
+        targetY = spawnBoundary;
+      }
+    }
+    
+    const dx = targetX - this.chargeStart.x;
+    const dy = targetY - this.chargeStart.y;
     const dist = Math.hypot(dx, dy);
     
     if (dist > 20) {
@@ -81,8 +100,8 @@ export class InputManager {
       this.engine.launchAsteroid(
         this.chargeStart.x,
         this.chargeStart.y,
-        this.currentPos.x,
-        this.currentPos.y,
+        targetX,
+        targetY,
         this.chargeSize,
         slownessFactor
       );
@@ -126,11 +145,44 @@ export class InputManager {
         (Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
       );
       
-      // Visual feedback for charge growth
-      const pulse = Math.sin(performance.now() / 100) * 0.1 + 1;
-      this.chargeIndicator.circle(this.chargeStart.x, this.chargeStart.y, this.chargeSize * pulse);
-      this.chargeIndicator.stroke({ width: 2, color, alpha: 1 });
-      this.chargeIndicator.fill({ color, alpha: 0.2 });
+      // Show actual asteroid shape preview while charging
+      const pulse = Math.sin(performance.now() / 100) * 0.05 + 1;
+      const asteroidSize = this.chargeSize * pulse;
+      
+      // Draw irregular asteroid preview (matching Asteroid.ts shape)
+      const points = 12;
+      const angleStep = (Math.PI * 2) / points;
+      const vertices: number[] = [];
+      
+      // Use consistent randomness based on charge start position
+      const seed = this.chargeStart.x + this.chargeStart.y;
+      const getRandom = (i: number) => {
+        const x = Math.sin(seed * (i + 1)) * 10000;
+        return x - Math.floor(x);
+      };
+      
+      for (let i = 0; i <= points; i++) {
+        const idx = i % points;
+        const angle = i * angleStep + (getRandom(i) - 0.5) * angleStep * 0.3;
+        const r = asteroidSize * (0.4 + getRandom(i + 100) * 0.6);
+        vertices.push(
+          this.chargeStart.x + Math.cos(angle) * r,
+          this.chargeStart.y + Math.sin(angle) * r
+        );
+      }
+      
+      // Draw the asteroid preview
+      this.chargeIndicator.poly(vertices);
+      this.chargeIndicator.stroke({ width: 3, color, alpha: 0.8 });
+      this.chargeIndicator.fill({ color, alpha: 0.15 });
+      
+      // Add growing effect text
+      const sizePercent = Math.floor(((this.chargeSize - GameConfig.AST_MIN) / (GameConfig.AST_MAX_CHARGE - GameConfig.AST_MIN)) * 100);
+      if (sizePercent > 20) {
+        // Show charge level indicator near asteroid
+        this.chargeIndicator.circle(this.chargeStart.x, this.chargeStart.y - asteroidSize - 20, 3);
+        this.chargeIndicator.fill({ color: 0xffffff, alpha: 0.7 });
+      }
       
       // Draw aim line with dotted pattern
       this.aimLine.clear();
