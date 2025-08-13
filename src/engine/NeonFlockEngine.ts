@@ -36,6 +36,9 @@ export class NeonFlockEngine {
   private birdsToSpawn = 0;
   private nextSpawnTime = 0;
   private speedMultiplier = 1;
+  private comboCount = 0;
+  private comboTimer = 0;
+  private COMBO_WINDOW = 2000; // 2 seconds to maintain combo
   private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
   private DOT_RESPAWN_DELAY = 15000; // 15 seconds per dot respawn
   
@@ -493,6 +496,14 @@ export class NeonFlockEngine {
     // Update particles
     this.particleSystem.update(dt);
     
+    // Update combo timer
+    if (this.comboTimer > 0) {
+      this.comboTimer -= dt * 1000;
+      if (this.comboTimer <= 0) {
+        this.comboCount = 0; // Reset combo
+      }
+    }
+    
     // Check wave complete
     if (this.birdsToSpawn === 0 && this.boids.filter(b => !b.hasDot).length === 0) {
       this.wave++;
@@ -540,8 +551,23 @@ export class NeonFlockEngine {
   };
   
   private updateScore(points: number) {
-    this.score += points;
+    // Apply combo multiplier
+    const comboMultiplier = Math.min(1 + this.comboCount * 0.5, 5); // Max 5x multiplier
+    const finalPoints = Math.floor(points * comboMultiplier);
+    
+    this.score += finalPoints;
     this.onScoreUpdate?.(this.score);
+    
+    // Increase combo
+    this.comboCount++;
+    this.comboTimer = this.COMBO_WINDOW;
+    
+    // Show combo feedback
+    if (this.comboCount > 1) {
+      const comboX = this.app.screen.width / 2;
+      const comboY = this.app.screen.height * 0.3;
+      this.particleSystem.createComboText(comboX, comboY, `${this.comboCount}x COMBO!`, comboMultiplier);
+    }
   }
   
   private handleResize = () => {
