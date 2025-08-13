@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { chromium } = require('playwright');
-const { spawn } = require('child_process');
+import { chromium } from 'playwright';
+import { spawn } from 'child_process';
 
 async function runFullGameTest() {
   console.log('🎮 Starting Full Game Test...');
@@ -128,7 +128,10 @@ async function runFullGameTest() {
 }
 
 // Run if called directly
-if (require.main === module) {
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+
+if (process.argv[1] === __filename) {
   runFullGameTest()
     .then(() => {
       console.log('✅ Full game test completed successfully');
@@ -140,4 +143,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { runFullGameTest };
+export { runFullGameTest };
