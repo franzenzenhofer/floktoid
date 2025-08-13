@@ -80,16 +80,15 @@ export class Asteroid {
     // Scale shape based on current size vs base size
     const scale = this.size / this.baseSize;
     
-    // Generate vertices without duplicating the first point
-    for (let i = 0; i < points; i++) {
-      const angle = i * angleStep + (this.shapeVertices[i] * 0.01 - 0.5) * angleStep * 0.3;
-      const r = this.size * this.shapeRoughness[i];
+    // Generate vertices for polygon
+    for (let i = 0; i <= points; i++) {
+      const idx = i % points;  // Wrap around to close the shape
+      const angle = idx * angleStep + (this.shapeVertices[idx] * 0.01 - 0.5) * angleStep * 0.3;
+      const r = this.size * this.shapeRoughness[idx];
       vertices.push(Math.cos(angle) * r, Math.sin(angle) * r);
     }
     
-    // Close the polygon by connecting back to first point
-    vertices.push(vertices[0], vertices[1]);
-    
+    // Draw as a closed polygon
     this.sprite.poly(vertices);
     this.sprite.stroke({ width: 2, color, alpha: 1 });
     
