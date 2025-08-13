@@ -355,6 +355,9 @@ export class NeonFlockEngine {
       return true;
     });
     
+    // Queue for new asteroids to add after collision processing
+    const newAsteroids: Asteroid[] = [];
+    
     // Check collisions
     this.collisionSystem.checkCollisions(
       this.boids,
@@ -394,13 +397,17 @@ export class NeonFlockEngine {
             Math.sin(angle) * speed,
             fragmentSize
           );
-          this.asteroids.push(fragment);
+          // Queue fragments to add after collision processing
+          newAsteroids.push(fragment);
         }
         // Explosion effect
         this.particleSystem.createExplosion(asteroid.x, asteroid.y, 0xffaa00, 40);
         asteroid.destroy();
       }
     );
+    
+    // Add new fragments after collision processing is complete
+    this.asteroids.push(...newAsteroids);
     
     // Update falling dots
     this.fallingDots = this.fallingDots.filter(dot => {
@@ -554,6 +561,44 @@ export class NeonFlockEngine {
     // Apply combo multiplier
     const comboMultiplier = Math.min(1 + this.comboCount * 0.5, 5); // Max 5x multiplier
     const finalPoints = Math.floor(points * comboMultiplier);
+    
+    // Visual feedback for combo
+    if (this.comboCount > 0) {
+      // Create combo text effect
+      const comboText = new PIXI.Text(`COMBO x${this.comboCount + 1}!`, {
+        fontFamily: 'Arial',
+        fontSize: 24 + this.comboCount * 2,
+        fill: [0x00ffff, 0xff00ff],
+        stroke: 0x000000,
+        strokeThickness: 4,
+        dropShadow: true,
+        dropShadowDistance: 2,
+        dropShadowBlur: 4,
+        dropShadowColor: 0x00ffff
+      });
+      
+      comboText.anchor.set(0.5);
+      comboText.x = this.app.screen.width / 2;
+      comboText.y = this.app.screen.height * 0.3;
+      this.app.stage.addChild(comboText);
+      
+      // Animate and remove
+      let alpha = 1;
+      let scale = 1;
+      const ticker = (delta: number) => {
+        alpha -= delta * 0.02;
+        scale += delta * 0.01;
+        comboText.alpha = alpha;
+        comboText.scale.set(scale);
+        comboText.y -= delta * 2;
+        
+        if (alpha <= 0) {
+          this.app.ticker.remove(ticker);
+          comboText.destroy();
+        }
+      };
+      this.app.ticker.add(ticker);
+    }
     
     this.score += finalPoints;
     this.onScoreUpdate?.(this.score);
