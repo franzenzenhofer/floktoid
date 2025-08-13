@@ -1,80 +1,214 @@
-# CLAUDE.md
+# CLAUDE.md - NEON FLOCK Game Project
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with the NEON FLOCK game codebase.
 
-## Commands
+## 🎮 Project Overview
+
+**NEON FLOCK** is a high-performance arcade defense game built with TypeScript, React, and Pixi.js. Players defend energy cores from an AI-powered flock using asteroid projectiles in a stunning neon cyberpunk aesthetic.
+
+**Live URL:** https://floktoid.franzai.com  
+**Repository:** https://github.com/franzenzenhofer/floktoid (private)
+
+## 📁 Project Structure
+
+```
+floktoid/
+├── src/
+│   ├── engine/           # Pixi.js game engine
+│   │   ├── NeonFlockEngine.ts
+│   │   ├── GameConfig.ts
+│   │   ├── entities/    # Game objects (Boid, EnergyDot, Asteroid)
+│   │   └── systems/     # Game systems (Flocking, Particles, etc.)
+│   ├── components/       # React UI components
+│   └── main.tsx         # Entry point
+├── public/              # Static assets
+├── tests/               # Test suites
+└── GAME_DESIGN_DOCUMENT.md
+```
+
+## 🚀 Commands
 
 ### Development
-- `npm run dev` - Start development server with hot reload (Vite on :3000, Wrangler on :8787)
-- `npm run build` - Build production bundle
-- `npm run deploy` - Deploy to Cloudflare Workers (auto-bumps minor version)
-- `npm run deploy:preview` - Deploy to preview environment
+```bash
+npm run dev              # Start dev server (Vite on :3000, Wrangler on :8787)
+npm run build           # Build production bundle
+npm run deploy          # Deploy to Cloudflare Workers (auto-version bump)
+```
 
 ### Code Quality
-- `npm run lint` - Run ESLint checks
-- `npm run lint:fix` - Auto-fix linting issues  
-- `npm run typecheck` - Run TypeScript type checking
-- `npm run format` - Format code with Prettier
+```bash
+npm run lint            # ESLint with zero warnings policy
+npm run lint:fix        # Auto-fix linting issues
+npm run typecheck       # TypeScript strict mode checking
+npm run format          # Prettier formatting
+```
 
 ### Testing
-- `npm test` - Run unit tests with Vitest
-- `npm test -- --watch` - Run tests in watch mode
-- `npm run test:coverage` - Generate coverage report
-- `npm run test:e2e` - Run Playwright E2E tests
-- `npm run test:all` - Run all tests
+```bash
+npm test                # Run Vitest unit tests
+npm run test:coverage   # Generate coverage report (target: 80%)
+npm run test:e2e       # Run Playwright E2E tests
+npm run test:all       # Run all test suites
+```
 
-### Version Management
-- `npm run version:bump:patch` - Bump patch version
-- `npm run version:bump:minor` - Bump minor version
-- `npm run version:bump:major` - Bump major version
+## 🎯 Core Systems
 
-## Architecture
+### 1. Flocking Algorithm
+- Based on Craig Reynolds' Boids simulation
+- Three rules: Separation, Alignment, Cohesion
+- Additional behaviors: Target Seeking, Obstacle Avoidance
+- Weights tuned for aggressive but realistic behavior
 
-### Core Game Engine
-The puzzle game uses a mathematically-proven reverse-move algorithm for 100% solvability:
+### 2. Game Loop Architecture
+- **Pixi.js Ticker:** 60 FPS target with delta time
+- **Entity-Component Pattern:** Modular game objects
+- **System-based Updates:** Separated concerns (physics, rendering, input)
 
-1. **Grid System** (`/src/utils/gridV2.ts`): Pure functional operations using modular arithmetic
-   - Colors are integers in Z_n (modulo n)
-   - Click operations are additions in this finite field
-   - Each operation is self-inverse (clicking twice = original state)
+### 3. Performance Optimizations
+- Object pooling for particles
+- Efficient spatial queries for flocking
+- WebGL rendering via Pixi.js
+- Minimal React re-renders (game state isolated)
 
-2. **Puzzle Generation** (`/src/hooks/useGenerator.ts`): 
-   - Starts with solved state (all tiles same color)
-   - Applies N reverse moves (subtract instead of add)
-   - Guarantees solvability in exactly N moves
+## 🎨 Visual Design
 
-3. **State Management** (`/src/context/GameContext.tsx`):
-   - React Context + useReducer pattern
-   - Type-safe action dispatch system
-   - Local storage persistence
+### Neon Aesthetic
+- **Colors:** Cyan (#00FFFF), Magenta (#FF00FF), Yellow (#FFFF00)
+- **Effects:** Glowing trails, particle explosions, pulsing energy
+- **Style:** Cyberpunk/Synthwave inspired
 
-### Frontend Stack
-- React 18 with TypeScript (strict mode)
-- Tailwind CSS for styling
-- Framer Motion for animations
-- Vite for bundling
+### Rendering Pipeline
+1. Background grid and stars
+2. Energy dots with glow effects
+3. Boids with trails
+4. Asteroids with rotation
+5. Particle effects layer
+6. UI overlay (React components)
 
-### Backend Infrastructure  
-- Cloudflare Workers for edge computing
-- KV storage for game state persistence
-- Durable Objects for real-time sessions
-- Worker serves both API and static assets
+## 🔧 Configuration
 
-### Key Design Patterns
-- **Pure Functions**: All grid operations are immutable
-- **Functional Components**: No class components
-- **Custom Hooks**: Complex logic extracted (useGenerator, useSolver, useTimer)
-- **Type Safety**: Explicit types for all exports, no implicit any
+### Game Balance (GameConfig.ts)
+```typescript
+// Flocking parameters
+VIEW_RADIUS: 100        // Detection range
+SEPARATION_RADIUS: 35   // Personal space
+BASE_SPEED: 40         // Movement speed
+BASE_FORCE: 80         // Acceleration
 
-### Level Progression
-- Easy (1-10): 3x3 grid, 3 colors, unlimited undos
-- Medium (11-20): 6x6 grid, 4 colors, 5 undos, 5min timer
-- Hard (21+): Progressive grid scaling up to 20x20, 1 undo, 3min timer
+// Progression
+BIRDS_WAVE_1: 2        // Starting birds
+WAVE_GROWTH: 1.15      // Exponential growth
+SPEED_GROWTH: 1.03     // Gradual speedup
+SPAWN_BURST: 10        // Risk/reward mechanic
+```
 
-## Important Notes
+## 📊 Performance Requirements
 
-- The game uses a reverse-move algorithm that mathematically guarantees 100% solvability
-- All grid operations in `gridV2.ts` are pure functions using modular arithmetic
-- The Worker (`src/worker.js`) handles both API endpoints and static asset serving
-- Deployment automatically bumps version and updates `src/version.ts`
-- Test coverage thresholds are set at 80% for all metrics
+- **FPS:** 60 on modern mobile devices
+- **Load Time:** <3 seconds initial load
+- **Input Latency:** <100ms response
+- **Entity Count:** Support 100+ simultaneous objects
+- **Memory:** <100MB heap usage
+
+## 🧪 Testing Strategy
+
+### Unit Tests (Vitest)
+- Game logic functions
+- Flocking calculations
+- Collision detection
+- Score/wave progression
+
+### E2E Tests (Playwright)
+- Game start/restart flow
+- Input responsiveness
+- Wave progression
+- Mobile touch controls
+
+### Performance Tests
+- Frame rate monitoring
+- Memory leak detection
+- Load time benchmarks
+
+## 🚢 Deployment
+
+### Cloudflare Workers Setup
+```toml
+# wrangler.toml
+name = "floktoid"
+main = "src/worker.js"
+compatibility_date = "2024-01-01"
+
+[assets]
+directory = "./dist"
+
+[[routes]]
+pattern = "floktoid.franzai.com/*"
+zone_name = "franzai.com"
+```
+
+### Deployment Process
+1. Run tests: `npm test && npm run test:e2e`
+2. Build: `npm run build`
+3. Deploy: `npm run deploy`
+4. Verify: https://floktoid.franzai.com
+
+## 🐛 Common Issues & Solutions
+
+### Performance Drops
+- Check particle count (MAX_PARTICLES limit)
+- Verify object pooling is working
+- Profile with Chrome DevTools
+
+### Flocking Behavior
+- Tune weights in GameConfig
+- Check force normalization
+- Verify delta time calculations
+
+### Mobile Responsiveness
+- Test touch events on actual devices
+- Check viewport scaling
+- Verify pointer event handling
+
+## 💡 Development Guidelines
+
+1. **Type Safety:** No `any` types, strict mode always
+2. **Performance First:** Profile before optimizing
+3. **Mobile Primary:** Test on phones first
+4. **Zero Warnings:** ESLint must pass with 0 warnings
+5. **Test Coverage:** Maintain >80% coverage
+
+## 🎮 Game Mechanics Reference
+
+### Controls
+- **Click & Hold:** Charge asteroid
+- **Drag:** Aim trajectory  
+- **Release:** Launch projectile
+
+### Scoring
+- 5 points per bird eliminated
+- 10 points when bird reaches top (before burst)
+- Multipliers for chains
+
+### Wave Progression
+- Exponential bird count increase
+- Gradual speed increase
+- Energy dots reset when all stolen
+
+## 📈 Future Enhancements
+
+- [ ] Sound effects and music
+- [ ] Power-up system
+- [ ] Global leaderboards
+- [ ] Achievement system
+- [ ] Boss birds
+- [ ] Multiplayer mode
+
+## 🔗 Resources
+
+- [Pixi.js Documentation](https://pixijs.com)
+- [Boids Algorithm](https://cs.stanford.edu/people/eroberts/courses/soco/projects/2008-09/modeling-natural-systems/boids.html)
+- [Game Design Document](./GAME_DESIGN_DOCUMENT.md)
+
+---
+
+**Remember:** This is a performance-critical real-time game. Always profile changes, maintain 60 FPS, and test on actual mobile devices!
