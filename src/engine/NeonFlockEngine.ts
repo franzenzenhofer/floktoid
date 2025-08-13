@@ -14,6 +14,15 @@ export class NeonFlockEngine {
   private boids: Boid[] = [];
   private energyDots: EnergyDot[] = [];
   private asteroids: Asteroid[] = [];
+  private fallingDots: Array<{
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    targetSlot: number;
+    sprite: PIXI.Graphics;
+    originalDot: EnergyDot;
+  }> = [];
   
   private particleSystem!: ParticleSystem;
   private flockingSystem!: FlockingSystem;
@@ -25,6 +34,8 @@ export class NeonFlockEngine {
   private birdsToSpawn = 0;
   private nextSpawnTime = 0;
   private speedMultiplier = 1;
+  private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
+  private DOT_RESPAWN_DELAY = 15000; // 15 seconds per dot respawn
   
   public onScoreUpdate?: (score: number) => void;
   public onWaveUpdate?: (wave: number) => void;
@@ -133,6 +144,35 @@ export class NeonFlockEngine {
     this.app.ticker.add(() => this.gameLoop(this.app.ticker.deltaTime));
   }
   
+  private createFallingDot(x: number, y: number, originalDot: EnergyDot) {
+    const sprite = new PIXI.Graphics();
+    const targetSlot = this.energyDots.indexOf(originalDot);
+    const targetX = (this.app.screen.width / (GameConfig.ENERGY_COUNT + 1)) * (targetSlot + 1);
+    const targetY = this.app.screen.height * GameConfig.BASE_Y;
+    
+    // Calculate initial velocity toward target with some randomness
+    const dx = targetX - x;
+    const angle = Math.atan2(targetY - y, dx);
+    
+    sprite.circle(0, 0, GameConfig.ENERGY_RADIUS);
+    sprite.fill({ color: originalDot.hue, alpha: 1 });
+    this.app.stage.addChild(sprite);
+    
+    // Ultra slow falling speed - 10% of bird speed
+    const birdSpeed = GameConfig.BASE_SPEED * this.speedMultiplier;
+    const fallSpeed = birdSpeed * 0.1; // Only 10% of bird speed
+    
+    this.fallingDots.push({
+      x,
+      y,
+      vx: Math.cos(angle) * fallSpeed * 0.3 + (Math.random() - 0.5) * 5,
+      vy: fallSpeed, // Ultra slow fall speed
+      targetSlot,
+      sprite,
+      originalDot
+    });
+  }
+  
   private spawnEnergyDots() {
     this.energyDots.forEach(dot => dot.destroy());
     this.energyDots = [];
@@ -198,8 +238,7 @@ export class NeonFlockEngine {
       );
       this.asteroids.push(asteroid);
       
-      // Launch particles
-      this.particleSystem.createExplosion(startX, startY, 0x00ffff, 20);
+      // No launch effect - clean launch
     }
   }
   
@@ -226,17 +265,22 @@ export class NeonFlockEngine {
         
         if (boid.y < 20) {
           // Reached top - spawn burst
-          console.log('[GAME] Bird reached top with energy! Spawning burst...');
+          const burstCount = this.wave; // Dynamic: wave 1 = 1 bird, wave 10 = 10 birds, etc.
+          console.log(`[GAME] Bird reached top on wave ${this.wave}! Spawning ${burstCount} birds...`);
           
-          // Restore the stolen energy dot
+          // Start 15-second respawn timer for this dot
           if (boid.targetDot) {
-            boid.targetDot.restore();
+            const dotIndex = this.energyDots.indexOf(boid.targetDot);
+            if (dotIndex >= 0) {
+              this.dotRespawnTimers.set(dotIndex, 0);
+              console.log(`[GAME] Starting 15s respawn timer for dot ${dotIndex}`);
+            }
             boid.targetDot = null;
           }
           
-          // Spawn burst of new birds
-          for (let j = 0; j < GameConfig.SPAWN_BURST; j++) {
-            const angle = (j / GameConfig.SPAWN_BURST) * Math.PI * 2;
+          // Spawn burst of new birds (count = current wave number)
+          for (let j = 0; j < burstCount; j++) {
+            const angle = (j / burstCount) * Math.PI * 2;
             const newBoid = new Boid(
               this.app,
               boid.x,
@@ -248,8 +292,8 @@ export class NeonFlockEngine {
             this.boids.push(newBoid);
           }
           
-          // Visual feedback
-          this.particleSystem.createExplosion(boid.x, boid.y, 0xff00ff, 30);
+          // Visual feedback - more particles for higher waves
+          this.particleSystem.createExplosion(boid.x, boid.y, 0xff00ff, 20 + burstCount);
           
           // Penalty for letting bird reach top
           this.updateScore(-GameConfig.SCORE_DOT_SAVED);
@@ -286,8 +330,8 @@ export class NeonFlockEngine {
     
     // Update asteroids
     this.asteroids = this.asteroids.filter(asteroid => {
-      asteroid.update(dt);
-      if (asteroid.isOffScreen(this.app.screen)) {
+      const keepAsteroid = asteroid.update(dt);
+      if (!keepAsteroid || asteroid.isOffScreen(this.app.screen)) {
         asteroid.destroy();
         return false;
       }
@@ -300,8 +344,15 @@ export class NeonFlockEngine {
       this.asteroids,
       this.energyDots,
       (boid) => {
-        this.particleSystem.createExplosion(boid.x, boid.y, 0xff0000, 15);
-        this.updateScore(5);
+        // Create 3-line explosion with bird's color
+        this.particleSystem.createBirdExplosion(boid.x, boid.y, boid.hue, boid.vx, boid.vy);
+        this.updateScore(GameConfig.SCORE_HIT);
+        
+        // If bird had a dot, make it fall
+        if (boid.hasDot && boid.targetDot) {
+          this.createFallingDot(boid.x, boid.y, boid.targetDot);
+          boid.targetDot = null;
+        }
       },
       (asteroid) => {
         if (asteroid.size < 10) {
@@ -311,8 +362,87 @@ export class NeonFlockEngine {
         asteroid.size *= 0.8;
         asteroid.updateSize();
         return false;
+      },
+      (asteroid, fragments) => {
+        // Fragment large asteroid into smaller pieces
+        const fragmentSize = asteroid.size / 3;
+        for (let i = 0; i < fragments; i++) {
+          const angle = (i / fragments) * Math.PI * 2;
+          const speed = 200 + Math.random() * 100;
+          const fragment = new Asteroid(
+            this.app,
+            asteroid.x + Math.cos(angle) * 20,
+            asteroid.y + Math.sin(angle) * 20,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed,
+            fragmentSize
+          );
+          this.asteroids.push(fragment);
+        }
+        // Explosion effect
+        this.particleSystem.createExplosion(asteroid.x, asteroid.y, 0xffaa00, 40);
+        asteroid.destroy();
       }
     );
+    
+    // Update falling dots
+    this.fallingDots = this.fallingDots.filter(dot => {
+      // Apply physics with ultra slow fall
+      const birdSpeed = GameConfig.BASE_SPEED * this.speedMultiplier;
+      const maxFallSpeed = birdSpeed * 0.1; // Cap at 10% of bird speed
+      
+      dot.vy += 50 * dt; // Very gentle gravity
+      if (dot.vy > maxFallSpeed) {
+        dot.vy = maxFallSpeed; // Cap fall speed
+      }
+      dot.vx *= 0.95; // Air resistance
+      dot.x += dot.vx * dt;
+      dot.y += dot.vy * dt;
+      
+      // Update visual
+      dot.sprite.x = dot.x;
+      dot.sprite.y = dot.y;
+      
+      // Check if birds can catch falling dot
+      for (const boid of this.boids) {
+        if (!boid.hasDot && boid.alive) {
+          const dist = Math.hypot(boid.x - dot.x, boid.y - dot.y);
+          if (dist < GameConfig.BOID_SIZE + GameConfig.ENERGY_RADIUS) {
+            // Bird catches falling dot!
+            boid.hasDot = true;
+            boid.targetDot = dot.originalDot;
+            this.particleSystem.createPickup(dot.x, dot.y, dot.originalDot.hue);
+            
+            // Remove falling dot
+            this.app.stage.removeChild(dot.sprite);
+            dot.sprite.destroy();
+            return false;
+          }
+        }
+      }
+      
+      // Check if dot reached bottom
+      const targetY = this.app.screen.height * GameConfig.BASE_Y;
+      if (dot.y >= targetY - 10) {
+        // Restore the energy dot
+        dot.originalDot.restore();
+        this.particleSystem.createPickup(dot.x, targetY, dot.originalDot.hue);
+        
+        // Remove falling dot
+        this.app.stage.removeChild(dot.sprite);
+        dot.sprite.destroy();
+        return false;
+      }
+      
+      // Remove if off-screen
+      if (dot.y > this.app.screen.height + 100) {
+        this.app.stage.removeChild(dot.sprite);
+        dot.sprite.destroy();
+        return false;
+      }
+      
+      return true;
+    });
     
     // Update particles
     this.particleSystem.update(dt);
@@ -323,9 +453,36 @@ export class NeonFlockEngine {
       this.startWave();
     }
     
-    // Reset dots if all stolen
-    if (this.energyDots.filter(d => !d.stolen).length === 0) {
-      this.spawnEnergyDots();
+    // Check if all dots are stolen - if so, pause respawn
+    const availableDots = this.energyDots.filter(d => !d.stolen);
+    const allDotsStolen = availableDots.length === 0;
+    
+    // Only process respawn timers if not all dots are stolen
+    if (!allDotsStolen) {
+      // Process individual dot respawn timers
+      this.dotRespawnTimers.forEach((timer, dotIndex) => {
+        const newTimer = timer + dt * 1000;
+        if (newTimer >= this.DOT_RESPAWN_DELAY) {
+          // Respawn this specific dot after 15 seconds
+          const dot = this.energyDots[dotIndex];
+          if (dot && dot.stolen) {
+            dot.restore();
+            console.log(`[GAME] Dot ${dotIndex} respawned after 15 seconds`);
+            this.particleSystem.createPickup(dot.x, dot.y, dot.hue);
+          }
+          this.dotRespawnTimers.delete(dotIndex);
+        } else {
+          this.dotRespawnTimers.set(dotIndex, newTimer);
+        }
+      });
+    }
+    
+    // Check for game over - all dots stolen and no respawn timers
+    const finalAvailableDots = this.energyDots.filter(d => !d.stolen);
+    if (finalAvailableDots.length === 0 && this.fallingDots.length === 0 && this.dotRespawnTimers.size === 0) {
+      console.log('[GAME] GAME OVER - All energy lost with no recovery!');
+      this.onGameOver?.();
+      return;
     }
   };
   

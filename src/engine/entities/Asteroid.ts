@@ -80,12 +80,15 @@ export class Asteroid {
     // Scale shape based on current size vs base size
     const scale = this.size / this.baseSize;
     
-    for (let i = 0; i <= points; i++) {
-      const idx = i % points;
-      const angle = i * angleStep + (this.shapeVertices[idx] * 0.01 - 0.5) * angleStep * 0.3;
-      const r = this.size * this.shapeRoughness[idx];
+    // Generate vertices without duplicating the first point
+    for (let i = 0; i < points; i++) {
+      const angle = i * angleStep + (this.shapeVertices[i] * 0.01 - 0.5) * angleStep * 0.3;
+      const r = this.size * this.shapeRoughness[i];
       vertices.push(Math.cos(angle) * r, Math.sin(angle) * r);
     }
+    
+    // Close the polygon by connecting back to first point
+    vertices.push(vertices[0], vertices[1]);
     
     this.sprite.poly(vertices);
     this.sprite.stroke({ width: 2, color, alpha: 1 });
@@ -109,14 +112,39 @@ export class Asteroid {
     this.sprite.filters = [new PIXI.BlurFilter(2)];
   }
   
-  public update(dt: number) {
+  public update(dt: number): boolean {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.rotation += this.rotSpeed * dt;
     
+    // Wrap around left/right edges and shrink by 5%
+    const screenWidth = this.app.screen.width;
+    let wrapped = false;
+    
+    if (this.x < -this.size) {
+      this.x = screenWidth + this.size;
+      wrapped = true;
+    } else if (this.x > screenWidth + this.size) {
+      this.x = -this.size;
+      wrapped = true;
+    }
+    
+    // Shrink by 5% when wrapping
+    if (wrapped) {
+      this.size *= 0.95;
+      this.updateSize();
+      
+      // Remove if too small (below 5 pixels)
+      if (this.size < 5) {
+        return false; // Signal removal
+      }
+    }
+    
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     this.sprite.rotation = this.rotation;
+    
+    return true; // Keep asteroid
   }
   
   public updateSize() {
@@ -132,9 +160,8 @@ export class Asteroid {
   
   public isOffScreen(screen: PIXI.Rectangle): boolean {
     const margin = 100;
+    // Only check top/bottom since asteroids wrap left/right
     return (
-      this.x < -margin ||
-      this.x > screen.width + margin ||
       this.y < -margin ||
       this.y > screen.height + margin
     );

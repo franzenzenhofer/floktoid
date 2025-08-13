@@ -10,9 +10,11 @@ export class Boid {
   public maxSpeed: number;
   public maxForce: number;
   public hue: number;
+  public originalHue: number;
   public alive = true;
   public hasDot = false;
   public targetDot: EnergyDot | null = null;
+  public shimmerTime = 0;
   
   private sprite: PIXI.Graphics;
   private trail: { x: number; y: number }[] = [];
@@ -32,6 +34,7 @@ export class Boid {
     this.maxSpeed = GameConfig.BASE_SPEED * speedMultiplier;
     this.maxForce = GameConfig.BASE_FORCE;
     this.hue = Math.random() * 360;
+    this.originalHue = this.hue;
     
     this.sprite = new PIXI.Graphics();
     this.trailGraphics = new PIXI.Graphics();
@@ -42,7 +45,8 @@ export class Boid {
   }
   
   private draw() {
-    const color = Math.floor(
+    // Use normal bird color for fill
+    const fillColor = Math.floor(
       (Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
     ) << 16 | Math.floor(
       (Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
@@ -50,21 +54,42 @@ export class Boid {
       (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
     );
     
+    // If carrying dot, shimmer outline between orange and red
+    let strokeColor = fillColor;
+    if (this.hasDot) {
+      const shimmerPhase = Math.sin(this.shimmerTime * 10) * 0.5 + 0.5;
+      const shimmerHue = 30 * (1 - shimmerPhase); // 30 to 0 (orange to red)
+      strokeColor = Math.floor(
+        (Math.cos(shimmerHue * Math.PI / 180) * 0.5 + 0.5) * 255
+      ) << 16 | Math.floor(
+        (Math.sin(shimmerHue * Math.PI / 180) * 0.5 + 0.5) * 255
+      ) << 8 | Math.floor(
+        (Math.cos((shimmerHue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
+      );
+    }
+    
     this.sprite.clear();
     
-    // Draw triangle
+    // Draw triangle with shimmer on outline only
     this.sprite.poly([
       GameConfig.BOID_SIZE * 1.2, 0,
       -GameConfig.BOID_SIZE, GameConfig.BOID_SIZE * 0.8,
       -GameConfig.BOID_SIZE, -GameConfig.BOID_SIZE * 0.8
     ]);
-    this.sprite.stroke({ width: 2, color, alpha: 1 });
-    this.sprite.fill({ color, alpha: this.hasDot ? 0.9 : 0.7 });
+    this.sprite.stroke({ width: this.hasDot ? 3 : 2, color: strokeColor, alpha: 1 });
+    this.sprite.fill({ color: fillColor, alpha: this.hasDot ? 0.9 : 0.7 });
     
-    // Dot indicator
-    if (this.hasDot) {
-      this.sprite.circle(0, 0, 3);
-      this.sprite.fill({ color: 0xffffff, alpha: 1 });
+    // Dot indicator - show stolen dot color
+    if (this.hasDot && this.targetDot) {
+      const dotColor = Math.floor(
+        (Math.cos(this.targetDot.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+      ) << 16 | Math.floor(
+        (Math.sin(this.targetDot.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+      ) << 8 | Math.floor(
+        (Math.cos((this.targetDot.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
+      );
+      this.sprite.circle(0, 0, 4);
+      this.sprite.fill({ color: dotColor, alpha: 1 });
     }
   }
   
@@ -94,6 +119,13 @@ export class Boid {
   }
   
   public update(dt: number) {
+    // Update shimmer animation
+    if (this.hasDot) {
+      this.shimmerTime += dt;
+    } else {
+      this.shimmerTime = 0;
+    }
+    
     // Update position
     this.x += this.vx * dt;
     this.y += this.vy * dt;
@@ -112,12 +144,19 @@ export class Boid {
     // Draw trail
     this.trailGraphics.clear();
     if (this.trail.length > 1) {
+      // Use shimmer color for trail if carrying dot
+      let trailHue = this.hue;
+      if (this.hasDot) {
+        const shimmerPhase = Math.sin(this.shimmerTime * 10) * 0.5 + 0.5;
+        trailHue = 30 * (1 - shimmerPhase);
+      }
+      
       const color = Math.floor(
-        (Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+        (Math.cos(trailHue * Math.PI / 180) * 0.5 + 0.5) * 255
       ) << 16 | Math.floor(
-        (Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
+        (Math.sin(trailHue * Math.PI / 180) * 0.5 + 0.5) * 255
       ) << 8 | Math.floor(
-        (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
+        (Math.cos((trailHue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
       );
       
       for (let i = 1; i < this.trail.length; i++) {

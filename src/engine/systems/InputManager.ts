@@ -102,11 +102,19 @@ export class InputManager {
       }
     }
     
+    // Clear all visuals immediately before launch
+    this.chargeIndicator.clear();
+    this.aimLine.clear();
+    
     const dx = targetX - this.chargeStart.x;
     const dy = targetY - this.chargeStart.y;
     const dist = Math.hypot(dx, dy);
     
-    if (dist > 20) {
+    // Calculate angle from horizontal (upward shots have negative dy)
+    const angle = Math.atan2(-dy, Math.abs(dx)) * (180 / Math.PI);
+    
+    // Only launch if distance > 20 and angle between 15 and 70 degrees from horizontal
+    if (dist > 20 && angle >= 15 && angle <= 70) {
       // Apply slowness factor for bigger asteroids
       const slownessFactor = 1 - ((this.chargeSize - GameConfig.AST_MIN) / (GameConfig.AST_MAX_CHARGE - GameConfig.AST_MIN)) * (1 - GameConfig.AST_SLOWNESS_FACTOR);
       
@@ -121,10 +129,10 @@ export class InputManager {
       );
     }
     
+    // Reset state
     this.charging = false;
-    this.chargeIndicator.clear();
-    this.aimLine.clear();
     this.asteroidShape = null;
+    this.chargeSize = GameConfig.AST_MIN;
   };
   
   private updateVisuals = () => {
@@ -183,19 +191,14 @@ export class InputManager {
         this.chargeIndicator.poly(vertices);
         this.chargeIndicator.stroke({ width: 3, color, alpha: 0.8 });
         this.chargeIndicator.fill({ color, alpha: 0.15 });
-      }
-      
-      // Draw the asteroid preview
-      this.chargeIndicator.poly(vertices);
-      this.chargeIndicator.stroke({ width: 3, color, alpha: 0.8 });
-      this.chargeIndicator.fill({ color, alpha: 0.15 });
-      
-      // Add growing effect text
-      const sizePercent = Math.floor(((this.chargeSize - GameConfig.AST_MIN) / (GameConfig.AST_MAX_CHARGE - GameConfig.AST_MIN)) * 100);
-      if (sizePercent > 20) {
-        // Show charge level indicator near asteroid
-        this.chargeIndicator.circle(this.chargeStart.x, this.chargeStart.y - asteroidSize - 20, 3);
-        this.chargeIndicator.fill({ color: 0xffffff, alpha: 0.7 });
+        
+        // Add growing effect text
+        const sizePercent = Math.floor(((this.chargeSize - GameConfig.AST_MIN) / (GameConfig.AST_MAX_CHARGE - GameConfig.AST_MIN)) * 100);
+        if (sizePercent > 20) {
+          // Show charge level indicator near asteroid
+          this.chargeIndicator.circle(this.chargeStart.x, this.chargeStart.y - asteroidSize - 20, 3);
+          this.chargeIndicator.fill({ color: 0xffffff, alpha: 0.7 });
+        }
       }
       
       // Draw aim line with dotted pattern
@@ -204,10 +207,15 @@ export class InputManager {
       const dx = (this.currentPos.x - this.chargeStart.x) / segments;
       const dy = (this.currentPos.y - this.chargeStart.y) / segments;
       
+      // Check if angle is valid (between 15 and 70 degrees from horizontal)
+      const angle = Math.atan2(-dy * segments, Math.abs(dx * segments)) * (180 / Math.PI);
+      const validAngle = angle >= 15 && angle <= 70;
+      const lineColor = validAngle ? color : 0x808080; // Gray if invalid angle
+      
       for (let i = 0; i < segments; i += 2) {
         this.aimLine.moveTo(this.chargeStart.x + dx * i, this.chargeStart.y + dy * i);
         this.aimLine.lineTo(this.chargeStart.x + dx * (i + 1), this.chargeStart.y + dy * (i + 1));
-        this.aimLine.stroke({ width: 2, color, alpha: 0.5 });
+        this.aimLine.stroke({ width: 2, color: lineColor, alpha: 0.5 });
       }
     }
   };

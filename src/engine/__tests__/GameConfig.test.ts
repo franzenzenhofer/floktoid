@@ -14,7 +14,7 @@ describe('GameConfig', () => {
     expect(GameConfig.BIRDS_PER_WAVE[1]).toBe(4);
     expect(GameConfig.BIRDS_PER_WAVE[2]).toBe(8);
     expect(GameConfig.SPEED_GROWTH).toBeGreaterThan(1);
-    expect(GameConfig.SPAWN_BURST).toBeGreaterThan(0);
+    // SPAWN_BURST is now dynamic based on wave number
   });
 
   it('should have valid asteroid parameters', () => {

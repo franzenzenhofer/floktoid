@@ -24,12 +24,19 @@ export const GameConfig = {
   AST_SPEED: 500,
   AST_GROWTH_RATE: 20, // pixels per second while holding
   AST_MAX_CHARGE: 100, // max size from charging
-  AST_SLOWNESS_FACTOR: 0.7, // bigger asteroids are slower
+  AST_SLOWNESS_FACTOR: 0.4, // much slower for bigger asteroids (was 0.7)
   
-  // Progression - Fixed sequence: 2, 4, 8, 12, 16, 20, ...
-  BIRDS_PER_WAVE: [2, 4, 8, 12, 16, 20, 24, 30, 36, 44, 52, 62, 72, 84, 96, 110],
-  SPEED_GROWTH: 1.05, // 5% faster each wave
-  SPAWN_BURST: 10, // Birds spawned when dot reaches top
+  // Progression - More gradual increase with more stages
+  BIRDS_PER_WAVE: [
+    2, 3, 4, 5, 6, 7, 8, 9, 10, 11, // Waves 1-10: gentle start
+    12, 13, 14, 16, 18, 20, 22, 24, 26, 28, // Waves 11-20: moderate
+    30, 32, 35, 38, 41, 44, 47, 50, 54, 58, // Waves 21-30: challenging
+    62, 66, 70, 75, 80, 85, 90, 96, 102, 108, // Waves 31-40: hard
+    115, 122, 130, 138, 146, 155, 164, 174, 184, 195, // Waves 41-50: very hard
+    206, 218, 230, 243, 256, 270, 285, 300, 316, 333  // Waves 51-60: extreme
+  ],
+  SPEED_GROWTH: 1.02, // Only 2% faster each wave (was 5%)
+  // SPAWN_BURST: Dynamic - equals current wave number (1 bird on wave 1, 10 on wave 10, etc.)
   
   // Visual
   NEON_COLORS: [
