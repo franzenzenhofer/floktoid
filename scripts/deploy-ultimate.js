@@ -186,6 +186,16 @@ class UltimateDeploymentPipeline {
       this.log('    ⚠️ Unit tests skipped', 'yellow');
     }
     
+    // Run game test to check for collision freeze bug
+    this.log('  Running game collision test...', 'yellow');
+    try {
+      this.exec('npm run test:game', { silent: false });
+      this.log('    ✅ Game collision test passed', 'green');
+    } catch (error) {
+      this.log('    ❌ Game collision test failed', 'red');
+      throw new Error('Game collision test failed - potential freeze bug detected');
+    }
+    
     // Build project
     this.log('  Building project...', 'yellow');
     this.exec('npm run build');
