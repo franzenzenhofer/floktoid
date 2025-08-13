@@ -9,16 +9,16 @@ import { CollisionSystem } from './systems/CollisionSystem';
 import { GameConfig } from './GameConfig';
 
 export class NeonFlockEngine {
-  private app: PIXI.Application;
+  private app!: PIXI.Application;
   
   private boids: Boid[] = [];
   private energyDots: EnergyDot[] = [];
   private asteroids: Asteroid[] = [];
   
-  private particleSystem: ParticleSystem;
-  private flockingSystem: FlockingSystem;
-  private inputManager: InputManager;
-  private collisionSystem: CollisionSystem;
+  private particleSystem!: ParticleSystem;
+  private flockingSystem!: FlockingSystem;
+  private inputManager!: InputManager;
+  private collisionSystem!: CollisionSystem;
   
   private score = 0;
   private wave = 1;
@@ -32,29 +32,55 @@ export class NeonFlockEngine {
   
   private gridOverlay!: PIXI.Graphics;
   private backgroundStars!: PIXI.Container;
+  private container: HTMLDivElement;
+  private initialized = false;
 
   constructor(container: HTMLDivElement) {
+    this.container = container;
+  }
+  
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
     
-    this.app = new PIXI.Application({
-      width: window.innerWidth,
-      height: window.innerHeight,
-      backgroundColor: 0x000000,
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-    });
-    
-    container.appendChild(this.app.view as HTMLCanvasElement);
-    
-    this.particleSystem = new ParticleSystem(this.app);
-    this.flockingSystem = new FlockingSystem();
-    this.collisionSystem = new CollisionSystem();
-    this.inputManager = new InputManager(this.app, this);
-    
-    this.setupBackground();
-    this.initializeGame();
-    
-    window.addEventListener('resize', this.handleResize);
+    try {
+      console.log('[NEON FLOCK] Initializing Pixi.js...');
+      
+      // Create application
+      this.app = new PIXI.Application();
+      
+      // Initialize with settings
+      await this.app.init({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        background: '#000000',
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      });
+      
+      // Append canvas to container
+      this.container.appendChild(this.app.canvas);
+      
+      // Initialize systems
+      this.particleSystem = new ParticleSystem(this.app);
+      this.flockingSystem = new FlockingSystem();
+      this.collisionSystem = new CollisionSystem();
+      this.inputManager = new InputManager(this.app, this);
+      
+      // Setup game
+      this.setupBackground();
+      this.initializeGame();
+      
+      // Setup resize handler
+      window.addEventListener('resize', this.handleResize);
+      
+      this.initialized = true;
+      console.log('[NEON FLOCK] Engine initialized successfully');
+      
+    } catch (error) {
+      console.error('[NEON FLOCK] Failed to initialize engine:', error);
+      throw error;
+    }
   }
   
   private setupBackground() {
@@ -67,9 +93,8 @@ export class NeonFlockEngine {
     this.backgroundStars = new PIXI.Container();
     for (let i = 0; i < 100; i++) {
       const star = new PIXI.Graphics();
-      star.beginFill(0xffffff, Math.random() * 0.5);
-      star.drawCircle(0, 0, Math.random() * 2);
-      star.endFill();
+      star.circle(0, 0, Math.random() * 2);
+      star.fill({ color: 0xffffff, alpha: Math.random() * 0.5 });
       star.x = Math.random() * this.app.screen.width;
       star.y = Math.random() * this.app.screen.height;
       this.backgroundStars.addChild(star);
@@ -80,7 +105,7 @@ export class NeonFlockEngine {
   private drawGrid() {
     const gridSize = 50;
     this.gridOverlay.clear();
-    this.gridOverlay.lineStyle(1, 0x00ffff, 0.1);
+    this.gridOverlay.stroke({ width: 1, color: 0x00ffff, alpha: 0.1 });
     
     for (let x = 0; x < this.app.screen.width; x += gridSize) {
       this.gridOverlay.moveTo(x, 0);
@@ -95,12 +120,10 @@ export class NeonFlockEngine {
     // Energy zone glow
     const baseY = this.app.screen.height * GameConfig.BASE_Y;
     const gradient = new PIXI.Graphics();
-    gradient.beginFill(0x00ffff, 0.05);
-    gradient.drawRect(0, baseY - 100, this.app.screen.width, 150);
-    gradient.endFill();
-    gradient.beginFill(0xff00ff, 0.05);
-    gradient.drawRect(0, baseY + 50, this.app.screen.width, 100);
-    gradient.endFill();
+    gradient.rect(0, baseY - 100, this.app.screen.width, 150);
+    gradient.fill({ color: 0x00ffff, alpha: 0.05 });
+    gradient.rect(0, baseY + 50, this.app.screen.width, 100);
+    gradient.fill({ color: 0xff00ff, alpha: 0.05 });
     this.gridOverlay.addChild(gradient);
   }
   
@@ -127,9 +150,12 @@ export class NeonFlockEngine {
   }
   
   private startWave() {
-    const count = Math.floor(
-      GameConfig.BIRDS_WAVE_1 * Math.pow(GameConfig.WAVE_GROWTH, this.wave - 1)
-    );
+    // Use fixed sequence or calculate if beyond array
+    const waveIndex = this.wave - 1;
+    const count = waveIndex < GameConfig.BIRDS_PER_WAVE.length 
+      ? GameConfig.BIRDS_PER_WAVE[waveIndex]
+      : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
+    
     this.birdsToSpawn = count;
     this.speedMultiplier = Math.pow(GameConfig.SPEED_GROWTH, this.wave - 1);
     this.nextSpawnTime = 0;
@@ -146,13 +172,13 @@ export class NeonFlockEngine {
     this.boids.push(boid);
   }
   
-  public launchAsteroid(startX: number, startY: number, targetX: number, targetY: number, size: number) {
+  public launchAsteroid(startX: number, startY: number, targetX: number, targetY: number, size: number, slownessFactor = 1) {
     const dx = targetX - startX;
     const dy = targetY - startY;
     const dist = Math.hypot(dx, dy);
     
     if (dist > 20) {
-      const speed = Math.min(dist * 3, GameConfig.AST_SPEED);
+      const speed = Math.min(dist * 3, GameConfig.AST_SPEED) * slownessFactor;
       const asteroid = new Asteroid(
         this.app,
         startX,
@@ -169,6 +195,8 @@ export class NeonFlockEngine {
   }
   
   private gameLoop = (delta: number) => {
+    if (!this.initialized) return;
+    
     const dt = delta / 60; // Convert to seconds at 60fps
     const time = performance.now() / 1000;
     
@@ -189,6 +217,15 @@ export class NeonFlockEngine {
         
         if (boid.y < 20) {
           // Reached top - spawn burst
+          console.log('[GAME] Bird reached top with energy! Spawning burst...');
+          
+          // Restore the stolen energy dot
+          if (boid.targetDot) {
+            boid.targetDot.restore();
+            boid.targetDot = null;
+          }
+          
+          // Spawn burst of new birds
           for (let j = 0; j < GameConfig.SPAWN_BURST; j++) {
             const angle = (j / GameConfig.SPAWN_BURST) * Math.PI * 2;
             const newBoid = new Boid(
@@ -202,8 +239,13 @@ export class NeonFlockEngine {
             this.boids.push(newBoid);
           }
           
+          // Visual feedback
           this.particleSystem.createExplosion(boid.x, boid.y, 0xff00ff, 30);
-          this.updateScore(10);
+          
+          // Penalty for letting bird reach top
+          this.updateScore(-GameConfig.SCORE_DOT_SAVED);
+          
+          // Remove the original bird
           boid.destroy();
           this.boids.splice(i, 1);
           return;
@@ -284,22 +326,30 @@ export class NeonFlockEngine {
   }
   
   private handleResize = () => {
+    if (!this.app) return;
     this.app.renderer.resize(window.innerWidth, window.innerHeight);
     this.drawGrid();
     this.spawnEnergyDots();
   };
   
   public start() {
+    if (!this.initialized) {
+      console.warn('[NEON FLOCK] Engine not initialized yet');
+      return;
+    }
     this.app.start();
   }
   
   public destroy() {
+    if (!this.initialized) return;
+    
     window.removeEventListener('resize', this.handleResize);
     this.app.ticker.stop();
     this.boids.forEach(b => b.destroy());
     this.energyDots.forEach(d => d.destroy());
     this.asteroids.forEach(a => a.destroy());
-    this.inputManager.destroy();
+    this.inputManager?.destroy();
     this.app.destroy(true);
+    this.initialized = false;
   }
 }

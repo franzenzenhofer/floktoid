@@ -298,14 +298,16 @@ test.describe('NEON FLOCK - Complete Game Flow', () => {
 
   test.afterAll(async () => {
     // Generate manifest for AI analysis
+    const screenshots = await fs.readdir(screenshotDir).then(files => 
+      files.filter(f => f.endsWith('.png'))
+    );
+    
     const manifest = {
       timestamp: new Date().toISOString(),
       screenshotDir,
       tests: Object.keys(GAME_STATES).map(state => ({
         state,
-        screenshots: await fs.readdir(screenshotDir).then(files => 
-          files.filter(f => f.endsWith('.png'))
-        )
+        screenshots
       }))
     };
     

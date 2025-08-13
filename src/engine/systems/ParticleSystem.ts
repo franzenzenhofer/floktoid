@@ -68,9 +68,8 @@ export class ParticleSystem {
     }
     
     const sprite = new PIXI.Graphics();
-    sprite.beginFill(color, 1);
-    sprite.drawCircle(0, 0, 2);
-    sprite.endFill();
+    sprite.circle(0, 0, 2);
+    sprite.fill({ color, alpha: 1 });
     
     this.container.addChild(sprite);
     

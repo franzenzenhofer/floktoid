@@ -15,10 +15,17 @@ html, body {
   background: #000;
   overflow: hidden;
   touch-action: none;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10+ */
+  user-select: none; /* Standard */
   font-family: 'Space Mono', monospace;
   position: fixed;
   top: 0;
   left: 0;
+  /* Prevent elastic scrolling on iOS */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 #root {

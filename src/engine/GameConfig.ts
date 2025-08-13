@@ -22,11 +22,13 @@ export const GameConfig = {
   AST_MIN: 15,
   AST_MAX: 60,
   AST_SPEED: 500,
+  AST_GROWTH_RATE: 20, // pixels per second while holding
+  AST_MAX_CHARGE: 100, // max size from charging
+  AST_SLOWNESS_FACTOR: 0.7, // bigger asteroids are slower
   
-  // Progression
-  BIRDS_WAVE_1: 2,
-  WAVE_GROWTH: 1.15,
-  SPEED_GROWTH: 1.03,
+  // Progression - Fixed sequence: 2, 4, 8, 12, 16, 20, ...
+  BIRDS_PER_WAVE: [2, 4, 8, 12, 16, 20, 24, 30, 36, 44, 52, 62, 72, 84, 96, 110],
+  SPEED_GROWTH: 1.05, // 5% faster each wave
   SPAWN_BURST: 10, // Birds spawned when dot reaches top
   
   // Visual
@@ -46,4 +48,12 @@ export const GameConfig = {
   // Performance
   MAX_PARTICLES: 500,
   PARTICLE_LIFETIME: 1.0,
+  
+  // Scoring
+  SCORE_HIT: 10,
+  SCORE_COMBO_2: 25,
+  SCORE_COMBO_3: 50,
+  SCORE_COMBO_4: 100,
+  SCORE_CLEVER: 200, // ricochet kills
+  SCORE_DOT_SAVED: 50,
 } as const;

@@ -8,6 +8,7 @@ export class InputManager {
   private charging = false;
   private chargeStart: { x: number; y: number } = { x: 0, y: 0 };
   private chargeSize = 0;
+  private chargeStartTime = 0;
   private chargeIndicator: PIXI.Graphics;
   private aimLine: PIXI.Graphics;
   private cursor: PIXI.Graphics;
@@ -40,24 +41,33 @@ export class InputManager {
   }
   
   private handlePointerDown = (e: PointerEvent) => {
+    e.preventDefault(); // Prevent browser touch side effects
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
+    // Only allow spawning in lower 20% of screen
+    if (y < this.app.screen.height * 0.8) {
+      return;
+    }
+    
     this.charging = true;
     this.chargeStart = { x, y };
     this.chargeSize = GameConfig.AST_MIN;
+    this.chargeStartTime = performance.now();
     this.currentPos = { x, y };
   };
   
   private handlePointerMove = (e: PointerEvent) => {
+    e.preventDefault(); // Prevent browser touch side effects
     const canvas = this.app.view as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();
     this.currentPos.x = e.clientX - rect.left;
     this.currentPos.y = e.clientY - rect.top;
   };
   
-  private handlePointerUp = () => {
+  private handlePointerUp = (e?: PointerEvent) => {
+    if (e) e.preventDefault();
     if (!this.charging) return;
     
     const dx = this.currentPos.x - this.chargeStart.x;
@@ -65,12 +75,16 @@ export class InputManager {
     const dist = Math.hypot(dx, dy);
     
     if (dist > 20) {
+      // Apply slowness factor for bigger asteroids
+      const slownessFactor = 1 - ((this.chargeSize - GameConfig.AST_MIN) / (GameConfig.AST_MAX_CHARGE - GameConfig.AST_MIN)) * (1 - GameConfig.AST_SLOWNESS_FACTOR);
+      
       this.engine.launchAsteroid(
         this.chargeStart.x,
         this.chargeStart.y,
         this.currentPos.x,
         this.currentPos.y,
-        this.chargeSize
+        this.chargeSize,
+        slownessFactor
       );
     }
     
@@ -83,15 +97,22 @@ export class InputManager {
     // Update cursor
     this.cursor.clear();
     const cursorColor = this.charging ? 0xffff00 : 0x00ffff;
-    this.cursor.lineStyle(2, cursorColor, 1);
-    this.cursor.drawCircle(this.currentPos.x, this.currentPos.y, 10);
+    // Show spawn zone indicator
+    if (this.currentPos.y < this.app.screen.height * 0.8) {
+      this.cursor.circle(this.currentPos.x, this.currentPos.y, 10);
+      this.cursor.stroke({ width: 2, color: 0xff0000, alpha: 0.5 }); // Red when out of zone
+    } else {
+      this.cursor.circle(this.currentPos.x, this.currentPos.y, 10);
+      this.cursor.stroke({ width: 2, color: cursorColor, alpha: 1 });
+    }
     
     // Update charging visuals
     if (this.charging) {
-      // Grow charge size
+      // Grow charge size based on hold time
+      const holdTime = (performance.now() - this.chargeStartTime) / 1000;
       this.chargeSize = Math.min(
-        this.chargeSize + 0.5,
-        GameConfig.AST_MAX
+        GameConfig.AST_MIN + holdTime * GameConfig.AST_GROWTH_RATE,
+        GameConfig.AST_MAX_CHARGE
       );
       
       // Draw charge indicator
@@ -105,16 +126,23 @@ export class InputManager {
         (Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
       );
       
-      this.chargeIndicator.lineStyle(2, color, 1);
-      this.chargeIndicator.beginFill(color, 0.2);
-      this.chargeIndicator.drawCircle(this.chargeStart.x, this.chargeStart.y, this.chargeSize);
-      this.chargeIndicator.endFill();
+      // Visual feedback for charge growth
+      const pulse = Math.sin(performance.now() / 100) * 0.1 + 1;
+      this.chargeIndicator.circle(this.chargeStart.x, this.chargeStart.y, this.chargeSize * pulse);
+      this.chargeIndicator.stroke({ width: 2, color, alpha: 1 });
+      this.chargeIndicator.fill({ color, alpha: 0.2 });
       
-      // Draw aim line
+      // Draw aim line with dotted pattern
       this.aimLine.clear();
-      this.aimLine.lineStyle(2, color, 0.5);
-      this.aimLine.moveTo(this.chargeStart.x, this.chargeStart.y);
-      this.aimLine.lineTo(this.currentPos.x, this.currentPos.y);
+      const segments = 10;
+      const dx = (this.currentPos.x - this.chargeStart.x) / segments;
+      const dy = (this.currentPos.y - this.chargeStart.y) / segments;
+      
+      for (let i = 0; i < segments; i += 2) {
+        this.aimLine.moveTo(this.chargeStart.x + dx * i, this.chargeStart.y + dy * i);
+        this.aimLine.lineTo(this.chargeStart.x + dx * (i + 1), this.chargeStart.y + dy * (i + 1));
+        this.aimLine.stroke({ width: 2, color, alpha: 0.5 });
+      }
     }
   };
   

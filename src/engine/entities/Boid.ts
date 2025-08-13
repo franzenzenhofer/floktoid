@@ -51,21 +51,20 @@ export class Boid {
     );
     
     this.sprite.clear();
-    this.sprite.lineStyle(2, color, 1);
-    this.sprite.beginFill(color, this.hasDot ? 0.9 : 0.7);
     
     // Draw triangle
-    this.sprite.moveTo(GameConfig.BOID_SIZE * 1.2, 0);
-    this.sprite.lineTo(-GameConfig.BOID_SIZE, GameConfig.BOID_SIZE * 0.8);
-    this.sprite.lineTo(-GameConfig.BOID_SIZE, -GameConfig.BOID_SIZE * 0.8);
-    this.sprite.closePath();
-    this.sprite.endFill();
+    this.sprite.poly([
+      GameConfig.BOID_SIZE * 1.2, 0,
+      -GameConfig.BOID_SIZE, GameConfig.BOID_SIZE * 0.8,
+      -GameConfig.BOID_SIZE, -GameConfig.BOID_SIZE * 0.8
+    ]);
+    this.sprite.stroke({ width: 2, color, alpha: 1 });
+    this.sprite.fill({ color, alpha: this.hasDot ? 0.9 : 0.7 });
     
     // Dot indicator
     if (this.hasDot) {
-      this.sprite.beginFill(0xffffff, 1);
-      this.sprite.drawCircle(0, 0, 3);
-      this.sprite.endFill();
+      this.sprite.circle(0, 0, 3);
+      this.sprite.fill({ color: 0xffffff, alpha: 1 });
     }
   }
   
@@ -124,9 +123,9 @@ export class Boid {
       for (let i = 1; i < this.trail.length; i++) {
         const alpha = (i / this.trail.length) * 0.5;
         const width = (i / this.trail.length) * 2;
-        this.trailGraphics.lineStyle(width, color, alpha);
         this.trailGraphics.moveTo(this.trail[i - 1].x, this.trail[i - 1].y);
         this.trailGraphics.lineTo(this.trail[i].x, this.trail[i].y);
+        this.trailGraphics.stroke({ width, color, alpha });
       }
     }
     

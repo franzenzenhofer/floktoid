@@ -46,27 +46,20 @@ export class Asteroid {
     );
     
     this.sprite.clear();
-    this.sprite.lineStyle(2, color, 1);
     
     // Draw irregular asteroid shape
     const points = 8;
     const angleStep = (Math.PI * 2) / points;
+    const vertices: number[] = [];
     
-    this.sprite.moveTo(
-      Math.cos(0) * this.size,
-      Math.sin(0) * this.size
-    );
-    
-    for (let i = 1; i <= points; i++) {
+    for (let i = 0; i <= points; i++) {
       const angle = i * angleStep;
       const r = this.size * (0.8 + Math.sin(i * 2.7) * 0.2);
-      this.sprite.lineTo(
-        Math.cos(angle) * r,
-        Math.sin(angle) * r
-      );
+      vertices.push(Math.cos(angle) * r, Math.sin(angle) * r);
     }
     
-    this.sprite.closePath();
+    this.sprite.poly(vertices);
+    this.sprite.stroke({ width: 2, color, alpha: 1 });
     
     // Add glow filter
     this.sprite.filters = [new PIXI.BlurFilter(2)];

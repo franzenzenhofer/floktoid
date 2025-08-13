@@ -17,26 +17,37 @@ export function Game() {
 
   useEffect(() => {
     if (gameState === 'playing' && canvasRef.current) {
-      engineRef.current = new NeonFlockEngine(canvasRef.current);
-      
-      engineRef.current.onScoreUpdate = (newScore) => {
-        setScore(newScore);
-        if (newScore > highScore) {
-          setHighScore(newScore);
-          localStorage.setItem('floktoid-highscore', newScore.toString());
+      const initEngine = async () => {
+        try {
+          const engine = new NeonFlockEngine(canvasRef.current!);
+          await engine.initialize();
+          
+          engine.onScoreUpdate = (newScore) => {
+            setScore(newScore);
+            if (newScore > highScore) {
+              setHighScore(newScore);
+              localStorage.setItem('floktoid-highscore', newScore.toString());
+            }
+          };
+          
+          engine.onWaveUpdate = setWave;
+          engine.onGameOver = () => setGameState('gameover');
+          
+          engine.start();
+          engineRef.current = engine;
+        } catch (error) {
+          console.error('[GAME] Failed to initialize engine:', error);
         }
       };
       
-      engineRef.current.onWaveUpdate = setWave;
-      engineRef.current.onGameOver = () => setGameState('gameover');
-      
-      engineRef.current.start();
+      initEngine();
       
       return () => {
         engineRef.current?.destroy();
+        engineRef.current = null;
       };
     }
-  }, [gameState, highScore]);
+  }, [gameState]); // Remove highScore from deps - it was causing engine to reset!
 
   const handleStart = () => {
     setScore(0);

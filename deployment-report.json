@@ -1,0 +1,78 @@
+{
+  "timestamp": "2025-08-13T10:52:06.802Z",
+  "duration": "94.72s",
+  "deployment": {
+    "id": "c9901fd1-0330-4bbc-9f4e-045bc362c911",
+    "url": "https://floktoid.franzai.com",
+    "timestamp": "2025-08-13T10:51:31.262Z"
+  },
+  "url": "https://floktoid.franzai.com",
+  "checks": {
+    "preDeployment": false,
+    "build": true,
+    "deployment": true,
+    "httpHealth": true,
+    "performance": true,
+    "noConsoleErrors": false,
+    "lighthouse": true
+  },
+  "fullResults": {
+    "preChecks": {
+      "gitStatus": false,
+      "dependencies": true,
+      "environment": true,
+      "diskSpace": true
+    },
+    "build": {
+      "success": true,
+      "size": "692K"
+    },
+    "deployment": {
+      "id": "c9901fd1-0330-4bbc-9f4e-045bc362c911",
+      "url": "https://floktoid.franzai.com",
+      "timestamp": "2025-08-13T10:51:31.262Z"
+    },
+    "verification": {
+      "http": {
+        "status": 200,
+        "ok": true,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "cf-cache-status": "HIT",
+          "cf-ray": "96e7a8619fcad2de-FRA",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "text/html",
+          "date": "Wed, 13 Aug 2025 10:51:31 GMT",
+          "nel": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}",
+          "report-to": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=ajE5%2FedtYBPb2Vu4hANuiLDuXN3N4hcxGq0WgjHQ8TCYboshxEZQLtiLyasgqfr%2B9PltyeR79AYaPM2657jeZZQadjqH%2FHkwHvuyTkMHdUFMp8x4hvCQ%2F6atrenlsif8p24IwexvpnURfK3aXW3HJ6C0ZQ%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+          "server": "cloudflare",
+          "server-timing": "cfL4;desc=\"?proto=TCP&rtt=5476&min_rtt=5419&rtt_var=2073&sent=2&recv=5&lost=0&retrans=0&sent_bytes=219&recv_bytes=865&delivery_rate=248754&cwnd=250&unsent_bytes=0&cid=455a67de3dbc3d8d&ts=42&x=0\"",
+          "speculation-rules": "\"/cdn-cgi/speculation\"",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding"
+        }
+      },
+      "performance": {
+        "loadTime": 853,
+        "metrics": {
+          "firstPaint": 228,
+          "firstContentfulPaint": 332,
+          "domContentLoaded": 256,
+          "loadComplete": 256
+        },
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 500 ()"
+        ]
+      },
+      "lighthouse": {
+        "performance": 94,
+        "accessibility": 75
+      }
+    },
+    "aiAnalysis": {
+      "output": "🤖 AI Analyzing: desktop.png\n🤖 AI Analyzing: mobile.png\n🤖 AI Analyzing: tablet.png\n\n📊 AI Analysis Complete:\n✅ Passed: 3/3\n❌ Failed: 0/3\n⭐ Average Quality: 2.7/10\n\n⚠️ Issues Found:\n  - Screen appears to be mostly black - possible rendering failure\n  - Screen appears to be mostly black - possible rendering failure\n"
+    }
+  }
+}

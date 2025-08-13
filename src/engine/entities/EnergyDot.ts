@@ -48,20 +48,17 @@ export class EnergyDot {
     
     // Draw glow
     this.glowSprite.clear();
-    this.glowSprite.beginFill(color, 0.3 * pulse);
-    this.glowSprite.drawCircle(this.x, this.y, GameConfig.ENERGY_RADIUS * 3 * pulse);
-    this.glowSprite.endFill();
+    this.glowSprite.circle(this.x, this.y, GameConfig.ENERGY_RADIUS * 3 * pulse);
+    this.glowSprite.fill({ color, alpha: 0.3 * pulse });
     
     // Draw dot
     this.sprite.clear();
-    this.sprite.beginFill(color, 1);
-    this.sprite.drawCircle(this.x, this.y, GameConfig.ENERGY_RADIUS * pulse);
-    this.sprite.endFill();
+    this.sprite.circle(this.x, this.y, GameConfig.ENERGY_RADIUS * pulse);
+    this.sprite.fill({ color, alpha: 1 });
     
     // Core
-    this.sprite.beginFill(0xffffff, 1);
-    this.sprite.drawCircle(this.x, this.y, GameConfig.ENERGY_RADIUS * 0.3);
-    this.sprite.endFill();
+    this.sprite.circle(this.x, this.y, GameConfig.ENERGY_RADIUS * 0.3);
+    this.sprite.fill({ color: 0xffffff, alpha: 1 });
   }
   
   private update = () => {
