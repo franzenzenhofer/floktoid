@@ -161,16 +161,20 @@ export class InputManager {
   };
   
   private updateVisuals = () => {
-    // Update cursor - KEEP THIS VISIBLE (belongs with the aim line)
+    // Clear cursor first
     this.cursor.clear();
-    const cursorColor = this.charging ? VISUALS.COLORS.NEON_YELLOW : VISUALS.COLORS.NEON_CYAN;
-    // Show spawn zone indicator
-    if (this.currentPos.y < this.app.screen.height * 0.67) {
-      this.cursor.circle(this.currentPos.x, this.currentPos.y, SIZES.BIRD.BASE);
-      this.cursor.stroke({ width: VISUALS.STROKE.NORMAL, color: VISUALS.COLORS.NEON_RED, alpha: VISUALS.ALPHA.MEDIUM }); // Red when out of spawn zone (top 2/3)
-    } else {
-      this.cursor.circle(this.currentPos.x, this.currentPos.y, SIZES.BIRD.BASE);
-      this.cursor.stroke({ width: VISUALS.STROKE.NORMAL, color: cursorColor, alpha: VISUALS.ALPHA.FULL });
+    
+    // Only show cursor when charging (like the dashed line!)
+    if (this.charging) {
+      const cursorColor = this.charging ? VISUALS.COLORS.NEON_YELLOW : VISUALS.COLORS.NEON_CYAN;
+      // Show spawn zone indicator
+      if (this.currentPos.y < this.app.screen.height * 0.67) {
+        this.cursor.circle(this.currentPos.x, this.currentPos.y, SIZES.BIRD.BASE);
+        this.cursor.stroke({ width: VISUALS.STROKE.NORMAL, color: VISUALS.COLORS.NEON_RED, alpha: VISUALS.ALPHA.MEDIUM }); // Red when out of spawn zone (top 2/3)
+      } else {
+        this.cursor.circle(this.currentPos.x, this.currentPos.y, SIZES.BIRD.BASE);
+        this.cursor.stroke({ width: VISUALS.STROKE.NORMAL, color: cursorColor, alpha: VISUALS.ALPHA.FULL });
+      }
     }
     
     // Update charging visuals

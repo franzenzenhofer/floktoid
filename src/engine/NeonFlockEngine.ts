@@ -990,11 +990,22 @@ export class NeonFlockEngine {
       });
     }
     
-    // SIMPLE GAME OVER CHECK: Game ends when ALL energy dots are stolen (no visible dots below)
-    const visibleDots = this.energyDots.filter(d => !d.stolen);
+    // PROPER GAME OVER CHECK: Game ends only when NO dots exist in any state
+    // Energy dots can be in 4 states:
+    // 1. Mine (visible below, not stolen)
+    // 2. Stolen (carried by birds)
+    // 3. Falling (slowly returning to position after bird killed)
+    // 4. Removed (transformed to birds - these don't count)
     
-    if (visibleDots.length === 0) {
-      console.log('[GAME] GAME OVER - All energy dots stolen! No dots visible below!');
+    const dotsInPlayerControl = this.energyDots.filter(d => !d.stolen).length; // Mine
+    const dotsStolen = this.boids.filter(b => b.hasDot).length; // Stolen by birds
+    const dotsFalling = this.fallingDots.length; // Falling back down
+    
+    const totalDotsInPlay = dotsInPlayerControl + dotsStolen + dotsFalling;
+    
+    if (totalDotsInPlay === 0) {
+      console.log('[GAME] GAME OVER - No energy dots remain in any state!');
+      console.log(`  Mine: ${dotsInPlayerControl}, Stolen: ${dotsStolen}, Falling: ${dotsFalling}`);
       this.onGameOver?.();
       return;
     }
