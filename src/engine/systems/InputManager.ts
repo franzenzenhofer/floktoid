@@ -6,6 +6,10 @@ import { renderAsteroidPreview } from '../utils/AsteroidRenderer';
 import CentralConfig from '../CentralConfig';
 import { scoringSystem } from '../ScoringSystem';
 
+// Debug overlay control - ONLY hides the cyan cost indicator box/dot
+// The red cursor circle and dashed aim line are gameplay features and remain visible
+const DEBUG_OVERLAYS = false; // PRODUCTION: false to hide cost indicator, DEV: true to show
+
 const { SIZES, VISUALS } = CentralConfig;
 
 export class InputManager {
@@ -157,7 +161,7 @@ export class InputManager {
   };
   
   private updateVisuals = () => {
-    // Update cursor
+    // Update cursor - KEEP THIS VISIBLE (belongs with the aim line)
     this.cursor.clear();
     const cursorColor = this.charging ? VISUALS.COLORS.NEON_YELLOW : VISUALS.COLORS.NEON_CYAN;
     // Show spawn zone indicator
@@ -200,33 +204,35 @@ export class InputManager {
           GameConfig.AST_MIN
         );
         
-        // Add cost indicator and warning if can't afford
-        const cost = scoringSystem.calculateAsteroidCost(this.chargeSize);
-        
-        // Show cost indicator box
-        const costColor = canAfford ? VISUALS.COLORS.NEON_CYAN : VISUALS.COLORS.NEON_RED;
-        
-        // Create visual indicator for cost
-        this.chargeIndicator.rect(
-          this.chargeStart.x - 60,
-          this.chargeStart.y - asteroidSize - 40,
-          120,
-          25
-        );
-        this.chargeIndicator.fill({ color: VISUALS.COLORS.BLACK, alpha: 0.7 });
-        this.chargeIndicator.stroke({ color: costColor, width: 2 });
-        
-        // Show cost amount as small circles indicating magnitude
-        const costIndicatorSize = Math.min(cost / 20, 10);
-        this.chargeIndicator.circle(
-          this.chargeStart.x,
-          this.chargeStart.y - asteroidSize - 27,
-          costIndicatorSize
-        );
-        this.chargeIndicator.fill({ color: costColor, alpha: 0.8 });
+        // Add cost indicator and warning if can't afford - only if DEBUG_OVERLAYS enabled
+        if (DEBUG_OVERLAYS) {
+          const cost = scoringSystem.calculateAsteroidCost(this.chargeSize);
+          
+          // Show cost indicator box (the cyan rectangle described in ticket)
+          const costColor = canAfford ? VISUALS.COLORS.NEON_CYAN : VISUALS.COLORS.NEON_RED;
+          
+          // Create visual indicator for cost
+          this.chargeIndicator.rect(
+            this.chargeStart.x - 60,
+            this.chargeStart.y - asteroidSize - 40,
+            120,
+            25
+          );
+          this.chargeIndicator.fill({ color: VISUALS.COLORS.BLACK, alpha: 0.7 });
+          this.chargeIndicator.stroke({ color: costColor, width: 2 });
+          
+          // Show cost amount as small circles indicating magnitude (the cyan dot)
+          const costIndicatorSize = Math.min(cost / 20, 10);
+          this.chargeIndicator.circle(
+            this.chargeStart.x,
+            this.chargeStart.y - asteroidSize - 27,
+            costIndicatorSize
+          );
+          this.chargeIndicator.fill({ color: costColor, alpha: 0.8 });
+        }
       }
       
-      // Draw aim line with dotted pattern
+      // Draw aim line with dotted pattern - KEEP THIS VISIBLE (user wants to keep dashed red line)
       this.aimLine.clear();
       const segments = 10;
       const dx = (this.currentPos.x - this.chargeStart.x) / segments;
@@ -243,6 +249,7 @@ export class InputManager {
         0xFF0000; // Red if can't afford
       const lineColor = !validAngle ? 0x808080 : aimColor; // Gray if invalid angle, colored otherwise
       
+      // Keep the dashed aim line visible (important for gameplay)
       for (let i = 0; i < segments; i += 2) {
         this.aimLine.moveTo(this.chargeStart.x + dx * i, this.chargeStart.y + dy * i);
         this.aimLine.lineTo(this.chargeStart.x + dx * (i + 1), this.chargeStart.y + dy * (i + 1));
