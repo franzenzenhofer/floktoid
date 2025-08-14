@@ -12,7 +12,7 @@ import { GameConfig } from './GameConfig';
 import CentralConfig from './CentralConfig';
 import { scoringSystem, ScoringEvent } from './ScoringSystem';
 
-const { VISUALS, SIZES, TIMING, ENTITY_LIMITS, PHYSICS, FLOCKING, ERRORS, UI, GAME_CONSTANTS, SCORING } = CentralConfig;
+const { VISUALS, SIZES, TIMING, ENTITY_LIMITS, PHYSICS, FLOCKING, ERRORS, UI, GAME_CONSTANTS } = CentralConfig;
 
 export class NeonFlockEngine {
   private app!: PIXI.Application;
@@ -47,6 +47,7 @@ export class NeonFlockEngine {
   private birdsToSpawn = 0;
   private nextSpawnTime = 0;
   private speedMultiplier = 1;
+  private waveDotsLost = 0; // Track dots lost in current wave
   private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
   private DOT_RESPAWN_DELAY = TIMING.DOT_RESPAWN_DELAY_MS;
   
@@ -204,6 +205,7 @@ export class NeonFlockEngine {
   
   private initializeGame() {
     try {
+      scoringSystem.reset(); // Reset scoring system
       this.spawnEnergyDots();
       this.startWave();
       
@@ -288,6 +290,15 @@ export class NeonFlockEngine {
   }
   
   private startWave() {
+    // Check for perfect wave from previous wave
+    if (this.wave > 1 && this.waveDotsLost === 0) {
+      scoringSystem.addEvent(ScoringEvent.PERFECT_WAVE);
+      this.updateScoreDisplay();
+    }
+    
+    // Reset wave tracking
+    this.waveDotsLost = 0;
+    
     // Use fixed sequence or calculate if beyond array
     const waveIndex = this.wave - 1;
     const count = waveIndex < GameConfig.BIRDS_PER_WAVE.length 
@@ -331,6 +342,10 @@ export class NeonFlockEngine {
     shapeData?: { vertices: number[], roughness: number[] } | null,
     hue?: number // The exact hue that was shown during charging
   ) {
+    // Charge points for launching asteroid
+    scoringSystem.addEvent(ScoringEvent.ASTEROID_LAUNCH, { size });
+    this.updateScoreDisplay();
+    
     const dx = targetX - startX;
     const dy = targetY - startY;
     
@@ -370,6 +385,9 @@ export class NeonFlockEngine {
     if (!this.initialized) return;
     
     this.frameCount++;
+    
+    // Update combo timer
+    scoringSystem.updateComboTimer(delta * 16.67); // Convert delta to milliseconds
     
     // EMERGENCY ENTITY COUNT PROTECTION - Prevent performance freeze with too many entities
     const MAX_TOTAL_ENTITIES = ENTITY_LIMITS.TOTAL_ENTITIES.MAX;
@@ -487,6 +505,7 @@ export class NeonFlockEngine {
           
           // Penalty for letting bird reach top
           scoringSystem.addEvent(ScoringEvent.ENERGY_DOT_LOST);
+          this.waveDotsLost++; // Track dots lost in this wave
           this.updateScoreDisplay();
           
           // Mark for removal instead of immediate splice
@@ -928,6 +947,8 @@ export class NeonFlockEngine {
     
     // Check wave complete
     if (this.birdsToSpawn === 0 && this.boids.filter(b => !b.hasDot).length === 0) {
+      scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
+      this.updateScoreDisplay();
       this.wave++;
       this.startWave();
     }
@@ -972,25 +993,24 @@ export class NeonFlockEngine {
     }
   };
   
-  private updateScore(points: number) {
-    // Apply combo multiplier
-    const comboMultiplier = Math.min(1 + this.comboCount * SCORING.MULTIPLIERS.INCREMENT, SCORING.MULTIPLIERS.MAX);
-    const finalPoints = Math.floor(points * comboMultiplier);
+  private updateScoreDisplay() {
+    // Get current score info from scoring system
+    const scoreInfo = scoringSystem.getScoreBreakdown();
     
     // Visual feedback for combo
-    if (this.comboCount > 0) {
+    if (scoreInfo.combo > 1) {
       // Create combo text effect
-      const comboText = new PIXI.Text(`COMBO x${this.comboCount + 1}!`, {
+      const comboText = new PIXI.Text(`COMBO x${scoreInfo.combo}!`, {
         fontFamily: UI.FONTS.PRIMARY,
-        fontSize: UI.FONTS.SIZES.LARGE + this.comboCount * 2,
+        fontSize: UI.FONTS.SIZES.LARGE + scoreInfo.combo * 2,
         fill: [VISUALS.COLORS.NEON_CYAN, VISUALS.COLORS.NEON_MAGENTA],
         stroke: { color: VISUALS.COLORS.BLACK, width: VISUALS.STROKE.VERY_THICK },
         dropShadow: {
-          color: 0x00ffff,
-          blur: 4,
+          color: VISUALS.COLORS.NEON_CYAN,
+          blur: VISUALS.GLOW.BLUR_AMOUNT,
           distance: 2,
           angle: Math.PI / 4,
-          alpha: 0.8
+          alpha: VISUALS.ALPHA.HIGH
         }
       });
       
@@ -999,16 +1019,15 @@ export class NeonFlockEngine {
       comboText.y = this.app.screen.height * 0.3;
       this.app.stage.addChild(comboText);
       
-      // Animate and remove safely - PREVENT STACK OVERFLOW with proper cleanup
-      let alpha = 1;
+      // Animate and remove safely
+      let alpha = VISUALS.ALPHA.FULL;
       let scale = 1;
       let animationFrames = 0;
-      const maxFrames = 100; // Prevent infinite animation
+      const maxFrames = 100;
       
       const ticker = () => {
         animationFrames++;
         
-        // SAFE: Prevent infinite animation and stack overflow
         if (!comboText || comboText.destroyed || animationFrames > maxFrames) {
           try {
             this.app.ticker.remove(ticker);
@@ -1022,7 +1041,7 @@ export class NeonFlockEngine {
         }
         
         try {
-          alpha -= 0.02;
+          alpha -= VISUALS.TRAIL.FADE_RATE;
           scale += 0.01;
           comboText.alpha = alpha;
           comboText.scale.set(scale);
@@ -1036,7 +1055,6 @@ export class NeonFlockEngine {
           }
         } catch (animationError) {
           console.error('[COMBO TEXT ANIMATION ERROR]:', animationError);
-          // Emergency cleanup on error
           try {
             this.app.ticker.remove(ticker);
             if (comboText && !comboText.destroyed) {
@@ -1052,26 +1070,19 @@ export class NeonFlockEngine {
         this.app.ticker.add(ticker);
       } catch (addError) {
         console.error('[COMBO TEXT ADD TICKER ERROR]:', addError);
-        // Fallback - just destroy immediately
         if (comboText && !comboText.destroyed) {
           comboText.destroy();
         }
       }
-    }
-    
-    this.score += finalPoints;
-    this.onScoreUpdate?.(this.score);
-    
-    // Increase combo
-    this.comboCount++;
-    this.comboTimer = this.COMBO_WINDOW;
-    
-    // Show combo feedback
-    if (this.comboCount > 1) {
+      
+      // Show additional combo feedback
       const comboX = this.app.screen.width / 2;
       const comboY = this.app.screen.height * 0.3;
-      this.particleSystem.createComboText(comboX, comboY, `${this.comboCount}x COMBO!`, comboMultiplier);
+      this.particleSystem.createComboText(comboX, comboY, `${scoreInfo.combo}x COMBO!`, scoreInfo.multiplier);
     }
+    
+    // Update score display with combo info
+    this.onScoreUpdate?.(scoreInfo.score, scoreInfo.combo, scoreInfo.multiplier);
   }
   
   private handleResize = () => {
