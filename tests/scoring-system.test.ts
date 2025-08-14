@@ -10,9 +10,16 @@ describe('ScoringSystem', () => {
   });
   
   describe('Basic Scoring', () => {
+    it('should start with 1000 points', () => {
+      expect(scoringSystem.getScore()).toBe(1000);
+    });
+    
     it('should never allow negative scores', () => {
-      // Try to go negative with asteroid launches
-      scoringSystem.addEvent(ScoringEvent.ASTEROID_LAUNCH, { size: 60 }); // -200 points
+      scoringSystem.reset();
+      // Spend all starting points
+      for (let i = 0; i < 10; i++) {
+        scoringSystem.addEvent(ScoringEvent.ASTEROID_LAUNCH, { size: 60 }); // -200 points each
+      }
       expect(scoringSystem.getScore()).toBe(0); // Should be 0, not negative
       
       // Add some points
@@ -42,23 +49,55 @@ describe('ScoringSystem', () => {
     });
     
     it('should award points for bird hits', () => {
+      const startScore = scoringSystem.getScore();
       scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
-      expect(scoringSystem.getScore()).toBe(POINT_VALUES.REWARDS.BIRD_HIT);
+      expect(scoringSystem.getScore()).toBe(startScore + POINT_VALUES.REWARDS.BIRD_HIT);
     });
     
     it('should award bonus points for hitting birds with energy', () => {
+      const startScore = scoringSystem.getScore();
       scoringSystem.addEvent(ScoringEvent.BIRD_WITH_ENERGY_HIT);
-      expect(scoringSystem.getScore()).toBe(POINT_VALUES.REWARDS.BIRD_WITH_ENERGY_HIT);
+      expect(scoringSystem.getScore()).toBe(startScore + POINT_VALUES.REWARDS.BIRD_WITH_ENERGY_HIT);
     });
     
     it('should award points for reclaiming energy dots', () => {
+      const startScore = scoringSystem.getScore();
       scoringSystem.addEvent(ScoringEvent.ENERGY_DOT_RECLAIMED);
-      expect(scoringSystem.getScore()).toBe(POINT_VALUES.REWARDS.ENERGY_DOT_RECLAIMED);
+      expect(scoringSystem.getScore()).toBe(startScore + POINT_VALUES.REWARDS.ENERGY_DOT_RECLAIMED);
     });
     
     it('should award points for catching falling dots', () => {
+      const startScore = scoringSystem.getScore();
       scoringSystem.addEvent(ScoringEvent.ENERGY_DOT_CAUGHT_FALLING);
-      expect(scoringSystem.getScore()).toBe(POINT_VALUES.REWARDS.ENERGY_DOT_CAUGHT_FALLING);
+      expect(scoringSystem.getScore()).toBe(startScore + POINT_VALUES.REWARDS.ENERGY_DOT_CAUGHT_FALLING);
+    });
+    
+    it('should check if player can afford asteroid', () => {
+      scoringSystem.reset(); // Start with 1000 points
+      
+      // Can afford small asteroid
+      expect(scoringSystem.canAffordAsteroid(10)).toBe(true);
+      
+      // Can afford large asteroid
+      expect(scoringSystem.canAffordAsteroid(60)).toBe(true);
+      
+      // Spend most points
+      for (let i = 0; i < 4; i++) {
+        scoringSystem.addEvent(ScoringEvent.ASTEROID_LAUNCH, { size: 60 }); // -200 each
+      }
+      // Should have 200 points left
+      expect(scoringSystem.getScore()).toBe(200);
+      
+      // Can still afford exactly 200 cost asteroid
+      expect(scoringSystem.canAffordAsteroid(60)).toBe(true);
+      
+      // Launch it
+      scoringSystem.addEvent(ScoringEvent.ASTEROID_LAUNCH, { size: 60 });
+      expect(scoringSystem.getScore()).toBe(0);
+      
+      // Now can't afford anything
+      expect(scoringSystem.canAffordAsteroid(10)).toBe(false);
+      expect(scoringSystem.canAffordAsteroid(60)).toBe(false);
     });
   });
   
@@ -107,13 +146,14 @@ describe('ScoringSystem', () => {
     });
     
     it('should apply combo multiplier to points', () => {
+      const startScore = scoringSystem.getScore();
       // Build a 3x combo
       scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
       scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
       scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
       
       const basePoints = POINT_VALUES.REWARDS.BIRD_HIT;
-      const expectedScore = basePoints + basePoints * 2 + basePoints * 3; // 1x + 2x + 3x
+      const expectedScore = startScore + basePoints + basePoints * 2 + basePoints * 3; // 1x + 2x + 3x
       
       expect(scoringSystem.getScore()).toBe(expectedScore);
     });
@@ -137,24 +177,28 @@ describe('ScoringSystem', () => {
   
   describe('Special Events', () => {
     it('should award multi-kill bonuses', () => {
+      const startScore = scoringSystem.getScore();
       scoringSystem.addEvent(ScoringEvent.MULTI_KILL, { count: 3 });
       const expectedPoints = POINT_VALUES.SPECIAL.MULTI_KILL * 3;
-      expect(scoringSystem.getScore()).toBe(expectedPoints);
+      expect(scoringSystem.getScore()).toBe(startScore + expectedPoints);
     });
     
     it('should award boss defeated points', () => {
+      const startScore = scoringSystem.getScore();
       scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
-      expect(scoringSystem.getScore()).toBe(POINT_VALUES.REWARDS.BOSS_DEFEATED);
+      expect(scoringSystem.getScore()).toBe(startScore + POINT_VALUES.REWARDS.BOSS_DEFEATED);
     });
     
     it('should award perfect wave bonus', () => {
+      const startScore = scoringSystem.getScore();
       scoringSystem.addEvent(ScoringEvent.PERFECT_WAVE);
-      expect(scoringSystem.getScore()).toBe(POINT_VALUES.REWARDS.PERFECT_WAVE);
+      expect(scoringSystem.getScore()).toBe(startScore + POINT_VALUES.REWARDS.PERFECT_WAVE);
     });
     
     it('should award ricochet kill bonus', () => {
+      const startScore = scoringSystem.getScore();
       scoringSystem.addEvent(ScoringEvent.RICOCHET_KILL);
-      expect(scoringSystem.getScore()).toBe(POINT_VALUES.SPECIAL.RICOCHET_KILL);
+      expect(scoringSystem.getScore()).toBe(startScore + POINT_VALUES.SPECIAL.RICOCHET_KILL);
     });
   });
   
@@ -226,7 +270,7 @@ describe('ScoringSystem', () => {
       // Reset
       scoringSystem.reset();
       
-      expect(scoringSystem.getScore()).toBe(0);
+      expect(scoringSystem.getScore()).toBe(1000); // Should reset to starting score
       
       const combo = scoringSystem.getComboInfo();
       expect(combo.count).toBe(0);
@@ -252,18 +296,18 @@ describe('ScoringSystem', () => {
     });
     
     it('should handle mixed positive and negative events', () => {
-      // Start with some points
+      // Start with 1000 points, add boss defeat
       scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED); // +1000
       const scoreAfterBoss = scoringSystem.getScore();
-      expect(scoreAfterBoss).toBe(1000);
+      expect(scoreAfterBoss).toBe(2000); // 1000 starting + 1000 boss
       
       // Launch small asteroid
       scoringSystem.addEvent(ScoringEvent.ASTEROID_LAUNCH, { size: 10 }); // -10
-      expect(scoringSystem.getScore()).toBe(990);
+      expect(scoringSystem.getScore()).toBe(1990);
       
       // Launch large asteroid
       scoringSystem.addEvent(ScoringEvent.ASTEROID_LAUNCH, { size: 60 }); // -200
-      expect(scoringSystem.getScore()).toBe(790);
+      expect(scoringSystem.getScore()).toBe(1790);
       
       // Try to go negative with many launches
       for (let i = 0; i < 10; i++) {
