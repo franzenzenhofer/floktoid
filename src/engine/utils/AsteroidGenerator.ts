@@ -95,8 +95,8 @@ export function generateAsteroid(seed?: number, size = 30): AsteroidShape {
   const actualSeed = seed ?? (Date.now() & 0xffffffff);
   const rng = createRNG(actualSeed);
   
-  // Choose number of edges (5-11 for variety)
-  const numEdges = choice(rng, 5, 11);
+  // Choose number of edges (3-13 lines for variety)
+  const numEdges = choice(rng, 3, 13);
   
   // Generate strictly increasing angles
   const angles = generateAngles(numEdges, rng);

@@ -59,13 +59,21 @@ export class Asteroid {
   }
   
   private draw() {
-    const color = Math.floor(
-      (Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 16 | Math.floor(
-      (Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 8 | Math.floor(
-      (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
-    );
+    // High contrast neon colors for maximum visibility
+    const neonColors = [
+      0xFF00FF, // Hot magenta
+      0x00FFFF, // Cyan
+      0xFFFF00, // Yellow
+      0xFF00AA, // Pink
+      0x00FF00, // Green
+      0xFF6600, // Orange
+      0xAA00FF, // Purple
+      0x00AAFF, // Sky blue
+    ];
+    
+    // Pick a neon color based on hue
+    const colorIndex = Math.floor((this.hue / 360) * neonColors.length) % neonColors.length;
+    const color = neonColors[colorIndex];
     
     this.sprite.clear();
     
@@ -81,7 +89,13 @@ export class Asteroid {
     
     // Draw as a closed polygon - guaranteed no self-intersections!
     this.sprite.poly(scaledVertices);
-    this.sprite.stroke({ width: 2, color, alpha: 1 });
+    
+    // High visibility neon stroke with glow
+    this.sprite.stroke({ width: 3, color, alpha: 1 });
+    
+    // Add inner fill with semi-transparent neon
+    this.sprite.poly(scaledVertices);
+    this.sprite.fill({ color, alpha: 0.3 });
     
     // Scale craters with size
     const craterCount = Math.floor(this.baseSize / 20);

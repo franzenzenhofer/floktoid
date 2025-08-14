@@ -60,7 +60,8 @@ export class InputManager {
     this.currentPos = { x, y };
     
     // Generate unique asteroid shape that won't self-intersect
-    this.asteroidShape = generateAsteroid();
+    // Use AST_MIN as base size for the shape generation
+    this.asteroidShape = generateAsteroid(undefined, GameConfig.AST_MIN);
   };
   
   private handlePointerMove = (e: PointerEvent) => {
@@ -167,22 +168,17 @@ export class InputManager {
       const asteroidSize = this.chargeSize * pulse;
       
       if (this.asteroidShape) {
-        const points = this.asteroidShape.roughness.length;
-        const angleStep = (Math.PI * 2) / points;
-        const vertices: number[] = [];
+        // Use the pre-generated vertices from the new vector-based generator
+        const scaledVertices: number[] = [];
+        const scale = asteroidSize / GameConfig.AST_MIN; // Scale based on charge
         
-        for (let i = 0; i <= points; i++) {
-          const idx = i % points;
-          const angle = i * angleStep + (this.asteroidShape.vertices[idx] * 0.01 - 0.5) * angleStep * 0.3;
-          const r = asteroidSize * this.asteroidShape.roughness[idx];
-          vertices.push(
-            this.chargeStart.x + Math.cos(angle) * r,
-            this.chargeStart.y + Math.sin(angle) * r
-          );
+        for (let i = 0; i < this.asteroidShape.vertices.length; i += 2) {
+          scaledVertices.push(this.chargeStart.x + this.asteroidShape.vertices[i] * scale);
+          scaledVertices.push(this.chargeStart.y + this.asteroidShape.vertices[i + 1] * scale);
         }
         
         // Draw the asteroid preview with same shape
-        this.chargeIndicator.poly(vertices);
+        this.chargeIndicator.poly(scaledVertices);
         this.chargeIndicator.stroke({ width: 3, color, alpha: 0.8 });
         this.chargeIndicator.fill({ color, alpha: 0.15 });
         

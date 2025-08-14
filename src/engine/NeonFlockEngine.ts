@@ -7,6 +7,7 @@ import { FlockingSystem } from './systems/FlockingSystem';
 import { InputManager } from './systems/InputManager';
 import { SafeCollisionSystem } from './systems/SafeCollisionSystem';
 import { CollisionDebugger } from './systems/CollisionDebugger';
+import { CollisionEffects } from './effects/CollisionEffects';
 import { GameConfig } from './GameConfig';
 
 export class NeonFlockEngine {
@@ -35,6 +36,7 @@ export class NeonFlockEngine {
   private inputManager!: InputManager;
   private collisionSystem!: SafeCollisionSystem;
   private collisionDebugger!: CollisionDebugger;
+  private collisionEffects!: CollisionEffects;
   
   private score = 0;
   private wave = 1;
@@ -91,7 +93,8 @@ export class NeonFlockEngine {
       this.particleSystem = new ParticleSystem(this.app);
       this.flockingSystem = new FlockingSystem();
       this.collisionSystem = new SafeCollisionSystem();
-    this.collisionDebugger = new CollisionDebugger();
+      this.collisionDebugger = new CollisionDebugger();
+      this.collisionEffects = new CollisionEffects(this.app);
       this.inputManager = new InputManager(this.app, this);
       
       // Setup game
@@ -449,7 +452,9 @@ export class NeonFlockEngine {
             // Deferred visual effects - won't freeze!
             requestAnimationFrame(() => {
               try {
-                // Simple particle explosion instead of complex graphics
+                // Add crash lines animation showing bird was hit
+                this.collisionEffects.createCrashLines(boid.x, boid.y, boid.hue);
+                // Simple particle explosion too
                 this.particleSystem.createExplosion(boid.x, boid.y, boid.hue, 10);
                 this.updateScore(GameConfig.SCORE_HIT);
                 

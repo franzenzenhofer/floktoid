@@ -18,6 +18,11 @@ export const GameConfig = {
   ENERGY_RADIUS: 6,
   BASE_Y: 0.9, // Position of energy dots (90% down the screen)
   
+  // Respawn timers (balanced for difficulty)
+  DOT_RESPAWN_BASE: 15000, // Base 15 seconds at wave 1
+  DOT_RESPAWN_PER_WAVE: -300, // Faster by 0.3s per wave
+  DOT_RESPAWN_MIN: 3000, // Never faster than 3 seconds
+  
   // Asteroids
   AST_MIN: 15,
   AST_MAX: 60,
