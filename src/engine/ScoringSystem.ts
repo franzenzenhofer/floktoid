@@ -170,18 +170,19 @@ export class ScoringSystem {
   /**
    * Add points for an event
    */
-  addEvent(event: ScoringEvent, context?: any): number {
+  addEvent(event: ScoringEvent, context?: { size?: number; count?: number }): number {
     const now = Date.now();
     let points = 0;
     
     // Calculate base points
     switch (event) {
       // COSTS
-      case ScoringEvent.ASTEROID_LAUNCH:
+      case ScoringEvent.ASTEROID_LAUNCH: {
         const cost = this.calculateAsteroidCost(context?.size || SIZES.ASTEROID.MIN);
         points = -cost; // Negative because it's a cost
         this.statistics.totalAsteroidsLaunched++;
         break;
+      }
         
       case ScoringEvent.ENERGY_DOT_LOST:
         points = -POINT_VALUES.COSTS.ENERGY_DOT_LOST;
@@ -397,7 +398,12 @@ export class ScoringSystem {
   /**
    * Check for special achievements
    */
-  checkAchievements(context: any): ScoringEvent[] {
+  checkAchievements(context: {
+    simultaneousKills?: number;
+    distance?: number;
+    dotDistanceFromTop?: number;
+    timeUntilDotLost?: number;
+  }): ScoringEvent[] {
     const achievements: ScoringEvent[] = [];
     
     // Check for multi-kill
