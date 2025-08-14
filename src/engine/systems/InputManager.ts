@@ -4,6 +4,7 @@ import { GameConfig } from '../GameConfig';
 import { generateAsteroid } from '../utils/AsteroidGenerator';
 import { renderAsteroidPreview } from '../utils/AsteroidRenderer';
 import CentralConfig from '../CentralConfig';
+import { scoringSystem } from '../ScoringSystem';
 
 const { SIZES, VISUALS } = CentralConfig;
 
@@ -177,8 +178,11 @@ export class InputManager {
         GameConfig.AST_MAX_CHARGE
       );
       
+      // Check if player can afford this asteroid
+      const canAfford = scoringSystem.canAffordAsteroid(this.chargeSize);
+      
       // Draw charge indicator using EXACT SAME RENDERING as launched asteroid!
-      const hue = (performance.now() / 10) % 360;
+      const hue = canAfford ? (performance.now() / 10) % 360 : 0; // Red hue if can't afford
       
       // Show actual asteroid shape preview using the generated shape
       const pulse = Math.sin(performance.now() / 100) * 0.05 + 1;
@@ -189,20 +193,33 @@ export class InputManager {
         renderAsteroidPreview(
           this.chargeIndicator,
           this.asteroidShape.vertices,
-          hue,
+          canAfford ? hue : 0, // Red if can't afford
           this.chargeStart.x,
           this.chargeStart.y,
           asteroidSize,
           GameConfig.AST_MIN
         );
         
-        // Add growing effect text
-        const sizePercent = Math.floor(((this.chargeSize - GameConfig.AST_MIN) / (GameConfig.AST_MAX_CHARGE - GameConfig.AST_MIN)) * 100);
-        if (sizePercent > 20) {
-          // Show charge level indicator near asteroid
-          this.chargeIndicator.circle(this.chargeStart.x, this.chargeStart.y - asteroidSize - 20, 3);
-          this.chargeIndicator.fill({ color: 0xffffff, alpha: 0.7 });
-        }
+        // Add cost indicator and warning if can't afford
+        const cost = scoringSystem.calculateAsteroidCost(this.chargeSize);
+        const currentScore = scoringSystem.getScore();
+        
+        // Show cost text
+        const costColor = canAfford ? VISUALS.COLORS.NEON_CYAN : VISUALS.COLORS.NEON_RED;
+        const costText = canAfford ? `Cost: ${cost}` : `NEED ${cost} (Have ${currentScore})`;
+        
+        // Create text style for cost indicator
+        this.chargeIndicator.rect(
+          this.chargeStart.x - 60,
+          this.chargeStart.y - asteroidSize - 40,
+          120,
+          25
+        );
+        this.chargeIndicator.fill({ color: VISUALS.COLORS.BLACK, alpha: 0.7 });
+        this.chargeIndicator.stroke({ color: costColor, width: 2 });
+        
+        // Note: We can't render text directly in Graphics, but the rect shows the cost zone
+        // The actual cost will be shown in the score display
       }
       
       // Draw aim line with dotted pattern
@@ -214,11 +231,13 @@ export class InputManager {
       // Check if angle is valid (not too horizontal)
       const angle = Math.abs(Math.atan2(dy * segments, dx * segments) * (180 / Math.PI));
       const validAngle = angle > 15 && angle < 165;
-      // Get color from hue for aim line
-      const aimColor = Math.floor((Math.cos(hue * Math.PI / 180) * 0.5 + 0.5) * 255) << 16 | 
-                       Math.floor((Math.sin(hue * Math.PI / 180) * 0.5 + 0.5) * 255) << 8 | 
-                       Math.floor((Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255);
-      const lineColor = validAngle ? aimColor : 0x808080; // Gray if invalid angle
+      // Get color from hue for aim line - red if can't afford
+      const aimColor = canAfford ? 
+        (Math.floor((Math.cos(hue * Math.PI / 180) * 0.5 + 0.5) * 255) << 16 | 
+         Math.floor((Math.sin(hue * Math.PI / 180) * 0.5 + 0.5) * 255) << 8 | 
+         Math.floor((Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255)) :
+        0xFF0000; // Red if can't afford
+      const lineColor = !validAngle ? 0x808080 : aimColor; // Gray if invalid angle, colored otherwise
       
       for (let i = 0; i < segments; i += 2) {
         this.aimLine.moveTo(this.chargeStart.x + dx * i, this.chargeStart.y + dy * i);
