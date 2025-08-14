@@ -110,7 +110,7 @@ export interface ComboState {
 // ============================================
 
 export class ScoringSystem {
-  private score: number = 0;
+  private score: number = 1000; // Start with 1000 points
   private combo: ComboState = {
     count: 0,
     multiplier: 1,
@@ -131,6 +131,7 @@ export class ScoringSystem {
   
   private readonly COMBO_WINDOW_MS = 2000; // 2 seconds to maintain combo
   private readonly MIN_SCORE = 0; // Never go below 0!
+  private readonly STARTING_SCORE = 1000; // Starting points
   
   constructor() {
     this.reset();
@@ -140,7 +141,7 @@ export class ScoringSystem {
    * Reset scoring system
    */
   reset(): void {
-    this.score = 0;
+    this.score = this.STARTING_SCORE; // Start with 1000 points
     this.combo = {
       count: 0,
       multiplier: 1,
@@ -149,6 +150,14 @@ export class ScoringSystem {
       events: []
     };
     this.resetStatistics();
+  }
+  
+  /**
+   * Check if player can afford to launch an asteroid
+   */
+  canAffordAsteroid(asteroidSize: number): boolean {
+    const cost = this.calculateAsteroidCost(asteroidSize);
+    return this.score >= cost;
   }
   
   /**
@@ -407,22 +416,22 @@ export class ScoringSystem {
     const achievements: ScoringEvent[] = [];
     
     // Check for multi-kill
-    if (context.simultaneousKills > 1) {
+    if (context.simultaneousKills && context.simultaneousKills > 1) {
       achievements.push(ScoringEvent.MULTI_KILL);
     }
     
     // Check for long shot
-    if (context.distance > 500) {
+    if (context.distance && context.distance > 500) {
       achievements.push(ScoringEvent.LONG_SHOT);
     }
     
     // Check for close call
-    if (context.dotDistanceFromTop < 50) {
+    if (context.dotDistanceFromTop && context.dotDistanceFromTop < 50) {
       achievements.push(ScoringEvent.CLOSE_CALL);
     }
     
     // Check for last second save
-    if (context.timeUntilDotLost < 1000) {
+    if (context.timeUntilDotLost && context.timeUntilDotLost < 1000) {
       achievements.push(ScoringEvent.LAST_SECOND_SAVE);
     }
     
