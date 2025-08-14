@@ -115,10 +115,10 @@ const GAME_SCENARIOS = [
     test: async (page) => {
       // Test asteroid launching
       await page.mouse.move(400, 500);
-      await page.mouse.down());
-      await new Promise(r => setTimeout(r, 1000); // Charge
-      await page.mouse.move(400, 200));
-      await page.mouse.up());
+      await page.mouse.down();
+      await new Promise(r => setTimeout(r, 1000)); // Charge
+      await page.mouse.move(400, 200);
+      await page.mouse.up();
       
       await new Promise(r => setTimeout(r, 500));
       
