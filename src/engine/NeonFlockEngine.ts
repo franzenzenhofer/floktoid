@@ -342,6 +342,14 @@ export class NeonFlockEngine {
     shapeData?: { vertices: number[], roughness: number[] } | null,
     hue?: number // The exact hue that was shown during charging
   ) {
+    // Check if player can afford the asteroid
+    if (!scoringSystem.canAffordAsteroid(size)) {
+      console.log('[SCORING] Cannot afford asteroid of size', size);
+      // Show visual feedback that you can't afford it
+      this.showNoPointsWarning();
+      return;
+    }
+    
     // Charge points for launching asteroid
     scoringSystem.addEvent(ScoringEvent.ASTEROID_LAUNCH, { size });
     this.updateScoreDisplay();
@@ -982,12 +990,11 @@ export class NeonFlockEngine {
       });
     }
     
-    // Check for game over - all dots stolen, no falling dots, and no birds carrying dots
-    const finalAvailableDots = this.energyDots.filter(d => !d.stolen);
-    const finalBirdsWithDots = this.boids.filter(b => b.hasDot).length;
+    // SIMPLE GAME OVER CHECK: Game ends when ALL energy dots are stolen (no visible dots below)
+    const visibleDots = this.energyDots.filter(d => !d.stolen);
     
-    if (finalAvailableDots.length === 0 && this.fallingDots.length === 0 && finalBirdsWithDots === 0) {
-      console.log('[GAME] GAME OVER - All energy lost! No dots available, falling, or carried by birds!');
+    if (visibleDots.length === 0) {
+      console.log('[GAME] GAME OVER - All energy dots stolen! No dots visible below!');
       this.onGameOver?.();
       return;
     }
@@ -1083,6 +1090,81 @@ export class NeonFlockEngine {
     
     // Update score display with combo info
     this.onScoreUpdate?.(scoreInfo.score, scoreInfo.combo, scoreInfo.multiplier);
+  }
+  
+  private showNoPointsWarning() {
+    // Create warning text effect
+    const warningText = new PIXI.Text('NOT ENOUGH POINTS!', {
+      fontFamily: UI.FONTS.PRIMARY,
+      fontSize: UI.FONTS.SIZES.LARGE,
+      fill: VISUALS.COLORS.NEON_RED,
+      stroke: { color: VISUALS.COLORS.BLACK, width: VISUALS.STROKE.VERY_THICK },
+      dropShadow: {
+        color: VISUALS.COLORS.NEON_RED,
+        blur: VISUALS.GLOW.BLUR_AMOUNT,
+        distance: 2,
+        angle: Math.PI / 4,
+        alpha: VISUALS.ALPHA.HIGH
+      }
+    });
+    
+    warningText.anchor.set(0.5);
+    warningText.x = this.app.screen.width / 2;
+    warningText.y = this.app.screen.height * 0.5;
+    this.app.stage.addChild(warningText);
+    
+    // Shake animation
+    let shakeTime = 0;
+    let animationFrames = 0;
+    const maxFrames = 60; // 1 second at 60fps
+    
+    const ticker = () => {
+      animationFrames++;
+      
+      if (!warningText || warningText.destroyed || animationFrames > maxFrames) {
+        try {
+          this.app.ticker.remove(ticker);
+          if (warningText && !warningText.destroyed) {
+            warningText.destroy();
+          }
+        } catch (cleanupError) {
+          console.error('[WARNING TEXT CLEANUP ERROR]:', cleanupError);
+        }
+        return;
+      }
+      
+      try {
+        shakeTime += 0.3;
+        warningText.x = this.app.screen.width / 2 + Math.sin(shakeTime) * 10;
+        warningText.alpha = 1 - (animationFrames / maxFrames);
+        
+        if (animationFrames >= maxFrames) {
+          this.app.ticker.remove(ticker);
+          if (!warningText.destroyed) {
+            warningText.destroy();
+          }
+        }
+      } catch (animationError) {
+        console.error('[WARNING TEXT ANIMATION ERROR]:', animationError);
+        try {
+          this.app.ticker.remove(ticker);
+          if (warningText && !warningText.destroyed) {
+            warningText.destroy();
+          }
+        } catch (emergencyError) {
+          console.error('[WARNING TEXT EMERGENCY CLEANUP ERROR]:', emergencyError);
+        }
+      }
+    };
+    
+    try {
+      this.app.ticker.add(ticker);
+    } catch (addError) {
+      console.error('[WARNING TEXT ADD TICKER ERROR]:', addError);
+      if (warningText && !warningText.destroyed) {
+        warningText.destroy();
+      }
+    }
   }
   
   private handleResize = () => {
