@@ -116,7 +116,7 @@ const GAME_SCENARIOS = [
       // Test asteroid launching
       await page.mouse.move(400, 500);
       await page.mouse.down();
-      await new Promise(r => setTimeout(r, 1000)); // Charge
+      await new Promise(r => setTimeout(r, 1000); // Charge
       await page.mouse.move(400, 200);
       await page.mouse.up();
       
@@ -127,7 +127,7 @@ const GAME_SCENARIOS = [
       });
       
       if (asteroidCount === 0) {
-        throw new Error('Asteroid launch failed'));
+        throw new Error('Asteroid launch failed');
       }
       
       return true;
@@ -141,10 +141,10 @@ const GAME_SCENARIOS = [
         // Launch asteroids to kill birds
         for (let i = 0; i < 5; i++) {
           await page.mouse.move(400, 500);
-          await page.mouse.down());
+          await page.mouse.down();
           await new Promise(r => setTimeout(r, 500));
-          await page.mouse.move(400, 100));
-          await page.mouse.up());
+          await page.mouse.move(400, 100);
+          await page.mouse.up();
           await new Promise(r => setTimeout(r, 1000));
         }
         
@@ -181,11 +181,11 @@ const GAME_SCENARIOS = [
       
       // Play intensively for 30 seconds
       for (let i = 0; i < 30; i++) {
-        await page.mouse.move(Math.random() * 800, 500));
-        await page.mouse.down());
+        await page.mouse.move(Math.random() * 800, 500);
+        await page.mouse.down();
         await new Promise(r => setTimeout(r, 200));
-        await page.mouse.move(Math.random() * 800, 100));
-        await page.mouse.up());
+        await page.mouse.move(Math.random() * 800, 100);
+        await page.mouse.up();
         await new Promise(r => setTimeout(r, 800));
       }
       
@@ -213,17 +213,17 @@ const GAME_SCENARIOS = [
       const metrics = await page.evaluate(() => {
         return new Promise((resolve) => {
           let frames = 0;
-          let lastTime = performance.now());
+          let lastTime = performance.now();
           const fpsValues = [];
           
           const checkFPS = () => {
             frames++;
-            const currentTime = performance.now());
+            const currentTime = performance.now();
             const delta = currentTime - lastTime;
             
             if (delta >= 1000) {
               const fps = (frames * 1000) / delta;
-              fpsValues.push(fps));
+              fpsValues.push(fps);
               frames = 0;
               lastTime = currentTime;
               
@@ -231,14 +231,14 @@ const GAME_SCENARIOS = [
                 const avgFPS = fpsValues.reduce((a, b) => a + b) / fpsValues.length;
                 resolve({ avgFPS, minFPS: Math.min(...fpsValues) });
               } else {
-                requestAnimationFrame(checkFPS));
+                requestAnimationFrame(checkFPS);
               }
             } else {
-              requestAnimationFrame(checkFPS));
+              requestAnimationFrame(checkFPS);
             }
           };
           
-          requestAnimationFrame(checkFPS));
+          requestAnimationFrame(checkFPS);
         });
       });
       
@@ -275,14 +275,14 @@ async function testDevice(deviceConfig, url = 'http://localhost:3000') {
     for (const scenario of GAME_SCENARIOS) {
       try {
         console.log(`${colors.yellow}    Testing: ${scenario.name}...${colors.reset}`);
-        await scenario.test(page));
-        results.passed.push(scenario.name));
+        await scenario.test(page);
+        results.passed.push(scenario.name);
         console.log(`${colors.green}      ✅ ${scenario.name}${colors.reset}`);
         
         // Take screenshot after each successful test
         const screenshotPath = path.join(__dirname, `../test-screenshots/${deviceConfig.name.replace(/\s/g, '-')}-${scenario.name.replace(/\s/g, '-')}.png`);
         await page.screenshot({ path: screenshotPath });
-        results.screenshots.push(screenshotPath));
+        results.screenshots.push(screenshotPath);
         
       } catch (error) {
         results.failed.push({ test: scenario.name, error: error.message });
@@ -309,7 +309,7 @@ async function analyzeScreenshotsWithAI(screenshots) {
   
   for (const screenshot of screenshots) {
     try {
-      const imageData = await fs.readFile(screenshot, 'base64'));
+      const imageData = await fs.readFile(screenshot, 'base64');
       
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
@@ -363,8 +363,8 @@ async function runComprehensiveTesting() {
     console.log(`${colors.cyan}${'-'.repeat(50)}${colors.reset}`);
     
     try {
-      const results = await testDevice(device));
-      allResults.push(results));
+      const results = await testDevice(device);
+      allResults.push(results);
       totalPassed += results.passed.length;
       totalFailed += results.failed.length;
       
@@ -403,7 +403,7 @@ async function runComprehensiveTesting() {
       devices: TEST_DEVICES.length,
       scenarios: GAME_SCENARIOS.length
     }
-  }, null, 2));
+  }, null, 2);
   
   console.log(`\n${colors.blue}📁 Detailed report: ${reportPath}${colors.reset}`);
   

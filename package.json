@@ -1,6 +1,6 @@
 {
   "name": "floktoid",
-  "version": "1.73.0",
+  "version": "1.74.0",
   "description": "NEON FLOCK - A high-octane flocking bird defense game with neon aesthetics",
   "type": "module",
   "scripts": {
