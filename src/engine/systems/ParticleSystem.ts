@@ -25,8 +25,10 @@ export class ParticleSystem {
   }
   
   createExplosion(x: number, y: number, color: number, count: number) {
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2;
+    // Limit particle count to prevent freeze
+    const safeCount = Math.min(count, 20);
+    for (let i = 0; i < safeCount; i++) {
+      const angle = (i / safeCount) * Math.PI * 2;
       const speed = 200 + Math.random() * 100;
       this.addParticle(
         x,
@@ -68,56 +70,26 @@ export class ParticleSystem {
       (Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
     );
     
-    // Create 3 lines at 120 degree angles
-    // Lines should be same size as bird triangle (BOID_SIZE)
+    // SIMPLIFIED: Just use regular particles in 3 directions
+    // This avoids creating complex Graphics objects during collision
     for (let i = 0; i < 3; i++) {
       const angle = (i * 120 * Math.PI / 180) + Math.atan2(vy, vx);
-      const baseSpeed = 150; // Much smaller than before
+      const speed = 200;
       
-      // Create particles for a short line (max length = BOID_SIZE * 1.2)
-      for (let j = 0; j < 5; j++) { // Fewer particles for shorter lines
-        const lineSpeed = baseSpeed * (0.6 + j * 0.1);
-        this.addLineParticle(
+      // Create a burst of simple particles instead of lines
+      for (let j = 0; j < 3; j++) {
+        const particleSpeed = speed * (0.8 + j * 0.2);
+        this.addParticle(
           x,
           y,
-          Math.cos(angle) * lineSpeed + vx * 0.3,
-          Math.sin(angle) * lineSpeed + vy * 0.3,
-          color,
-          0.8 // Faster fade for smaller effect
+          Math.cos(angle) * particleSpeed + vx * 0.3,
+          Math.sin(angle) * particleSpeed + vy * 0.3,
+          color
         );
       }
     }
   }
   
-  private addLineParticle(x: number, y: number, vx: number, vy: number, color: number, fadeSpeed: number) {
-    if (this.particles.length >= GameConfig.MAX_PARTICLES) {
-      const oldest = this.particles.shift();
-      if (oldest) {
-        this.container.removeChild(oldest.sprite);
-        oldest.sprite.destroy();
-      }
-    }
-    
-    const sprite = new PIXI.Graphics();
-    // Draw as a line segment
-    sprite.moveTo(-3, 0);
-    sprite.lineTo(3, 0);
-    sprite.stroke({ width: 2, color, alpha: 1 });
-    sprite.rotation = Math.atan2(vy, vx);
-    
-    this.container.addChild(sprite);
-    
-    this.particles.push({
-      x,
-      y,
-      vx,
-      vy,
-      life: GameConfig.PARTICLE_LIFETIME * fadeSpeed,
-      maxLife: GameConfig.PARTICLE_LIFETIME * fadeSpeed,
-      color,
-      sprite
-    });
-  }
   
   private addParticle(x: number, y: number, vx: number, vy: number, color: number) {
     if (this.particles.length >= GameConfig.MAX_PARTICLES) {

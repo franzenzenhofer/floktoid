@@ -58,6 +58,9 @@ export class CollisionSystem {
     const boidsToRemove = new Set<number>();
     asteroidsToRemove.clear();
     
+    // Track which boids have been hit to avoid duplicate processing
+    const hitBoids = new Set<number>();
+    
     // Check asteroid-boid collisions
     for (let i = asteroids.length - 1; i >= 0; i--) {
       if (asteroidsToRemove.has(i)) continue;
@@ -72,15 +75,19 @@ export class CollisionSystem {
         
         // More precise collision - reduce detection radius slightly
         if (dist < (ast.size * 0.9) + (GameConfig.BOID_SIZE * 0.8)) {
-          // Mark for removal first, don't destroy yet
+          // Mark for removal
           boidsToRemove.add(j);
           
-          // Callback will handle visual effects
-          onBoidHit(boid);
+          // Only trigger hit effect ONCE per bird!
+          if (!hitBoids.has(j)) {
+            hitBoids.add(j);
+            onBoidHit(boid); // Only call once per bird
+          }
           
           // Shrink or destroy asteroid
           if (onAsteroidHit(ast)) {
             asteroidsToRemove.add(i);
+            break; // This asteroid is done, move to next
           }
         }
       }

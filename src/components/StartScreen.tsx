@@ -1,7 +1,7 @@
 import { VERSION_INFO } from '../version';
 
 interface StartScreenProps {
-  onStart: () => void;
+  onStart: (devMode?: boolean) => void;
   highScore: number;
 }
 
@@ -37,10 +37,17 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
         )}
         
         <button
-          onClick={onStart}
+          onClick={() => onStart(false)}
           className="px-8 sm:px-12 py-3 sm:py-4 text-lg sm:text-xl md:text-2xl font-bold bg-transparent border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)]"
         >
           START GAME
+        </button>
+        
+        <button
+          onClick={() => onStart(true)}
+          className="px-6 sm:px-10 py-2 sm:py-3 text-base sm:text-lg md:text-xl font-bold bg-transparent border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,0,0.5)]"
+        >
+          START IN DEV MODE
         </button>
         
         <div className="text-xs sm:text-sm text-gray-600 mt-4 md:mt-8 space-y-1">

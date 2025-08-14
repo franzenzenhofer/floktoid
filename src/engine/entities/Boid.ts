@@ -178,10 +178,25 @@ export class Boid {
   }
   
   public destroy() {
-    this.app.stage.removeChild(this.sprite);
-    this.app.stage.removeChild(this.trailGraphics);
-    this.sprite.destroy();
-    this.trailGraphics.destroy();
+    // Prevent double destruction
+    if (!this.alive) return;
+    
     this.alive = false;
+    
+    // Safely remove and destroy sprites
+    if (this.sprite.parent) {
+      this.app.stage.removeChild(this.sprite);
+    }
+    if (this.trailGraphics.parent) {
+      this.app.stage.removeChild(this.trailGraphics);
+    }
+    
+    // Destroy only if not already destroyed
+    if (!this.sprite.destroyed) {
+      this.sprite.destroy();
+    }
+    if (!this.trailGraphics.destroyed) {
+      this.trailGraphics.destroy();
+    }
   }
 }

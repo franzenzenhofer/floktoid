@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NEON FLOCK Freeze Test</title>
+    <style>
+        body { margin: 0; background: #000; color: #0ff; font-family: monospace; }
+        #status { position: absolute; top: 10px; left: 10px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; }
+        #controls { position: absolute; top: 60px; left: 10px; z-index: 100; }
+        button { padding: 10px; margin: 5px; background: #111; color: #0ff; border: 1px solid #0ff; cursor: pointer; }
+        button:hover { background: #222; }
+    </style>
+</head>
+<body>
+    <div id="status">Loading game...</div>
+    <div id="controls">
+        <button onclick="rapidFire()">Rapid Fire Test</button>
+        <button onclick="singleShot()">Single Shot</button>
+        <button onclick="checkPerformance()">Check Performance</button>
+    </div>
+    <iframe id="game" src="http://localhost:3000" style="width: 100vw; height: 100vh; border: none;"></iframe>
+    
+    <script>
+        const status = document.getElementById('status');
+        const gameFrame = document.getElementById('game');
+        let frameCount = 0;
+        let lastTime = performance.now();
+        
+        // Monitor FPS
+        function checkFPS() {
+            frameCount++;
+            const now = performance.now();
+            const delta = now - lastTime;
+            
+            if (delta >= 1000) {
+                const fps = Math.round((frameCount * 1000) / delta);
+                status.innerHTML = `FPS: ${fps}<br>Status: ${fps < 30 ? '<span style="color:red">FREEZE!</span>' : '<span style="color:lime">OK</span>'}`;
+                frameCount = 0;
+                lastTime = now;
+            }
+            
+            requestAnimationFrame(checkFPS);
+        }
+        
+        gameFrame.onload = () => {
+            console.log('Game loaded');
+            checkFPS();
+        };
+        
+        function rapidFire() {
+            console.log('Testing rapid collisions...');
+            const doc = gameFrame.contentDocument;
+            const canvas = doc.querySelector('canvas');
+            
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const x = 400 + i * 50;
+                    canvas.dispatchEvent(new MouseEvent('pointerdown', {
+                        clientX: x, clientY: 600, bubbles: true
+                    }));
+                    
+                    setTimeout(() => {
+                        gameFrame.contentWindow.dispatchEvent(new MouseEvent('pointerup', {
+                            clientX: x, clientY: 300, bubbles: true
+                        }));
+                    }, 200);
+                }, i * 400);
+            }
+        }
+        
+        function singleShot() {
+            const doc = gameFrame.contentDocument;
+            const canvas = doc.querySelector('canvas');
+            
+            canvas.dispatchEvent(new MouseEvent('pointerdown', {
+                clientX: 600, clientY: 600, bubbles: true
+            }));
+            
+            setTimeout(() => {
+                gameFrame.contentWindow.dispatchEvent(new MouseEvent('pointerup', {
+                    clientX: 600, clientY: 200, bubbles: true
+                }));
+            }, 300);
+        }
+        
+        function checkPerformance() {
+            const win = gameFrame.contentWindow;
+            if (win.performance && win.performance.memory) {
+                const mem = win.performance.memory;
+                console.log('Memory:', {
+                    used: Math.round(mem.usedJSHeapSize / 1048576) + 'MB',
+                    total: Math.round(mem.totalJSHeapSize / 1048576) + 'MB',
+                    limit: Math.round(mem.jsHeapSizeLimit / 1048576) + 'MB'
+                });
+            }
+        }
+    </script>
+</body>
+</html>

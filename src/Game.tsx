@@ -3,6 +3,7 @@ import { NeonFlockEngine } from './engine/NeonFlockEngine';
 import { HUD } from './components/HUD';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
+import { DevConsole } from './components/DevConsole';
 
 export function Game() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -11,6 +12,7 @@ export function Game() {
   const [score, setScore] = useState(0);
   const [wave, setWave] = useState(1);
   const [energyCritical, setEnergyCritical] = useState(false);
+  const [devMode, setDevMode] = useState(false);
   const [highScore, setHighScore] = useState(() => {
     const saved = localStorage.getItem('floktoid-highscore');
     return saved ? parseInt(saved) : 0;
@@ -20,7 +22,7 @@ export function Game() {
     if (gameState === 'playing' && canvasRef.current) {
       const initEngine = async () => {
         try {
-          const engine = new NeonFlockEngine(canvasRef.current!);
+          const engine = new NeonFlockEngine(canvasRef.current!, devMode);
           await engine.initialize();
           
           engine.onScoreUpdate = (newScore) => {
@@ -50,11 +52,15 @@ export function Game() {
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState]); // Intentionally exclude highScore - it was causing engine to reset!
+  }, [gameState, devMode]); // Include devMode to reinitialize engine with debug mode
 
-  const handleStart = () => {
+  const handleStart = (isDevMode = false) => {
     setScore(0);
     setWave(1);
+    setDevMode(isDevMode);
+    if (isDevMode) {
+      console.log('[DEV MODE] Starting game in development mode');
+    }
     setGameState('playing');
   };
 
@@ -78,6 +84,7 @@ export function Game() {
         <>
           <div ref={canvasRef} className="fixed inset-0 w-full h-full" />
           <HUD score={score} wave={wave} energyCritical={energyCritical} />
+          {devMode && <DevConsole />}
         </>
       )}
       

@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { generateAsteroid } from '../utils/AsteroidGenerator';
 
 export class Asteroid {
   public x: number;
@@ -15,6 +16,7 @@ export class Asteroid {
   private app: PIXI.Application;
   private shapeVertices: number[] = [];
   private shapeRoughness: number[] = [];
+  public destroyed = false;
 
   constructor(
     app: PIXI.Application,
@@ -50,15 +52,10 @@ export class Asteroid {
   }
   
   private generateShape() {
-    const points = 12 + Math.floor(Math.random() * 4);
-    this.shapeVertices = [];
-    this.shapeRoughness = [];
-    
-    // Generate random roughness for each vertex
-    for (let i = 0; i < points; i++) {
-      this.shapeRoughness.push(0.4 + Math.random() * 0.6);
-      this.shapeVertices.push(i); // Store index
-    }
+    // Use the new vector-based generator for non-intersecting asteroids
+    const shape = generateAsteroid(undefined, this.baseSize);
+    this.shapeVertices = shape.vertices;
+    this.shapeRoughness = shape.roughness;
   }
   
   private draw() {
@@ -72,24 +69,18 @@ export class Asteroid {
     
     this.sprite.clear();
     
-    // Use stored shape with current size
-    const points = this.shapeRoughness.length;
-    const angleStep = (Math.PI * 2) / points;
-    const vertices: number[] = [];
-    
     // Scale shape based on current size vs base size
     const scale = this.size / this.baseSize;
     
-    // Generate vertices for polygon
-    for (let i = 0; i <= points; i++) {
-      const idx = i % points;  // Wrap around to close the shape
-      const angle = idx * angleStep + (this.shapeVertices[idx] * 0.01 - 0.5) * angleStep * 0.3;
-      const r = this.size * this.shapeRoughness[idx];
-      vertices.push(Math.cos(angle) * r, Math.sin(angle) * r);
+    // Apply scaling to the pre-generated vertices
+    const scaledVertices: number[] = [];
+    for (let i = 0; i < this.shapeVertices.length; i += 2) {
+      scaledVertices.push(this.shapeVertices[i] * scale);
+      scaledVertices.push(this.shapeVertices[i + 1] * scale);
     }
     
-    // Draw as a closed polygon
-    this.sprite.poly(vertices);
+    // Draw as a closed polygon - guaranteed no self-intersections!
+    this.sprite.poly(scaledVertices);
     this.sprite.stroke({ width: 2, color, alpha: 1 });
     
     // Scale craters with size
@@ -167,7 +158,16 @@ export class Asteroid {
   }
   
   public destroy() {
-    this.app.stage.removeChild(this.sprite);
-    this.sprite.destroy();
+    // Prevent double destruction
+    if (this.destroyed) return;
+    this.destroyed = true;
+    
+    // Safely remove and destroy sprite
+    if (this.sprite.parent) {
+      this.app.stage.removeChild(this.sprite);
+    }
+    if (!this.sprite.destroyed) {
+      this.sprite.destroy();
+    }
   }
 }

@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { NeonFlockEngine } from '../NeonFlockEngine';
 import { GameConfig } from '../GameConfig';
+import { generateAsteroid } from '../utils/AsteroidGenerator';
 
 export class InputManager {
   private app: PIXI.Application;
@@ -58,17 +59,8 @@ export class InputManager {
     this.chargeStartTime = performance.now();
     this.currentPos = { x, y };
     
-    // Generate asteroid shape once when starting charge
-    const points = 12 + Math.floor(Math.random() * 4);
-    const roughness: number[] = [];
-    const vertices: number[] = [];
-    
-    for (let i = 0; i < points; i++) {
-      roughness.push(0.4 + Math.random() * 0.6);
-      vertices.push(i * 100 + Math.random() * 100); // Random vertex data
-    }
-    
-    this.asteroidShape = { vertices, roughness };
+    // Generate unique asteroid shape that won't self-intersect
+    this.asteroidShape = generateAsteroid();
   };
   
   private handlePointerMove = (e: PointerEvent) => {

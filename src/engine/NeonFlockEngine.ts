@@ -5,11 +5,14 @@ import { Asteroid } from './entities/Asteroid';
 import { ParticleSystem } from './systems/ParticleSystem';
 import { FlockingSystem } from './systems/FlockingSystem';
 import { InputManager } from './systems/InputManager';
-import { CollisionSystem } from './systems/CollisionSystem';
+import { SafeCollisionSystem } from './systems/SafeCollisionSystem';
+import { CollisionDebugger } from './systems/CollisionDebugger';
 import { GameConfig } from './GameConfig';
 
 export class NeonFlockEngine {
   private app!: PIXI.Application;
+  private debug = false;
+  private frameCount = 0;
   
   private boids: Boid[] = [];
   private energyDots: EnergyDot[] = [];
@@ -25,11 +28,13 @@ export class NeonFlockEngine {
     trail: PIXI.Graphics[];
     trailPositions: { x: number, y: number }[];
   }> = [];
+  private deferredBirdSpawns: Array<{ x: number; y: number; vx: number; vy: number }> = [];
   
   private particleSystem!: ParticleSystem;
   private flockingSystem!: FlockingSystem;
   private inputManager!: InputManager;
-  private collisionSystem!: CollisionSystem;
+  private collisionSystem!: SafeCollisionSystem;
+  private collisionDebugger!: CollisionDebugger;
   
   private score = 0;
   private wave = 1;
@@ -52,8 +57,12 @@ export class NeonFlockEngine {
   private container: HTMLDivElement;
   private initialized = false;
 
-  constructor(container: HTMLDivElement) {
+  constructor(container: HTMLDivElement, debugMode = false) {
     this.container = container;
+    this.debug = debugMode;
+    if (debugMode) {
+      console.log('[ENGINE] Debug mode enabled - collision logging active');
+    }
   }
   
   async initialize(): Promise<void> {
@@ -81,7 +90,8 @@ export class NeonFlockEngine {
       // Initialize systems
       this.particleSystem = new ParticleSystem(this.app);
       this.flockingSystem = new FlockingSystem();
-      this.collisionSystem = new CollisionSystem();
+      this.collisionSystem = new SafeCollisionSystem();
+    this.collisionDebugger = new CollisionDebugger();
       this.inputManager = new InputManager(this.app, this);
       
       // Setup game
@@ -262,6 +272,8 @@ export class NeonFlockEngine {
   private gameLoop = (delta: number) => {
     if (!this.initialized) return;
     
+    this.frameCount++;
+    
     const dt = delta / 60; // Convert to seconds at 60fps
     const time = performance.now() / 1000;
     
@@ -295,18 +307,15 @@ export class NeonFlockEngine {
             boid.targetDot = null;
           }
           
-          // Spawn burst of new birds (count = current wave number)
+          // DEFER bird spawning to prevent array mutation during iteration
           for (let j = 0; j < burstCount; j++) {
             const angle = (j / burstCount) * Math.PI * 2;
-            const newBoid = new Boid(
-              this.app,
-              boid.x,
-              boid.y,
-              this.speedMultiplier
-            );
-            newBoid.vx = Math.cos(angle) * 150;
-            newBoid.vy = Math.sin(angle) * 150;
-            this.boids.push(newBoid);
+            this.deferredBirdSpawns.push({
+              x: boid.x,
+              y: boid.y,
+              vx: Math.cos(angle) * 150,
+              vy: Math.sin(angle) * 150
+            });
           }
           
           // Visual feedback - more particles for higher waves
@@ -321,16 +330,17 @@ export class NeonFlockEngine {
           return;
         }
       } else {
-        // Flocking behavior
+        // Flocking behavior - now with falling dot awareness!
         const forces = this.flockingSystem.calculateForces(
           boid,
           this.boids,
           this.energyDots,
-          this.asteroids
+          this.asteroids,
+          this.fallingDots
         );
         boid.applyForces(forces, dt);
         
-        // Check dot pickup
+        // Check dot pickup - both stationary and falling dots
         for (const dot of this.energyDots) {
           if (!dot.stolen && boid.checkDotPickup(dot)) {
             dot.steal();
@@ -340,10 +350,75 @@ export class NeonFlockEngine {
             break;
           }
         }
+        
+        // Check if bird can catch a falling dot
+        for (let j = this.fallingDots.length - 1; j >= 0; j--) {
+          const fallingDot = this.fallingDots[j];
+          const dist = Math.hypot(fallingDot.x - boid.x, fallingDot.y - boid.y);
+          
+          // Bird catches falling dot if close enough
+          if (dist < 30 && !boid.hasDot) {
+            // Bird catches the falling dot!
+            boid.hasDot = true;
+            
+            // Create pickup effect
+            this.particleSystem.createPickup(fallingDot.x, fallingDot.y, 120);
+            
+            // Remove the falling dot's sprite
+            this.app.stage.removeChild(fallingDot.sprite);
+            fallingDot.sprite.destroy();
+            
+            // Remove from falling dots array
+            this.fallingDots.splice(j, 1);
+            
+            // Bonus points for catching a falling dot!
+            this.updateScore(GameConfig.SCORE_DOT_SAVED);
+            break;
+          }
+        }
       }
       
       boid.update(dt);
     });
+    
+    // Process deferred bird spawns AFTER boid iteration is complete
+    if (this.deferredBirdSpawns.length > 0) {
+      const maxNewBirds = 50; // Safety limit to prevent performance issues
+      const maxTotalBirds = 200; // Maximum total birds to prevent performance issues
+      const currentBirdCount = this.boids.filter(b => b.alive).length;
+      const availableSlots = Math.max(0, maxTotalBirds - currentBirdCount);
+      const spawnsToProcess = Math.min(this.deferredBirdSpawns.length, maxNewBirds, availableSlots);
+      
+      if (this.debug) {
+        console.log(`[SPAWN] Processing ${spawnsToProcess} deferred bird spawns (current: ${currentBirdCount}, max: ${maxTotalBirds})`);
+      }
+      
+      if (spawnsToProcess === 0 && this.deferredBirdSpawns.length > 0) {
+        console.warn(`[SPAWN] Bird limit reached (${currentBirdCount}/${maxTotalBirds}), discarding ${this.deferredBirdSpawns.length} spawns`);
+        this.deferredBirdSpawns = [];
+        return;
+      }
+      
+      for (let i = 0; i < spawnsToProcess; i++) {
+        const spawn = this.deferredBirdSpawns[i];
+        const newBoid = new Boid(
+          this.app,
+          spawn.x,
+          spawn.y,
+          this.speedMultiplier
+        );
+        newBoid.vx = spawn.vx;
+        newBoid.vy = spawn.vy;
+        this.boids.push(newBoid);
+      }
+      
+      // Clear processed spawns
+      this.deferredBirdSpawns = this.deferredBirdSpawns.slice(spawnsToProcess);
+      
+      if (this.deferredBirdSpawns.length > 0) {
+        console.warn(`[SPAWN] ${this.deferredBirdSpawns.length} bird spawns deferred to next frame due to limit`);
+      }
+    }
     
     // Update asteroids
     this.asteroids = this.asteroids.filter(asteroid => {
@@ -355,69 +430,79 @@ export class NeonFlockEngine {
       return true;
     });
     
-    // Queue for new asteroids to add after collision processing
-    const newAsteroids: Asteroid[] = [];
-    
-    // Queue for visual effects to process after collision checking
-    const visualEffects: (() => void)[] = [];
-    
-    // Check collisions
-    this.collisionSystem.checkCollisions(
-      this.boids,
-      this.asteroids,
-      this.energyDots,
-      (boid) => {
-        // Queue visual effects instead of executing immediately
-        visualEffects.push(() => {
-          // Create 3-line explosion with bird's color
-          this.particleSystem.createBirdExplosion(boid.x, boid.y, boid.hue, boid.vx, boid.vy);
-          this.updateScore(GameConfig.SCORE_HIT);
-          
-          // If bird had a dot, make it fall
-          if (boid.hasDot && boid.targetDot) {
-            this.createFallingDot(boid.x, boid.y, boid.targetDot);
-            boid.targetDot = null;
-          }
-        });
-      },
-      (asteroid) => {
-        if (asteroid.size < 10) {
-          asteroid.destroy();
-          return true;
-        }
-        asteroid.size *= 0.8;
-        asteroid.updateSize();
-        return false;
-      },
-      (asteroid, fragments) => {
-        // Fragment large asteroid into smaller pieces
-        const fragmentSize = asteroid.size / 3;
-        for (let i = 0; i < fragments; i++) {
-          const angle = (i / fragments) * Math.PI * 2;
-          const speed = 200 + Math.random() * 100;
-          const fragment = new Asteroid(
-            this.app,
-            asteroid.x + Math.cos(angle) * 20,
-            asteroid.y + Math.sin(angle) * 20,
-            Math.cos(angle) * speed,
-            Math.sin(angle) * speed,
-            fragmentSize
-          );
-          // Queue fragments to add after collision processing
-          newAsteroids.push(fragment);
-        }
-        // Explosion effect
-        this.particleSystem.createExplosion(asteroid.x, asteroid.y, 0xffaa00, 40);
-        asteroid.destroy();
+    // WRAP ENTIRE COLLISION SYSTEM IN TRY-CATCH
+    try {
+      // Start collision performance tracking
+      if (this.debug) {
+        this.collisionDebugger.startFrame();
+        this.collisionDebugger.logCollisionCheck('asteroid-boid', this.asteroids.length, this.boids.length);
+        console.log(`[COLLISION] Frame ${this.frameCount}: ${this.asteroids.length} asteroids, ${this.boids.length} boids`);
       }
-    );
-    
-    // Add new fragments after collision processing is complete
-    this.asteroids.push(...newAsteroids);
-    
-    // Process all queued visual effects after collision processing
-    for (const effect of visualEffects) {
-      effect();
+      
+      // Use new safe collision system
+      this.collisionSystem.handleCollisions(
+        this.boids,
+        this.asteroids,
+        this.energyDots,
+        {
+          onBoidHit: (boid) => {
+            // Deferred visual effects - won't freeze!
+            requestAnimationFrame(() => {
+              try {
+                // Simple particle explosion instead of complex graphics
+                this.particleSystem.createExplosion(boid.x, boid.y, boid.hue, 10);
+                this.updateScore(GameConfig.SCORE_HIT);
+                
+                // If bird had a dot, make it fall
+                if (boid.hasDot && boid.targetDot) {
+                  this.createFallingDot(boid.x, boid.y, boid.targetDot);
+                  boid.targetDot = null;
+                }
+              } catch (e) {
+                console.error('[VISUAL EFFECT ERROR]:', e);
+              }
+            });
+          },
+          onAsteroidHit: (asteroid) => {
+            try {
+              if (asteroid.size < 10) {
+                return true; // Destroy
+              }
+              asteroid.size *= 0.8;
+              asteroid.updateSize();
+              return false; // Keep
+            } catch (e) {
+              console.error('[ASTEROID HIT ERROR]:', e);
+              return true; // Destroy on error
+            }
+          }
+        }
+      );
+      
+      // End collision performance tracking  
+      if (this.debug) {
+        this.collisionDebugger.mark('collisions_done');
+        this.collisionDebugger.endFrame();
+        
+        // Log stats every 60 frames
+        if (this.frameCount % 60 === 0) {
+          const stats = this.collisionSystem.getStats();
+          console.log('[COLLISION STATS]:', stats);
+        }
+      }
+    } catch (collisionError) {
+      console.error('[CRITICAL COLLISION ERROR]:', collisionError);
+      console.error('Stack trace:', (collisionError as Error).stack);
+      
+      // Emergency cleanup to prevent freeze
+      if (this.debug) {
+        console.warn('[EMERGENCY] Clearing some entities to prevent freeze');
+        // Remove oldest asteroids if too many
+        if (this.asteroids.length > 20) {
+          const toRemove = this.asteroids.splice(0, 5);
+          toRemove.forEach(ast => ast.destroy());
+        }
+      }
     }
     
     // Update falling dots
