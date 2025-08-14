@@ -1,0 +1,167 @@
+{
+  "timestamp": "2025-08-14T07:25:24.667Z",
+  "results": [
+    {
+      "device": "iPhone 12 Pro",
+      "passed": [
+        "Performance"
+      ],
+      "failed": [
+        {
+          "test": "Engine Initialization",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Game Start",
+          "error": "Game failed to start"
+        },
+        {
+          "test": "Asteroid Launch",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Wave Progression",
+          "error": "'left' is already pressed."
+        },
+        {
+          "test": "Memory Leaks",
+          "error": "'left' is already pressed."
+        }
+      ],
+      "screenshots": [
+        "/home/franz/dev/floktoid/test-screenshots/iPhone-12-Pro-Performance.png"
+      ]
+    },
+    {
+      "device": "iPhone SE",
+      "passed": [
+        "Performance"
+      ],
+      "failed": [
+        {
+          "test": "Engine Initialization",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Game Start",
+          "error": "Game failed to start"
+        },
+        {
+          "test": "Asteroid Launch",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Wave Progression",
+          "error": "'left' is already pressed."
+        },
+        {
+          "test": "Memory Leaks",
+          "error": "'left' is already pressed."
+        }
+      ],
+      "screenshots": [
+        "/home/franz/dev/floktoid/test-screenshots/iPhone-SE-Performance.png"
+      ]
+    },
+    {
+      "device": "iPad Pro",
+      "passed": [
+        "Performance"
+      ],
+      "failed": [
+        {
+          "test": "Engine Initialization",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Game Start",
+          "error": "Game failed to start"
+        },
+        {
+          "test": "Asteroid Launch",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Wave Progression",
+          "error": "'left' is already pressed."
+        },
+        {
+          "test": "Memory Leaks",
+          "error": "'left' is already pressed."
+        }
+      ],
+      "screenshots": [
+        "/home/franz/dev/floktoid/test-screenshots/iPad-Pro-Performance.png"
+      ]
+    },
+    {
+      "device": "Android Pixel 5",
+      "passed": [
+        "Performance"
+      ],
+      "failed": [
+        {
+          "test": "Engine Initialization",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Game Start",
+          "error": "Game failed to start"
+        },
+        {
+          "test": "Asteroid Launch",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Wave Progression",
+          "error": "'left' is already pressed."
+        },
+        {
+          "test": "Memory Leaks",
+          "error": "'left' is already pressed."
+        }
+      ],
+      "screenshots": [
+        "/home/franz/dev/floktoid/test-screenshots/Android-Pixel-5-Performance.png"
+      ]
+    },
+    {
+      "device": "Desktop Chrome",
+      "passed": [
+        "Performance"
+      ],
+      "failed": [
+        {
+          "test": "Engine Initialization",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Game Start",
+          "error": "Game failed to start"
+        },
+        {
+          "test": "Asteroid Launch",
+          "error": "page.waitForTimeout is not a function"
+        },
+        {
+          "test": "Wave Progression",
+          "error": "'left' is already pressed."
+        },
+        {
+          "test": "Memory Leaks",
+          "error": "'left' is already pressed."
+        }
+      ],
+      "screenshots": [
+        "/home/franz/dev/floktoid/test-screenshots/Desktop-Chrome-Performance.png"
+      ]
+    }
+  ],
+  "summary": {
+    "totalPassed": 5,
+    "totalFailed": 25,
+    "aiAnalysisPass": true,
+    "devices": 5,
+    "scenarios": 6
+  }
+}

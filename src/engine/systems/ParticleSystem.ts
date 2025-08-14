@@ -1,5 +1,8 @@
 import * as PIXI from 'pixi.js';
 import { GameConfig } from '../GameConfig';
+import CentralConfig from '../CentralConfig';
+
+const { ENTITY_LIMITS, PHYSICS, VISUALS } = CentralConfig;
 
 interface Particle {
   x: number;
@@ -26,10 +29,10 @@ export class ParticleSystem {
   
   createExplosion(x: number, y: number, color: number, count: number) {
     // Limit particle count to prevent freeze
-    const safeCount = Math.min(count, 20);
+    const safeCount = Math.min(count, ENTITY_LIMITS.PARTICLES.MAX_PER_EXPLOSION / 2.5);
     for (let i = 0; i < safeCount; i++) {
       const angle = (i / safeCount) * Math.PI * 2;
-      const speed = 200 + Math.random() * 100;
+      const speed = PHYSICS.SPEED.ASTEROID_BASE_SPEED * 0.67 + Math.random() * 100;
       this.addParticle(
         x,
         y,
@@ -92,7 +95,7 @@ export class ParticleSystem {
   
   
   private addParticle(x: number, y: number, vx: number, vy: number, color: number) {
-    if (this.particles.length >= GameConfig.MAX_PARTICLES) {
+    if (this.particles.length >= ENTITY_LIMITS.PARTICLES.MAX_TOTAL) {
       // Remove oldest particle
       const oldest = this.particles.shift();
       if (oldest) {
@@ -102,8 +105,8 @@ export class ParticleSystem {
     }
     
     const sprite = new PIXI.Graphics();
-    sprite.circle(0, 0, 2);
-    sprite.fill({ color, alpha: 1 });
+    sprite.circle(0, 0, VISUALS.STROKE.NORMAL);
+    sprite.fill({ color, alpha: VISUALS.ALPHA.FULL });
     
     this.container.addChild(sprite);
     

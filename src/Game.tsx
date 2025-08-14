@@ -25,9 +25,11 @@ export function Game() {
           const engine = new NeonFlockEngine(canvasRef.current!, devMode);
           await engine.initialize();
           
+          // CRITICAL FIX: Use stable highScore reference to prevent re-initialization loops
+          const currentHighScore = highScore;
           engine.onScoreUpdate = (newScore) => {
             setScore(newScore);
-            if (newScore > highScore) {
+            if (newScore > currentHighScore) {
               setHighScore(newScore);
               localStorage.setItem('floktoid-highscore', newScore.toString());
             }

@@ -2,6 +2,10 @@ import * as PIXI from 'pixi.js';
 import { NeonFlockEngine } from '../NeonFlockEngine';
 import { GameConfig } from '../GameConfig';
 import { generateAsteroid } from '../utils/AsteroidGenerator';
+import { renderAsteroidPreview } from '../utils/AsteroidRenderer';
+import CentralConfig from '../CentralConfig';
+
+const { SIZES, VISUALS } = CentralConfig;
 
 export class InputManager {
   private app: PIXI.Application;
@@ -113,6 +117,26 @@ export class InputManager {
       // Apply slowness factor for bigger asteroids
       const slownessFactor = 1 - ((this.chargeSize - GameConfig.AST_MIN) / (GameConfig.AST_MAX_CHARGE - GameConfig.AST_MIN)) * (1 - GameConfig.AST_SLOWNESS_FACTOR);
       
+      // CRITICAL FIX: Use the EXACT color at RELEASE moment!
+      // This is what the user sees when they let go!
+      const releaseTime = performance.now();
+      const hue = (releaseTime / 10) % 360; // Color at the moment of release!
+      
+      // CRITICAL FIX: Scale the asteroid shape to match the charged size!
+      // The shape was generated at AST_MIN, so we need to scale it to the actual charge size
+      let scaledShape = null;
+      if (this.asteroidShape) {
+        const scale = this.chargeSize / GameConfig.AST_MIN;
+        const scaledVertices: number[] = [];
+        for (let i = 0; i < this.asteroidShape.vertices.length; i++) {
+          scaledVertices.push(this.asteroidShape.vertices[i] * scale);
+        }
+        scaledShape = {
+          vertices: scaledVertices,
+          roughness: this.asteroidShape.roughness
+        };
+      }
+      
       this.engine.launchAsteroid(
         this.chargeStart.x,
         this.chargeStart.y,
@@ -120,7 +144,8 @@ export class InputManager {
         targetY,
         this.chargeSize,
         slownessFactor,
-        this.asteroidShape
+        scaledShape,
+        hue // Pass the exact hue that was shown!
       );
     }
     
@@ -133,14 +158,14 @@ export class InputManager {
   private updateVisuals = () => {
     // Update cursor
     this.cursor.clear();
-    const cursorColor = this.charging ? 0xffff00 : 0x00ffff;
+    const cursorColor = this.charging ? VISUALS.COLORS.NEON_YELLOW : VISUALS.COLORS.NEON_CYAN;
     // Show spawn zone indicator
     if (this.currentPos.y < this.app.screen.height * 0.67) {
-      this.cursor.circle(this.currentPos.x, this.currentPos.y, 10);
-      this.cursor.stroke({ width: 2, color: 0xff0000, alpha: 0.5 }); // Red when out of spawn zone (top 2/3)
+      this.cursor.circle(this.currentPos.x, this.currentPos.y, SIZES.BIRD.BASE);
+      this.cursor.stroke({ width: VISUALS.STROKE.NORMAL, color: VISUALS.COLORS.NEON_RED, alpha: VISUALS.ALPHA.MEDIUM }); // Red when out of spawn zone (top 2/3)
     } else {
-      this.cursor.circle(this.currentPos.x, this.currentPos.y, 10);
-      this.cursor.stroke({ width: 2, color: cursorColor, alpha: 1 });
+      this.cursor.circle(this.currentPos.x, this.currentPos.y, SIZES.BIRD.BASE);
+      this.cursor.stroke({ width: VISUALS.STROKE.NORMAL, color: cursorColor, alpha: VISUALS.ALPHA.FULL });
     }
     
     // Update charging visuals
@@ -152,35 +177,24 @@ export class InputManager {
         GameConfig.AST_MAX_CHARGE
       );
       
-      // Draw charge indicator
-      this.chargeIndicator.clear();
+      // Draw charge indicator using EXACT SAME RENDERING as launched asteroid!
       const hue = (performance.now() / 10) % 360;
-      const color = Math.floor(
-        (Math.cos(hue * Math.PI / 180) * 0.5 + 0.5) * 255
-      ) << 16 | Math.floor(
-        (Math.sin(hue * Math.PI / 180) * 0.5 + 0.5) * 255
-      ) << 8 | Math.floor(
-        (Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
-      );
       
       // Show actual asteroid shape preview using the generated shape
       const pulse = Math.sin(performance.now() / 100) * 0.05 + 1;
       const asteroidSize = this.chargeSize * pulse;
       
       if (this.asteroidShape) {
-        // Use the pre-generated vertices from the new vector-based generator
-        const scaledVertices: number[] = [];
-        const scale = asteroidSize / GameConfig.AST_MIN; // Scale based on charge
-        
-        for (let i = 0; i < this.asteroidShape.vertices.length; i += 2) {
-          scaledVertices.push(this.chargeStart.x + this.asteroidShape.vertices[i] * scale);
-          scaledVertices.push(this.chargeStart.y + this.asteroidShape.vertices[i + 1] * scale);
-        }
-        
-        // Draw the asteroid preview with same shape
-        this.chargeIndicator.poly(scaledVertices);
-        this.chargeIndicator.stroke({ width: 3, color, alpha: 0.8 });
-        this.chargeIndicator.fill({ color, alpha: 0.15 });
+        // DRY: Use shared renderer for PERFECT visual consistency!
+        renderAsteroidPreview(
+          this.chargeIndicator,
+          this.asteroidShape.vertices,
+          hue,
+          this.chargeStart.x,
+          this.chargeStart.y,
+          asteroidSize,
+          GameConfig.AST_MIN
+        );
         
         // Add growing effect text
         const sizePercent = Math.floor(((this.chargeSize - GameConfig.AST_MIN) / (GameConfig.AST_MAX_CHARGE - GameConfig.AST_MIN)) * 100);
@@ -200,7 +214,11 @@ export class InputManager {
       // Check if angle is valid (not too horizontal)
       const angle = Math.abs(Math.atan2(dy * segments, dx * segments) * (180 / Math.PI));
       const validAngle = angle > 15 && angle < 165;
-      const lineColor = validAngle ? color : 0x808080; // Gray if invalid angle
+      // Get color from hue for aim line
+      const aimColor = Math.floor((Math.cos(hue * Math.PI / 180) * 0.5 + 0.5) * 255) << 16 | 
+                       Math.floor((Math.sin(hue * Math.PI / 180) * 0.5 + 0.5) * 255) << 8 | 
+                       Math.floor((Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255);
+      const lineColor = validAngle ? aimColor : 0x808080; // Gray if invalid angle
       
       for (let i = 0; i < segments; i += 2) {
         this.aimLine.moveTo(this.chargeStart.x + dx * i, this.chargeStart.y + dy * i);

@@ -196,6 +196,18 @@ class UltimateDeploymentPipeline {
       throw new Error('Game collision test failed - potential freeze bug detected');
     }
     
+    // AI-POWERED COMPREHENSIVE TESTING - MANDATORY!
+    this.log('  🤖 Running AI-powered device testing...', 'yellow');
+    this.log('    Testing on iPhone, iPad, Android, Desktop...', 'cyan');
+    try {
+      this.exec('node scripts/ai-powered-testing.js', { silent: false });
+      this.log('    ✅ AI testing passed - all devices OK!', 'green');
+    } catch (error) {
+      this.log('    ❌ AI TESTING FAILED - CRITICAL ISSUES DETECTED!', 'red');
+      this.log('    Device initialization failures detected!', 'red');
+      throw new Error('AI testing detected critical issues - DO NOT DEPLOY!');
+    }
+    
     // Build project
     this.log('  Building project...', 'yellow');
     this.exec('npm run build');

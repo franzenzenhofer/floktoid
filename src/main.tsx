@@ -1,3 +1,6 @@
+// Load iOS polyfills first
+import './polyfills';
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Game } from './Game';

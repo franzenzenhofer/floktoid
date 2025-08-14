@@ -9,7 +9,6 @@ interface CleverMove {
 
 export class CleverMoveDetector {
   private lastAsteroidLaunchTime = 0;
-  private lastAsteroidLaunchPos = { x: 0, y: 0 };
   private nearMissCount = 0;
   private multiHitStreak = 0;
   private lastMultiHitTime = 0;
@@ -88,12 +87,11 @@ export class CleverMoveDetector {
   /**
    * Detect speed shot - very fast launch after previous
    */
-  detectSpeedShot(launchPos: { x: number; y: number }): CleverMove | null {
+  detectSpeedShot(): CleverMove | null {
     const now = performance.now();
     const timeSinceLastShot = now - this.lastAsteroidLaunchTime;
     
     this.lastAsteroidLaunchTime = now;
-    this.lastAsteroidLaunchPos = launchPos;
     
     if (timeSinceLastShot < 500 && timeSinceLastShot > 100) {
       return {

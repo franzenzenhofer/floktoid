@@ -32,9 +32,17 @@ export default defineConfig({
   ],
   build: {
     outDir: 'dist',
+    // iOS compatibility: transpile to older syntax
+    target: ['es2015', 'safari12'],
     rollupOptions: {
-      input: './index.html'
-    }
+      input: './index.html',
+      output: {
+        // Avoid dynamic imports on iOS
+        manualChunks: undefined
+      }
+    },
+    // Larger chunks to reduce module loading issues
+    chunkSizeWarningLimit: 1000
   },
   server: {
     port: 3000,

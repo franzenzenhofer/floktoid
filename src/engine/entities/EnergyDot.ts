@@ -1,5 +1,7 @@
 import * as PIXI from 'pixi.js';
-import { GameConfig } from '../GameConfig';
+import CentralConfig from '../CentralConfig';
+
+const { SIZES, VISUALS } = CentralConfig;
 
 export class EnergyDot {
   public x: number;
@@ -44,21 +46,21 @@ export class EnergyDot {
       (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
     );
     
-    const pulse = Math.sin(performance.now() / 1000 * 5 + this.pulsePhase) * 0.3 + 0.7;
+    const pulse = Math.sin(performance.now() / 1000 * 5 + this.pulsePhase) * (SIZES.ENERGY_DOT.PULSE_MAX_SCALE - SIZES.ENERGY_DOT.PULSE_MIN_SCALE) / 2 + (SIZES.ENERGY_DOT.PULSE_MIN_SCALE + SIZES.ENERGY_DOT.PULSE_MAX_SCALE) / 2;
     
     // Draw glow
     this.glowSprite.clear();
-    this.glowSprite.circle(this.x, this.y, GameConfig.ENERGY_RADIUS * 3 * pulse);
-    this.glowSprite.fill({ color, alpha: 0.3 * pulse });
+    this.glowSprite.circle(this.x, this.y, SIZES.ENERGY_DOT.RADIUS * SIZES.ENERGY_DOT.GLOW_RADIUS_MULTIPLIER * pulse);
+    this.glowSprite.fill({ color, alpha: VISUALS.ALPHA.LOW * pulse });
     
     // Draw dot
     this.sprite.clear();
-    this.sprite.circle(this.x, this.y, GameConfig.ENERGY_RADIUS * pulse);
-    this.sprite.fill({ color, alpha: 1 });
+    this.sprite.circle(this.x, this.y, SIZES.ENERGY_DOT.RADIUS * pulse);
+    this.sprite.fill({ color, alpha: VISUALS.ALPHA.FULL });
     
     // Core
-    this.sprite.circle(this.x, this.y, GameConfig.ENERGY_RADIUS * 0.3);
-    this.sprite.fill({ color: 0xffffff, alpha: 1 });
+    this.sprite.circle(this.x, this.y, SIZES.ENERGY_DOT.RADIUS * 0.3);
+    this.sprite.fill({ color: VISUALS.COLORS.WHITE, alpha: VISUALS.ALPHA.FULL });
   }
   
   private update = () => {
@@ -78,10 +80,27 @@ export class EnergyDot {
   }
   
   public destroy() {
-    this.app.ticker.remove(this.update);
-    this.app.stage.removeChild(this.sprite);
-    this.app.stage.removeChild(this.glowSprite);
-    this.sprite.destroy();
-    this.glowSprite.destroy();
+    // SAFE: Remove ticker callback to prevent memory leak
+    try {
+      this.app.ticker.remove(this.update);
+    } catch (e) {
+      console.warn('[EnergyDot] Failed to remove ticker callback:', e);
+    }
+    
+    // SAFE: Remove sprites only if they have parents
+    if (this.sprite.parent) {
+      this.app.stage.removeChild(this.sprite);
+    }
+    if (this.glowSprite.parent) {
+      this.app.stage.removeChild(this.glowSprite);
+    }
+    
+    // SAFE: Destroy only if not already destroyed
+    if (!this.sprite.destroyed) {
+      this.sprite.destroy();
+    }
+    if (!this.glowSprite.destroyed) {
+      this.glowSprite.destroy();
+    }
   }
 }

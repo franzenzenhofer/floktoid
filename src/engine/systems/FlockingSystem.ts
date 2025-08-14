@@ -1,7 +1,9 @@
 import { Boid } from '../entities/Boid';
 import { EnergyDot } from '../entities/EnergyDot';
 import { Asteroid } from '../entities/Asteroid';
-import { GameConfig } from '../GameConfig';
+import CentralConfig from '../CentralConfig';
+
+const { FLOCKING } = CentralConfig;
 
 export class FlockingSystem {
   calculateForces(
@@ -24,14 +26,14 @@ export class FlockingSystem {
       const dy = other.y - boid.y;
       const d2 = dx * dx + dy * dy;
       
-      if (d2 < GameConfig.VIEW_RADIUS * GameConfig.VIEW_RADIUS) {
+      if (d2 < FLOCKING.RADIUS.VIEW * FLOCKING.RADIUS.VIEW) {
         count++;
         alignment.x += other.vx;
         alignment.y += other.vy;
         cohesion.x += other.x;
         cohesion.y += other.y;
         
-        if (d2 < GameConfig.SEPARATION_RADIUS * GameConfig.SEPARATION_RADIUS && d2 > 0) {
+        if (d2 < FLOCKING.RADIUS.SEPARATION * FLOCKING.RADIUS.SEPARATION && d2 > 0) {
           const inv = 1 / Math.sqrt(d2);
           separation.x -= dx * inv;
           separation.y -= dy * inv;
@@ -66,7 +68,7 @@ export class FlockingSystem {
         const futureY = dot.y + dot.vy * timeToReach;
         
         // Only target if we can reach it before it falls off screen
-        if (futureY < 600 && dist < closestDist && dist < 300) {
+        if (futureY < 600 && dist < closestDist && dist < FLOCKING.RADIUS.VIEW * 3) {
           closestDist = dist;
           closestFallingDot = dot;
         }
@@ -106,7 +108,7 @@ export class FlockingSystem {
       const dx = ast.x - boid.x;
       const dy = ast.y - boid.y;
       const d2 = dx * dx + dy * dy;
-      const r = ast.size + 60;
+      const r = ast.size + FLOCKING.RADIUS.AVOIDANCE;
       
       if (d2 < r * r && d2 > 0) {
         const inv = 1 / Math.sqrt(d2);
@@ -121,25 +123,47 @@ export class FlockingSystem {
     this.normalize(cohesion, boid.maxSpeed);
     this.normalize(target, boid.maxSpeed);
     
+    // Apply personality weights if bird has them
+    const weights = boid.personalityWeights || {
+      separation: FLOCKING.PERSONALITY_MULTIPLIERS.DEFAULT, 
+      alignment: FLOCKING.PERSONALITY_MULTIPLIERS.DEFAULT, 
+      cohesion: FLOCKING.PERSONALITY_MULTIPLIERS.DEFAULT, 
+      targetSeek: FLOCKING.PERSONALITY_MULTIPLIERS.DEFAULT, 
+      avoidance: FLOCKING.PERSONALITY_MULTIPLIERS.DEFAULT, 
+      speedModifier: FLOCKING.PERSONALITY_MULTIPLIERS.DEFAULT
+    };
+    
     return {
-      x: GameConfig.WEIGHT_SEPARATION * separation.x +
-         GameConfig.WEIGHT_ALIGNMENT * alignment.x +
-         GameConfig.WEIGHT_COHESION * cohesion.x +
-         GameConfig.WEIGHT_TARGET * target.x +
-         GameConfig.WEIGHT_AVOID * avoid.x,
-      y: GameConfig.WEIGHT_SEPARATION * separation.y +
-         GameConfig.WEIGHT_ALIGNMENT * alignment.y +
-         GameConfig.WEIGHT_COHESION * cohesion.y +
-         GameConfig.WEIGHT_TARGET * target.y +
-         GameConfig.WEIGHT_AVOID * avoid.y
+      x: FLOCKING.WEIGHTS.SEPARATION * separation.x * weights.separation +
+         FLOCKING.WEIGHTS.ALIGNMENT * alignment.x * weights.alignment +
+         FLOCKING.WEIGHTS.COHESION * cohesion.x * weights.cohesion +
+         FLOCKING.WEIGHTS.TARGET * target.x * weights.targetSeek +
+         FLOCKING.WEIGHTS.AVOID * avoid.x * weights.avoidance,
+      y: FLOCKING.WEIGHTS.SEPARATION * separation.y * weights.separation +
+         FLOCKING.WEIGHTS.ALIGNMENT * alignment.y * weights.alignment +
+         FLOCKING.WEIGHTS.COHESION * cohesion.y * weights.cohesion +
+         FLOCKING.WEIGHTS.TARGET * target.y * weights.targetSeek +
+         FLOCKING.WEIGHTS.AVOID * avoid.y * weights.avoidance
     };
   }
   
   private normalize(v: { x: number; y: number }, max: number) {
     const len = Math.hypot(v.x, v.y);
-    if (len > 0) {
-      v.x = (v.x / len) * max;
-      v.y = (v.y / len) * max;
+    // SAFE: Check for zero length and NaN/infinity to prevent division by zero freeze
+    if (len > 0 && isFinite(len) && isFinite(max)) {
+      const factor = max / len;
+      if (isFinite(factor)) {
+        v.x = v.x * factor;
+        v.y = v.y * factor;
+      } else {
+        // Fallback to zero if factor is not finite
+        v.x = 0;
+        v.y = 0;
+      }
+    } else {
+      // Zero vector or invalid length - set to zero
+      v.x = 0;
+      v.y = 0;
     }
   }
 }

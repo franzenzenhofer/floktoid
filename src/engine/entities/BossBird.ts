@@ -5,8 +5,10 @@ import { GameConfig } from '../GameConfig';
 export class BossBird extends Boid {
   public isBoss = true;
   public health = 3; // Takes 3 hits to destroy
+  public size: number; // Boss bird size
   private shieldGraphics: PIXI.Graphics;
   private pulseTime = 0;
+  private flashTimeoutId: NodeJS.Timeout | null = null; // CRITICAL FIX: Track timeout to prevent leaks
   
   constructor(
     app: PIXI.Application,
@@ -111,13 +113,19 @@ export class BossBird extends Boid {
       return true; // Boss destroyed
     }
     
+    // CRITICAL FIX: Clear any existing flash timeout to prevent accumulation
+    if (this.flashTimeoutId) {
+      clearTimeout(this.flashTimeoutId);
+    }
+    
     // Flash effect when hit
     const originalAlpha = this.sprite.alpha;
     this.sprite.alpha = 0.5;
-    setTimeout(() => {
+    this.flashTimeoutId = setTimeout(() => {
       if (!this.sprite.destroyed) {
         this.sprite.alpha = originalAlpha;
       }
+      this.flashTimeoutId = null; // Clear reference
     }, 100);
     
     return false; // Boss still alive
@@ -125,6 +133,12 @@ export class BossBird extends Boid {
   
   destroy() {
     if (!this.alive) return;
+    
+    // CRITICAL FIX: Clear flash timeout on destroy to prevent leaks
+    if (this.flashTimeoutId) {
+      clearTimeout(this.flashTimeoutId);
+      this.flashTimeoutId = null;
+    }
     
     // Clean up shield
     if (this.shieldGraphics.parent) {

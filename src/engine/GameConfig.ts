@@ -1,37 +1,46 @@
+/**
+ * GAME CONFIG - Uses Central Configuration
+ * This file provides backward compatibility while using the central config
+ */
+
+import CentralConfig from './CentralConfig';
+
+const { ENTITY_LIMITS, PHYSICS, FLOCKING, VISUALS, SIZES, TIMING, SCORING, WAVES } = CentralConfig;
+
 export const GameConfig = {
-  // Flocking parameters
-  VIEW_RADIUS: 100,
-  SEPARATION_RADIUS: 35,
-  BOID_SIZE: 7,
-  BASE_SPEED: 40,
-  BASE_FORCE: 80,
+  // Flocking parameters - FROM CENTRAL CONFIG
+  VIEW_RADIUS: FLOCKING.RADIUS.VIEW,
+  SEPARATION_RADIUS: FLOCKING.RADIUS.SEPARATION,
+  BOID_SIZE: SIZES.BIRD.BASE,
+  BASE_SPEED: PHYSICS.SPEED.BASE_BIRD_SPEED,
+  BASE_FORCE: PHYSICS.SPEED.BASE_BIRD_FORCE,
   
-  // Flocking weights
-  WEIGHT_SEPARATION: 2.0,
-  WEIGHT_ALIGNMENT: 1.0,
-  WEIGHT_COHESION: 0.8,
-  WEIGHT_TARGET: 1.5,
-  WEIGHT_AVOID: 3.0,
+  // Flocking weights - FROM CENTRAL CONFIG
+  WEIGHT_SEPARATION: FLOCKING.WEIGHTS.SEPARATION,
+  WEIGHT_ALIGNMENT: FLOCKING.WEIGHTS.ALIGNMENT,
+  WEIGHT_COHESION: FLOCKING.WEIGHTS.COHESION,
+  WEIGHT_TARGET: FLOCKING.WEIGHTS.TARGET,
+  WEIGHT_AVOID: FLOCKING.WEIGHTS.AVOID,
   
-  // Game mechanics
-  ENERGY_COUNT: 12,
-  ENERGY_RADIUS: 6,
-  BASE_Y: 0.9, // Position of energy dots (90% down the screen)
+  // Game mechanics - FROM CENTRAL CONFIG
+  ENERGY_COUNT: ENTITY_LIMITS.ENERGY_DOTS.TOTAL_COUNT,
+  ENERGY_RADIUS: SIZES.ENERGY_DOT.RADIUS,
+  BASE_Y: 0.85, // Position of energy dots (85% down the screen)
   
-  // Respawn timers (balanced for difficulty)
-  DOT_RESPAWN_BASE: 15000, // Base 15 seconds at wave 1
+  // Respawn timers - FROM CENTRAL CONFIG
+  DOT_RESPAWN_BASE: TIMING.DOT_RESPAWN_DELAY_MS,
   DOT_RESPAWN_PER_WAVE: -300, // Faster by 0.3s per wave
   DOT_RESPAWN_MIN: 3000, // Never faster than 3 seconds
   
-  // Asteroids
-  AST_MIN: 15,
-  AST_MAX: 60,
-  AST_SPEED: 500,
-  AST_GROWTH_RATE: 20, // pixels per second while holding
-  AST_MAX_CHARGE: 100, // max size from charging
-  AST_SLOWNESS_FACTOR: 0.3, // BIG asteroids are 70% slower! (was 0.7, then 0.4)
+  // Asteroids - FROM CENTRAL CONFIG
+  AST_MIN: SIZES.ASTEROID.MIN,
+  AST_MAX: SIZES.ASTEROID.MAX,
+  AST_SPEED: PHYSICS.SPEED.ASTEROID_BASE_SPEED,
+  AST_GROWTH_RATE: SIZES.ASTEROID.CHARGE_GROWTH_RATE,
+  AST_MAX_CHARGE: SIZES.ASTEROID.MAX_CHARGE_SIZE,
+  AST_SLOWNESS_FACTOR: 0.3, // BIG asteroids are 70% slower!
   
-  // Progression - More gradual increase with more stages
+  // Progression - Extended wave config
   BIRDS_PER_WAVE: [
     2, 3, 4, 5, 6, 7, 8, 9, 10, 11, // Waves 1-10: gentle start
     12, 13, 14, 16, 18, 20, 22, 24, 26, 28, // Waves 11-20: moderate
@@ -40,32 +49,29 @@ export const GameConfig = {
     115, 122, 130, 138, 146, 155, 164, 174, 184, 195, // Waves 41-50: very hard
     206, 218, 230, 243, 256, 270, 285, 300, 316, 333  // Waves 51-60: extreme
   ],
-  SPEED_GROWTH: 1.02, // Only 2% faster each wave (was 5%)
-  // SPAWN_BURST: Dynamic - equals current wave number (1 bird on wave 1, 10 on wave 10, etc.)
+  SPEED_GROWTH: WAVES.SPEED_GROWTH,
   
-  // Visual
+  // Visual - FROM CENTRAL CONFIG
   NEON_COLORS: [
-    0xff00ff, // Magenta
-    0x00ffff, // Cyan
-    0xffff00, // Yellow
-    0xff00aa, // Pink
-    0x00ff00, // Green
-    0xff6600, // Orange
-    0x0099ff, // Blue
-    0xff0066, // Red-pink
-    0x66ff00, // Lime
-    0xff3366, // Coral
+    VISUALS.COLORS.NEON_MAGENTA,
+    VISUALS.COLORS.NEON_CYAN,
+    VISUALS.COLORS.NEON_YELLOW,
+    VISUALS.COLORS.NEON_RED,
+    VISUALS.COLORS.NEON_GREEN,
+    VISUALS.COLORS.NEON_ORANGE,
+    VISUALS.COLORS.NEON_BLUE,
+    VISUALS.COLORS.NEON_PURPLE,
   ],
   
-  // Performance
-  MAX_PARTICLES: 500,
+  // Performance - FROM CENTRAL CONFIG
+  MAX_PARTICLES: ENTITY_LIMITS.PARTICLES.MAX_TOTAL,
   PARTICLE_LIFETIME: 1.0,
   
-  // Scoring
-  SCORE_HIT: 10,
+  // Scoring - FROM CENTRAL CONFIG
+  SCORE_HIT: SCORING.POINTS.BIRD_HIT,
   SCORE_COMBO_2: 25,
   SCORE_COMBO_3: 50,
   SCORE_COMBO_4: 100,
   SCORE_CLEVER: 200, // ricochet kills
-  SCORE_DOT_SAVED: 50,
+  SCORE_DOT_SAVED: SCORING.POINTS.DOT_SAVED,
 } as const;

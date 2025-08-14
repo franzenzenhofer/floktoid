@@ -30,6 +30,13 @@ export class CollisionDebugger {
       // Log if slow (>5ms)
       if (duration > 5) {
         console.warn(`[Frame ${this.currentFrame}] Slow operation: ${startLabel} -> ${endLabel}: ${duration.toFixed(2)}ms`);
+        
+        // CRITICAL FIX: Prevent unbounded memory growth in slowFrames array
+        const MAX_SLOW_FRAMES = 100;
+        if (this.slowFrames.length >= MAX_SLOW_FRAMES) {
+          this.slowFrames.shift(); // Remove oldest entry
+        }
+        
         this.slowFrames.push({
           frame: this.currentFrame,
           time: duration,

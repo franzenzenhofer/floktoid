@@ -38,14 +38,20 @@ export class SafeCollisionSystem {
       return [];
     }
     
-    // Asteroid-Boid collisions
+    // Asteroid-Boid collisions - SAFE: Add comprehensive null checks
     for (let i = 0; i < asteroids.length && checkCount < this.maxChecksPerFrame; i++) {
       const ast = asteroids[i];
-      if (!ast) continue;
+      if (!ast || ast.destroyed || typeof ast.x !== 'number' || typeof ast.y !== 'number' || 
+          typeof ast.size !== 'number' || !isFinite(ast.x) || !isFinite(ast.y) || !isFinite(ast.size)) {
+        continue;
+      }
       
       for (let j = 0; j < boids.length && checkCount < this.maxChecksPerFrame; j++) {
         const boid = boids[j];
-        if (!boid || !boid.alive) continue;
+        if (!boid || !boid.alive || typeof boid.x !== 'number' || typeof boid.y !== 'number' || 
+            !isFinite(boid.x) || !isFinite(boid.y)) {
+          continue;
+        }
         
         checkCount++;
         
@@ -134,18 +140,44 @@ export class SafeCollisionSystem {
     removeBoids: number[],
     removeAsteroids: number[]
   ): void {
-    // Remove in reverse order to preserve indices
+    // SAFE: Remove in reverse order to preserve indices with comprehensive null checks
     for (const idx of removeBoids) {
-      if (boids[idx]) {
-        boids[idx].destroy();
-        boids.splice(idx, 1);
+      if (typeof idx === 'number' && isFinite(idx) && idx >= 0 && idx < boids.length && boids[idx]) {
+        try {
+          const boid = boids[idx];
+          if (boid && typeof boid.destroy === 'function') {
+            boid.destroy();
+          }
+          boids.splice(idx, 1);
+        } catch (destroyError) {
+          console.error('[COLLISION] Failed to destroy boid:', destroyError);
+          // Still try to remove from array
+          try {
+            boids.splice(idx, 1);
+          } catch (spliceError) {
+            console.error('[COLLISION] Failed to splice boid:', spliceError);
+          }
+        }
       }
     }
     
     for (const idx of removeAsteroids) {
-      if (asteroids[idx]) {
-        asteroids[idx].destroy();
-        asteroids.splice(idx, 1);
+      if (typeof idx === 'number' && isFinite(idx) && idx >= 0 && idx < asteroids.length && asteroids[idx]) {
+        try {
+          const asteroid = asteroids[idx];
+          if (asteroid && typeof asteroid.destroy === 'function') {
+            asteroid.destroy();
+          }
+          asteroids.splice(idx, 1);
+        } catch (destroyError) {
+          console.error('[COLLISION] Failed to destroy asteroid:', destroyError);
+          // Still try to remove from array
+          try {
+            asteroids.splice(idx, 1);
+          } catch (spliceError) {
+            console.error('[COLLISION] Failed to splice asteroid:', spliceError);
+          }
+        }
       }
     }
   }

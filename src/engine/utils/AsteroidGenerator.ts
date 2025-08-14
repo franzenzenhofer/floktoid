@@ -17,10 +17,7 @@ const createRNG = (seed: number) => {
   };
 };
 
-// Generate a value between min and max (inclusive)
-const choice = (rng: () => number, min: number, max: number): number => {
-  return Math.floor(rng() * (max - min + 1)) + min;
-};
+// Removed choice function - using direct calculation instead
 
 // Create a smooth radial function using sum of sines with random phases
 const makeRadialFunction = (rng: () => number, baseRadius: number) => {
@@ -95,11 +92,35 @@ export function generateAsteroid(seed?: number, size = 30): AsteroidShape {
   const actualSeed = seed ?? (Date.now() & 0xffffffff);
   const rng = createRNG(actualSeed);
   
-  // Choose number of edges (3-13 lines for variety)
-  const numEdges = choice(rng, 3, 13);
+  // FIXED: Choose number of edges (3-13 lines for variety)
+  // Use better distribution - prefer middle values (6-9) but allow all 3-13
+  const distribution = [
+    3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 
+    8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 11, 11, 12, 12, 13
+  ];
+  const index = Math.floor(rng() * distribution.length);
+  const numEdges = distribution[index] || 7; // Default to 7 if something goes wrong
+  
+  // Extra safety check
+  if (!numEdges || numEdges < 3 || numEdges > 13) {
+    console.error('[ASTEROID] Invalid edge count from distribution:', numEdges, 'index:', index);
+    return generateAsteroid(Date.now(), size); // Retry with new seed
+  }
+  
+  // CRITICAL: Ensure we have at least 3 edges
+  if (numEdges < 3 || numEdges > 13) {
+    console.error('[ASTEROID] Edge count out of range:', numEdges);
+    throw new Error(`Asteroid must have 3-13 edges, got ${numEdges}!`);
+  }
   
   // Generate strictly increasing angles
   const angles = generateAngles(numEdges, rng);
+  
+  // VALIDATION: Check we have enough angles
+  if (angles.length < 3) {
+    console.error('[ASTEROID] Not enough angles generated:', angles.length);
+    throw new Error('Failed to generate enough angles for asteroid!');
+  }
   
   // Create radial function with some size variation
   const baseRadius = size * (0.8 + rng() * 0.4);
@@ -107,6 +128,12 @@ export function generateAsteroid(seed?: number, size = 30): AsteroidShape {
   
   // Convert to vertices (star-shaped polygon, guaranteed no intersections)
   const vertices = polarToVertices(angles, radialFn);
+  
+  // VALIDATION: Check we have enough vertices
+  if (vertices.length < 6) { // At least 3 points = 6 coordinates
+    console.error('[ASTEROID] Not enough vertices:', vertices.length);
+    throw new Error('Failed to generate enough vertices for asteroid!');
+  }
   
   // Calculate roughness for visual texture
   const roughness = calculateRoughness(vertices, rng);
