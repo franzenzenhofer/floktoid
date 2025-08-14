@@ -202,13 +202,11 @@ export class InputManager {
         
         // Add cost indicator and warning if can't afford
         const cost = scoringSystem.calculateAsteroidCost(this.chargeSize);
-        const currentScore = scoringSystem.getScore();
         
-        // Show cost text
+        // Show cost indicator box
         const costColor = canAfford ? VISUALS.COLORS.NEON_CYAN : VISUALS.COLORS.NEON_RED;
-        const costText = canAfford ? `Cost: ${cost}` : `NEED ${cost} (Have ${currentScore})`;
         
-        // Create text style for cost indicator
+        // Create visual indicator for cost
         this.chargeIndicator.rect(
           this.chargeStart.x - 60,
           this.chargeStart.y - asteroidSize - 40,
@@ -218,8 +216,14 @@ export class InputManager {
         this.chargeIndicator.fill({ color: VISUALS.COLORS.BLACK, alpha: 0.7 });
         this.chargeIndicator.stroke({ color: costColor, width: 2 });
         
-        // Note: We can't render text directly in Graphics, but the rect shows the cost zone
-        // The actual cost will be shown in the score display
+        // Show cost amount as small circles indicating magnitude
+        const costIndicatorSize = Math.min(cost / 20, 10);
+        this.chargeIndicator.circle(
+          this.chargeStart.x,
+          this.chargeStart.y - asteroidSize - 27,
+          costIndicatorSize
+        );
+        this.chargeIndicator.fill({ color: costColor, alpha: 0.8 });
       }
       
       // Draw aim line with dotted pattern
