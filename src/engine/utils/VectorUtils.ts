@@ -50,12 +50,31 @@ export class VectorUtils {
   }
   
   /**
+   * Clamp single value to range
+   */
+  static clamp(value: number, min: number, max: number): number {
+    // Handle invalid parameters
+    if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max)) {
+      console.warn('[VectorUtils] Invalid clamp parameters');
+      return Number.isFinite(value) ? value : 0;
+    }
+    
+    // Handle min > max case
+    if (min > max) {
+      console.warn('[VectorUtils] Min greater than max in clamp');
+      return value;
+    }
+    
+    return Math.max(min, Math.min(max, value));
+  }
+
+  /**
    * Clamp vector components to range
    */
-  static clamp(vector: Vector2D, min: number, max: number): Vector2D {
+  static clampVector(vector: Vector2D, min: number, max: number): Vector2D {
     return {
-      x: Math.max(min, Math.min(max, vector.x)),
-      y: Math.max(min, Math.min(max, vector.y))
+      x: this.clamp(vector.x, min, max),
+      y: this.clamp(vector.y, min, max)
     };
   }
   

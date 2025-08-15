@@ -12,6 +12,13 @@ export class CollisionEffects {
   }
 
   /**
+   * Create impact effect (alias for crash lines)
+   */
+  createImpact(x: number, y: number, color: number = 0xff0000) {
+    this.createCrashLines(x, y, color);
+  }
+
+  /**
    * Create crash lines effect when bird is hit
    * Three short lines emanating from collision point showing impact
    */

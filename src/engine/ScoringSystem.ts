@@ -183,6 +183,32 @@ export class ScoringSystem {
     // Return the greater of percentage or minimum
     return Math.max(percentageCost, minCost);
   }
+
+  /**
+   * CRITICAL: Spend points for asteroid launch
+   * Returns true if successful, false if insufficient funds
+   */
+  spendPoints(amount: number): boolean {
+    // Validate input
+    if (!Number.isFinite(amount) || amount < 0) {
+      return false;
+    }
+    
+    // Check if can afford
+    if (this.score < amount) {
+      return false;
+    }
+    
+    // Deduct points
+    this.score -= amount;
+    
+    // Never allow negative score (critical business rule!)
+    if (this.score < 0) {
+      this.score = 0;
+    }
+    
+    return true;
+  }
   
   /**
    * Add points for an event

@@ -6,9 +6,9 @@ describe('Asteroid Consistency Tests', () => {
     it('should generate varied edge counts (not mostly 3-sided)', () => {
       const edgeCounts: Record<number, number> = {};
       
-      // Generate 100 asteroids
+      // Generate 100 asteroids with different seeds
       for (let i = 0; i < 100; i++) {
-        const asteroid = generateAsteroid();
+        const asteroid = generateAsteroid(i * 1000); // Use different seeds
         const numEdges = asteroid.vertices.length / 2;
         edgeCounts[numEdges] = (edgeCounts[numEdges] || 0) + 1;
       }
@@ -32,7 +32,7 @@ describe('Asteroid Consistency Tests', () => {
     
     it('should never generate asteroids with < 3 or > 13 edges', () => {
       for (let i = 0; i < 200; i++) {
-        const asteroid = generateAsteroid();
+        const asteroid = generateAsteroid(i * 500); // Use different seeds
         const numEdges = asteroid.vertices.length / 2;
         expect(numEdges).toBeGreaterThanOrEqual(3);
         expect(numEdges).toBeLessThanOrEqual(13);

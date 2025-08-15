@@ -10,9 +10,9 @@ describe('GameConfig', () => {
 
   it('should have valid progression parameters', () => {
     expect(GameConfig.BIRDS_PER_WAVE).toBeDefined();
-    expect(GameConfig.BIRDS_PER_WAVE[0]).toBe(2);
-    expect(GameConfig.BIRDS_PER_WAVE[1]).toBe(4);
-    expect(GameConfig.BIRDS_PER_WAVE[2]).toBe(8);
+    expect(GameConfig.BIRDS_PER_WAVE[0]).toBe(2);  // Wave 1: 2 birds
+    expect(GameConfig.BIRDS_PER_WAVE[1]).toBe(3);  // Wave 2: 3 birds
+    expect(GameConfig.BIRDS_PER_WAVE[2]).toBe(4);  // Wave 3: 4 birds
     expect(GameConfig.SPEED_GROWTH).toBeGreaterThan(1);
     // SPAWN_BURST is now dynamic based on wave number
   });

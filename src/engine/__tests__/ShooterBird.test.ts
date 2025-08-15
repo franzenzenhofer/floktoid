@@ -14,7 +14,7 @@ describe('ShooterBird', () => {
   
   beforeEach(() => {
     app = new Application();
-    shooterBird = new Boid(app, 100, 100, { x: 0, y: -1 });
+    shooterBird = new Boid(app, 100, 100, 1, { vx: 0, vy: -1 });
     // Force bird to be a shooter
     shooterBird.isShooter = true;
   });
@@ -25,7 +25,7 @@ describe('ShooterBird', () => {
       const numBirds = 1000;
       
       for (let i = 0; i < numBirds; i++) {
-        birds.push(new Boid(app, 100, 100, { x: 0, y: -1 }));
+        birds.push(new Boid(app, 100, 100, 1, { vx: 0, vy: -1 }));
       }
       
       const shooterCount = birds.filter(b => b.isShooter).length;
@@ -39,7 +39,7 @@ describe('ShooterBird', () => {
     });
     
     it('should have enhanced shooting abilities', () => {
-      const normalBird = new Boid(app, 100, 100, { x: 0, y: -1 });
+      const normalBird = new Boid(app, 100, 100, 1, { vx: 0, vy: -1 });
       normalBird.isShooter = false;
       
       expect(shooterBird.shootCooldown).toBeDefined();
@@ -199,7 +199,7 @@ describe('Shooter-Asteroid Collision', () => {
   
   beforeEach(() => {
     app = new Application();
-    shooterBird = new Boid(app, 100, 100, { x: 0, y: -1 });
+    shooterBird = new Boid(app, 100, 100, 1, { vx: 0, vy: -1 });
     shooterBird.isShooter = true;
     asteroid = new Asteroid(app, 200, 200, 0, 0, 40);
     projectile = new BirdProjectile(app, 190, 200, 10, 0);
@@ -230,7 +230,6 @@ describe('Shooter-Asteroid Collision', () => {
     
     it('should remove projectile after collision', () => {
       const projectiles = [projectile];
-      const asteroids = [asteroid];
       
       // Check collision
       const distance = Math.hypot(projectile.x - asteroid.x, projectile.y - asteroid.y);

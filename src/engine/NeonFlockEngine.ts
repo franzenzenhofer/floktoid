@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Boid } from './entities/Boid';
-import { BirdProjectile } from './entities/BirdProjectile';
+import type { BirdProjectile } from './entities/BirdProjectile';
 import { EnergyDot } from './entities/EnergyDot';
 import { Asteroid } from './entities/Asteroid';
 import { AsteroidSplitter } from './systems/AsteroidSplitter';
@@ -10,8 +10,8 @@ import { SuperNavigatorAI } from './systems/SuperNavigatorAI';
 import { InputManager } from './systems/InputManager';
 import { SafeCollisionSystemExtended } from './systems/SafeCollisionSystemExtended';
 import { CollisionDebugger } from './systems/CollisionDebugger';
-import { CollisionEffects } from './effects/CollisionEffects';
 import { ComboEffects } from './effects/ComboEffects';
+import { DevModeDisplay } from './ui/DevModeDisplay';
 import { GameConfig } from './GameConfig';
 import CentralConfig from './CentralConfig';
 import { scoringSystem, ScoringEvent } from './ScoringSystem';
@@ -25,6 +25,7 @@ export class NeonFlockEngine {
   private frameCount = 0;
   
   private boids: Boid[] = [];
+  private projectiles: BirdProjectile[] = [];
   private energyDots: EnergyDot[] = [];
   private asteroids: Asteroid[] = [];
   private fallingDots: Array<{
@@ -47,10 +48,11 @@ export class NeonFlockEngine {
   private flockingSystem!: FlockingSystem;
   private superNavigatorAI!: SuperNavigatorAI;
   private comboEffects!: ComboEffects;
+  private devModeDisplay!: DevModeDisplay;
   private inputManager!: InputManager;
   private collisionSystem!: SafeCollisionSystemExtended;
   private collisionDebugger!: CollisionDebugger;
-  private collisionEffects!: CollisionEffects;
+  private asteroidSplitter!: AsteroidSplitter;
   
   private wave = 1;
   private birdsToSpawn = 0;
@@ -112,8 +114,8 @@ export class NeonFlockEngine {
       this.superNavigatorAI = new SuperNavigatorAI();
       this.collisionSystem = new SafeCollisionSystemExtended(this.app);
       this.comboEffects = new ComboEffects(this.app);
+      this.devModeDisplay = new DevModeDisplay(this.app, this.debug);
       this.collisionDebugger = new CollisionDebugger();
-      this.collisionEffects = new CollisionEffects(this.app);
       this.asteroidSplitter = new AsteroidSplitter(this.app);
       this.inputManager = new InputManager(this.app, this);
       
@@ -222,18 +224,29 @@ export class NeonFlockEngine {
       this.startWave();
       
       // SAFE: Wrap game loop with error recovery
+      let consecutiveErrors = 0;
+      const MAX_CONSECUTIVE_ERRORS = 10;
+      
       const safeGameLoop = (ticker: PIXI.Ticker) => {
         try {
           this.gameLoop(ticker.deltaTime);
+          // Reset error count on successful frame
+          consecutiveErrors = 0;
         } catch (gameLoopError) {
-          console.error('[CRITICAL GAME LOOP ERROR]:', gameLoopError);
+          consecutiveErrors++;
+          console.error(`[GAME LOOP ERROR ${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}]:`, gameLoopError);
           console.error('Stack trace:', (gameLoopError as Error).stack);
           
-          // Try to continue with reduced functionality
-          try {
-            this.onGameOver?.();
-          } catch (gameOverError) {
-            console.error('[GAME OVER ERROR]:', gameOverError);
+          // Only trigger game over after multiple consecutive failures
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            console.error('[CRITICAL] Too many consecutive errors, ending game');
+            try {
+              this.onGameOver?.();
+            } catch (gameOverError) {
+              console.error('[GAME OVER ERROR]:', gameOverError);
+            }
+          } else {
+            console.warn(`[RECOVERY] Attempting to continue (${MAX_CONSECUTIVE_ERRORS - consecutiveErrors} attempts remaining)`);
           }
         }
       };
@@ -342,6 +355,16 @@ export class NeonFlockEngine {
       // Validate the boid is properly initialized
       if (boid && typeof boid.applyForces === 'function' && typeof boid.destroy === 'function') {
         this.boids.push(boid);
+        
+        // Dev mode spawn notifications
+        if (this.devModeDisplay && this.devModeDisplay.isEnabled()) {
+          if (boid.isSuperNavigator) {
+            this.devModeDisplay.addSpawnMessage('super');
+          }
+          if (boid.isShooter) {
+            this.devModeDisplay.addSpawnMessage('shooter');
+          }
+        }
       } else {
         console.error('[SPAWN ERROR] Invalid Boid instance in spawnBird!');
       }
@@ -573,11 +596,12 @@ export class NeonFlockEngine {
         
         // SHOOTER BIRDS - Check if they should shoot!
         if (boid.isShooter && boid.canShoot() && this.asteroids.length > 0) {
+          console.log('[SHOOTER] Attempting to shoot! Asteroids:', this.asteroids.length);
           const projectile = boid.shoot(this.asteroids);
           if (projectile) {
             this.projectiles.push(projectile);
-            // Visual feedback for shooting
-            this.particleSystem.createExplosion(boid.x, boid.y, 0xFF4400, 5);
+            console.log('[SHOOTER] Shot fired! Projectiles:', this.projectiles.length);
+            // NO visual feedback for shooting - laser beam is enough!
           }
         }
         
@@ -755,16 +779,15 @@ export class NeonFlockEngine {
         this.energyDots,
         this.projectiles,
         {
-          onProjectileHit: (projectile, asteroid) => {
+          onProjectileHit: (_projectile, asteroid) => {
             // Split asteroid when hit by projectile
             const fragments = this.asteroidSplitter.split(asteroid);
             
-            // Visual effect for split
+            // Visual effect for split - just explosion, no annoying lines
             this.particleSystem.createExplosion(asteroid.x, asteroid.y, asteroid.hue, 15);
-            this.collisionEffects.createImpact(asteroid.x, asteroid.y, asteroid.size);
             
             // Score for shooting asteroid
-            scoringSystem.addEvent(ScoringEvent.ASTEROID_HIT);
+            scoringSystem.addEvent(ScoringEvent.ASTEROID_SPLIT);
             this.updateScoreDisplay();
             
             return fragments;
@@ -803,8 +826,7 @@ export class NeonFlockEngine {
                 // Note: boid might be destroyed already, so we use captured values
                 this.particleSystem.createExplosion(boidX, boidY, boidHue, 15);
                 this.particleSystem.createBirdExplosion(boidX, boidY, boidHue, 0, 0);
-                // Add crash lines animation showing bird was hit
-                this.collisionEffects.createCrashLines(boidX, boidY, boidHue);
+                // NO annoying crash lines - just the explosions are enough!
               } catch (e) {
                 console.error('[VISUAL EFFECT ERROR]:', e);
               }
@@ -962,9 +984,14 @@ export class NeonFlockEngine {
           }
           
           if (dist < SIZES.BIRD.BASE + SIZES.ENERGY_DOT.RADIUS) {
-            // Bird catches falling dot!
+            // Bird catches falling dot! CRITICAL: Ensure state consistency
             boid.hasDot = true;
             boid.targetDot = dot.originalDot;
+            
+            // CRITICAL FIX: Re-steal the original dot to maintain consistent state
+            // This prevents the locked state bug where dot is neither stolen nor visible
+            dot.originalDot.steal();
+            
             this.particleSystem.createPickup(dot.x, dot.y, dot.originalDot.hue);
             
             // Remove falling dot and trail safely
@@ -1078,6 +1105,11 @@ export class NeonFlockEngine {
     // Update combo effects (screen shake, animations, etc.)
     if (this.comboEffects) {
       this.comboEffects.update(dt);
+    }
+    
+    // Update dev mode display
+    if (this.devModeDisplay) {
+      this.devModeDisplay.update(dt);
     }
     
     // Check wave complete

@@ -22,6 +22,9 @@ export enum BirdPersonality {
   NORMAL = 'normal'           // Standard behavior
 }
 
+// SUPER DRY: Shared spawn chance for special birds
+const SPECIAL_BIRD_CHANCE = 0.1; // 10% chance
+
 export class Boid {
   public x: number;
   public y: number;
@@ -73,11 +76,23 @@ export class Boid {
     this.x = x;
     this.y = y;
     
-    // SUPER NAVIGATOR - 10% chance!
-    this.isSuperNavigator = Math.random() < 0.1;
+    // SUPER DRY: Use EXACT SAME logic for both special types!
+    const superNavigatorRoll = Math.random();
+    const shooterRoll = Math.random();
     
-    // SHOOTER - 10% chance (independent of super navigator)
-    this.isShooter = Math.random() < 0.1;
+    // SUPER NAVIGATOR - 10% chance!
+    this.isSuperNavigator = superNavigatorRoll < SPECIAL_BIRD_CHANCE;
+    
+    // SHOOTER - 10% chance (EXACT SAME LOGIC AS SUPER NAVIGATOR!)
+    this.isShooter = shooterRoll < SPECIAL_BIRD_CHANCE;
+    
+    // Debug logging for verification
+    if (this.isSuperNavigator) {
+      console.log('[SPECIAL BIRD] Super Navigator spawned!');
+    }
+    if (this.isShooter) {
+      console.log('[SPECIAL BIRD] Shooter spawned!');
+    }
     
     // ASSIGN RANDOM PERSONALITY
     const personalities = Object.values(BirdPersonality);
@@ -252,34 +267,29 @@ export class Boid {
     
     clearGraphics(this.sprite);
     
-    // Super Navigator blueish shimmer effect
-    if (this.isSuperNavigator) {
-      const shimmerPhase = Math.sin(this.superShimmerTime * 8) * 0.5 + 0.5;
+    // SUPER DRY: Shared glow effect for special birds!
+    const drawSpecialGlow = (glowTime: number, glowColor: number) => {
+      const shimmerPhase = Math.sin(glowTime * 8) * 0.5 + 0.5;
       const shimmerAlpha = 0.3 + shimmerPhase * 0.3; // Oscillate between 0.3 and 0.6
-      const blueGlowColor = 0x00AAFF; // Bright blue glow
       
-      // Draw outer glow for super navigators
+      // Draw outer glow polygon (SAME FOR BOTH!)
       this.sprite.poly([
         SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER * 1.3, 0,
         -SIZES.BIRD.BASE * 1.3, SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER * 1.3,
         -SIZES.BIRD.BASE * 1.3, -SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER * 1.3
       ]);
-      this.sprite.fill({ color: blueGlowColor, alpha: shimmerAlpha });
+      this.sprite.fill({ color: glowColor, alpha: shimmerAlpha });
+    };
+    
+    // Super Navigator blueish shimmer effect
+    if (this.isSuperNavigator) {
+      drawSpecialGlow(this.superShimmerTime, 0x00AAFF); // Bright blue glow
     }
     
-    // Shooter bird red/orange pulsing glow
+    // Shooter bird red shimmer effect (EXACT SAME AS SUPER NAVIGATOR!)
     if (this.isShooter) {
-      const shooterPhase = Math.sin(this.shooterGlowTime * 6) * 0.5 + 0.5;
-      const shooterAlpha = 0.2 + shooterPhase * 0.4; // Oscillate between 0.2 and 0.6
-      const shooterGlowColor = this.shootCooldown <= 0 ? 0xFF4400 : 0xFF8800; // Red when ready, orange when cooling
-      
-      // Draw targeting reticle effect
-      this.sprite.circle(0, 0, SIZES.BIRD.BASE * 2);
-      this.sprite.stroke({ width: 1, color: shooterGlowColor, alpha: shooterAlpha });
-      
-      // Draw weapon glow at front
-      this.sprite.circle(SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER * 0.8, 0, 3);
-      this.sprite.fill({ color: shooterGlowColor, alpha: shooterAlpha * 2 });
+      drawSpecialGlow(this.shooterGlowTime, 0xFF0000); // Bright red glow
+      // NO clown nose dot - shooters are identified by red glow and stroke only
     }
     
     // Draw triangle with shimmer on outline only
@@ -296,7 +306,7 @@ export class Boid {
     }
     // Shooters get a red-tinted stroke
     if (this.isShooter) {
-      finalStrokeColor = 0xFF6600; // Orange-red stroke
+      finalStrokeColor = 0xFF0000; // BRIGHT RED stroke
     }
     
     this.sprite.stroke({ width: this.hasDot ? VISUALS.STROKE.THICK : VISUALS.STROKE.NORMAL, color: finalStrokeColor, alpha: VISUALS.ALPHA.FULL });
@@ -312,7 +322,7 @@ export class Boid {
   
   public applyForces(forces: { x: number; y: number }, dt: number) {
     // DRY: Use VectorUtils for clamping
-    const clamped = VectorUtils.clamp(forces, -this.maxForce, this.maxForce);
+    const clamped = VectorUtils.clampVector(forces, -this.maxForce, this.maxForce);
     
     this.vx += clamped.x * dt;
     this.vy += clamped.y * dt;
@@ -465,47 +475,30 @@ export class Boid {
   /**
    * Shoot a projectile at the nearest asteroid
    */
-  public shoot(asteroids?: Asteroid[]): BirdProjectile | null {
+  public shoot(_asteroids?: Asteroid[]): BirdProjectile | null {
     // Check if can shoot
     if (!this.isShooter || this.shootCooldown > 0 || !this.alive) {
       return null;
     }
     
-    // Find nearest asteroid if provided
-    let targetX = this.x + this.vx * 10; // Default: shoot in movement direction
-    let targetY = this.y + this.vy * 10;
+    // ALWAYS shoot in the bird's flying direction - like original Asteroids!
+    // No smart targeting, just pure direction shooting
+    const shootRange = 500; // How far ahead to aim
+    const velocity = VectorUtils.normalize({ x: this.vx, y: this.vy });
+    const targetX = this.x + velocity.x * shootRange;
+    const targetY = this.y + velocity.y * shootRange;
     
-    if (asteroids && asteroids.length > 0) {
-      let nearestAsteroid: Asteroid | null = null;
-      let nearestDist = Infinity;
-      
-      for (const asteroid of asteroids) {
-        if (asteroid.destroyed) continue;
-        const dist = VectorUtils.distance(
-          { x: this.x, y: this.y },
-          { x: asteroid.x, y: asteroid.y }
-        );
-        
-        // Only target asteroids within reasonable range
-        if (dist < 300 && dist < nearestDist) {
-          nearestDist = dist;
-          nearestAsteroid = asteroid;
-        }
-      }
-      
-      if (nearestAsteroid) {
-        // Predict where asteroid will be
-        const timeToHit = nearestDist / BirdProjectile.SPEED;
-        targetX = nearestAsteroid.x + nearestAsteroid.vx * timeToHit * 0.5;
-        targetY = nearestAsteroid.y + nearestAsteroid.vy * timeToHit * 0.5;
-      }
-    }
+    // Calculate nose position based on bird direction
+    const noseOffset = SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER;
+    const angle = Math.atan2(this.vy, this.vx);
+    const noseX = this.x + Math.cos(angle) * noseOffset;
+    const noseY = this.y + Math.sin(angle) * noseOffset;
     
-    // Create projectile
+    // Create projectile from nose position
     const projectile = BirdProjectile.createAimed(
       this.app,
-      this.x,
-      this.y,
+      noseX,
+      noseY,
       targetX,
       targetY
     );

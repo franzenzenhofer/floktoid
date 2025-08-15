@@ -1,6 +1,6 @@
 /**
- * AsteroidSplitter - Handles splitting asteroids into smaller fragments
- * DRY, modular system for asteroid fragmentation
+ * AsteroidSplitter - EXACT recreation of original Asteroids (1979) splitting mechanics
+ * Based on authentic Atari arcade behavior: Large→2Medium→2Small→Destroyed
  */
 
 import * as PIXI from 'pixi.js';
@@ -9,52 +9,92 @@ import CentralConfig from '../CentralConfig';
 
 const { SIZES } = CentralConfig;
 
+// Original Asteroids size categories (in our game units)
+export enum AsteroidSize {
+  LARGE = 'LARGE',
+  MEDIUM = 'MEDIUM', 
+  SMALL = 'SMALL'
+}
+
 export class AsteroidSplitter {
   private app: PIXI.Application;
   
-  // Split configuration
-  private static readonly FRAGMENT_COUNT = 4;
-  private static readonly SIZE_REDUCTION_FACTOR = 0.5; // Each fragment is 50% of parent size
-  private static readonly SPEED_MULTIPLIER = 1.5; // Fragments move faster
-  private static readonly SPREAD_ANGLE = Math.PI * 2 / AsteroidSplitter.FRAGMENT_COUNT;
-  private static readonly MIN_FRAGMENT_SIZE = SIZES.ASTEROID.MIN;
+  // Original Asteroids constants
+  private static readonly MAX_ASTEROIDS = 26; // Original game limit
+  private static readonly FRAGMENT_COUNT = 2; // Always splits into 2 pieces
+  
+  // Size definitions (based on original Asteroids ratios)
+  private static readonly SIZE_LARGE = 40;   // Large asteroid
+  private static readonly SIZE_MEDIUM = 20;  // Medium = half of large
+  private static readonly SIZE_SMALL = 10;   // Small = half of medium
   
   constructor(app: PIXI.Application) {
     this.app = app;
   }
   
   /**
-   * Split an asteroid into smaller fragments
-   * Returns empty array if asteroid is too small to split
+   * Get asteroid size category based on its current size
    */
-  public split(asteroid: Asteroid): Asteroid[] {
-    // Check if asteroid is large enough to split
-    const fragmentSize = asteroid.size * AsteroidSplitter.SIZE_REDUCTION_FACTOR;
+  private getAsteroidCategory(size: number): AsteroidSize {
+    if (size >= AsteroidSplitter.SIZE_LARGE * 0.8) return AsteroidSize.LARGE;
+    if (size >= AsteroidSplitter.SIZE_MEDIUM * 0.8) return AsteroidSize.MEDIUM;
+    return AsteroidSize.SMALL;
+  }
+  
+  /**
+   * Split an asteroid exactly like original Asteroids (1979)
+   * Large → 2 Medium, Medium → 2 Small, Small → Destroyed
+   */
+  public split(asteroid: Asteroid, currentAsteroidCount: number = 0): Asteroid[] {
+    const category = this.getAsteroidCategory(asteroid.size);
     
-    if (fragmentSize < AsteroidSplitter.MIN_FRAGMENT_SIZE) {
-      // Too small to split, just destroy
+    // Small asteroids are destroyed completely (no split)
+    if (category === AsteroidSize.SMALL) {
+      console.log('[ASTEROIDS] Small asteroid destroyed - no split');
       return [];
     }
     
-    const fragments: Asteroid[] = [];
-    const parentShape = asteroid.getShapeData();
-    const baseSpeed = Math.hypot(asteroid.vx, asteroid.vy) || 50;
+    // Check asteroid limit (original Asteroids feature)
+    const wouldExceedLimit = currentAsteroidCount + 1 >= AsteroidSplitter.MAX_ASTEROIDS;
+    const fragmentCount = wouldExceedLimit ? 1 : AsteroidSplitter.FRAGMENT_COUNT;
     
-    // Create fragments in different directions
-    for (let i = 0; i < AsteroidSplitter.FRAGMENT_COUNT; i++) {
-      const angle = i * AsteroidSplitter.SPREAD_ANGLE + Math.random() * 0.5 - 0.25;
+    if (wouldExceedLimit) {
+      console.log(`[ASTEROIDS] Near limit (${currentAsteroidCount}/${AsteroidSplitter.MAX_ASTEROIDS}) - creating 1 fragment instead of 2`);
+    }
+    
+    // Determine fragment size
+    let fragmentSize: number;
+    if (category === AsteroidSize.LARGE) {
+      fragmentSize = AsteroidSplitter.SIZE_MEDIUM;
+    } else { // MEDIUM
+      fragmentSize = AsteroidSplitter.SIZE_SMALL;
+    }
+    
+    const fragments: Asteroid[] = [];
+    const parentMomentum = { x: asteroid.vx * asteroid.size, y: asteroid.vy * asteroid.size };
+    const parentShape = asteroid.getShapeData();
+    
+    // Create fragments with conservation of momentum + randomness
+    for (let i = 0; i < fragmentCount; i++) {
+      // Original Asteroids: "fragments flying in seemingly random directions"
+      const randomAngle = Math.random() * Math.PI * 2;
+      const baseSpeed = Math.hypot(asteroid.vx, asteroid.vy);
       
-      // Calculate fragment velocity
-      const speed = baseSpeed * AsteroidSplitter.SPEED_MULTIPLIER * (0.8 + Math.random() * 0.4);
-      const vx = Math.cos(angle) * speed + asteroid.vx * 0.3; // Inherit some parent velocity
-      const vy = Math.sin(angle) * speed + asteroid.vy * 0.3;
+      // Conservation of momentum with realistic variation
+      const momentumFactor = 0.7; // Some momentum is "lost" in the break
+      const randomFactor = 0.5 + Math.random(); // 0.5 to 1.5x speed variation
       
-      // Slightly randomize position to prevent overlap
-      const offsetDist = fragmentSize * 0.5;
-      const fragmentX = asteroid.x + Math.cos(angle) * offsetDist;
-      const fragmentY = asteroid.y + Math.sin(angle) * offsetDist;
+      const speed = (baseSpeed * momentumFactor + Math.random() * 30) * randomFactor;
+      const vx = Math.cos(randomAngle) * speed;
+      const vy = Math.sin(randomAngle) * speed;
       
-      // Create fragment with similar shape but scaled down
+      // Fragment position (slightly offset to prevent overlap)
+      const offsetDistance = fragmentSize * 0.7;
+      const offsetAngle = (i / fragmentCount) * Math.PI * 2 + Math.random() * 0.5;
+      const fragmentX = asteroid.x + Math.cos(offsetAngle) * offsetDistance;
+      const fragmentY = asteroid.y + Math.sin(offsetAngle) * offsetDistance;
+      
+      // Create fragment using same DRY Asteroid constructor
       const fragment = new Asteroid(
         this.app,
         fragmentX,
@@ -62,102 +102,40 @@ export class AsteroidSplitter {
         vx,
         vy,
         fragmentSize,
-        this.mutateShape(parentShape, fragmentSize),
-        asteroid.hue + (Math.random() * 30 - 15) // Slight hue variation
+        this.mutateShape(parentShape, fragmentSize / asteroid.size),
+        asteroid.hue + (Math.random() * 20 - 10) // Slight color variation
       );
       
       fragments.push(fragment);
+      console.log(`[ASTEROIDS] Created ${category}→fragment: size ${fragmentSize}, speed ${speed.toFixed(1)}`);
     }
     
     return fragments;
   }
   
   /**
-   * Split multiple asteroids at once
+   * Mutate asteroid shape for fragment (same logic as before)
    */
-  public splitMultiple(asteroids: Asteroid[]): Asteroid[] {
-    const allFragments: Asteroid[] = [];
-    
-    for (const asteroid of asteroids) {
-      const fragments = this.split(asteroid);
-      allFragments.push(...fragments);
-    }
-    
-    return allFragments;
+  private mutateShape(originalShape: number[], scaleFactor: number): number[] {
+    return originalShape.map((point, index) => {
+      const scaled = point * scaleFactor;
+      // Add slight variation to make fragments look different
+      const variation = 1 + (Math.random() - 0.5) * 0.2; // ±10% variation
+      return scaled * variation;
+    });
   }
   
   /**
-   * Create a chain reaction split (for special effects)
+   * Check if we're near the asteroid limit
    */
-  public chainSplit(
-    asteroid: Asteroid,
-    depth: number = 1,
-    maxDepth: number = 2
-  ): Asteroid[] {
-    if (depth > maxDepth) return [];
-    
-    const fragments = this.split(asteroid);
-    const allFragments = [...fragments];
-    
-    // Recursively split some fragments
-    if (depth < maxDepth) {
-      const numToSplit = Math.min(2, fragments.length);
-      for (let i = 0; i < numToSplit; i++) {
-        const subFragments = this.chainSplit(fragments[i], depth + 1, maxDepth);
-        allFragments.push(...subFragments);
-      }
-    }
-    
-    return allFragments;
+  public static isNearLimit(count: number): boolean {
+    return count >= AsteroidSplitter.MAX_ASTEROIDS - 2;
   }
   
   /**
-   * Mutate parent shape for variation in fragments
+   * Get the maximum asteroid count (for game logic)
    */
-  private mutateShape(
-    parentShape: { vertices: number[], roughness: number[] },
-    size: number
-  ): { vertices: number[], roughness: number[] } {
-    const vertices = [...parentShape.vertices];
-    const roughness = [...parentShape.roughness];
-    
-    // Apply small random mutations
-    for (let i = 0; i < vertices.length; i += 2) {
-      vertices[i] = vertices[i] * (0.9 + Math.random() * 0.2); // X
-      vertices[i + 1] = vertices[i + 1] * (0.9 + Math.random() * 0.2); // Y
-    }
-    
-    // Scale to new size
-    const scaleFactor = size / SIZES.ASTEROID.BASE;
-    for (let i = 0; i < vertices.length; i++) {
-      vertices[i] *= scaleFactor;
-    }
-    
-    return { vertices, roughness };
-  }
-  
-  /**
-   * Check if an asteroid can be split
-   */
-  public canSplit(asteroid: Asteroid): boolean {
-    const fragmentSize = asteroid.size * AsteroidSplitter.SIZE_REDUCTION_FACTOR;
-    return fragmentSize >= AsteroidSplitter.MIN_FRAGMENT_SIZE;
-  }
-  
-  /**
-   * Get fragment info without creating them (for preview/planning)
-   */
-  public getFragmentInfo(asteroid: Asteroid): {
-    count: number;
-    size: number;
-    canSplit: boolean;
-  } {
-    const fragmentSize = asteroid.size * AsteroidSplitter.SIZE_REDUCTION_FACTOR;
-    
-    return {
-      count: this.canSplit(asteroid) ? AsteroidSplitter.FRAGMENT_COUNT : 0,
-      size: fragmentSize,
-      canSplit: this.canSplit(asteroid)
-    };
+  public static getMaxAsteroids(): number {
+    return AsteroidSplitter.MAX_ASTEROIDS;
   }
 }

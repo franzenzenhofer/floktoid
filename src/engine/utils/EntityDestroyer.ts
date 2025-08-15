@@ -19,7 +19,7 @@ export function safeDestroySprite(sprite: DestroyableSprite | null | undefined, 
     // Remove from parent if it has one
     if (sprite.parent) {
       sprite.parent.removeChild(sprite);
-    } else if (parent && parent.children.includes(sprite)) {
+    } else if (parent && parent.children && parent.children.includes(sprite)) {
       parent.removeChild(sprite);
     }
     

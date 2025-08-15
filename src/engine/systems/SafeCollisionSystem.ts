@@ -7,7 +7,6 @@ import { Boid } from '../entities/Boid';
 import { BirdProjectile } from '../entities/BirdProjectile';
 import { Asteroid } from '../entities/Asteroid';
 import { EnergyDot } from '../entities/EnergyDot';
-import { AsteroidSplitter } from './AsteroidSplitter';
 import { GameConfig } from '../GameConfig';
 import * as PIXI from 'pixi.js';
 
@@ -22,12 +21,8 @@ export class SafeCollisionSystem {
   private maxChecksPerFrame = 1000; // Limit checks to prevent freeze
   private collisionPairs: CollisionPair[] = [];
   private frameCounter = 0;
-  private asteroidSplitter: AsteroidSplitter | null = null;
-  
-  constructor(app?: PIXI.Application) {
-    if (app) {
-      this.asteroidSplitter = new AsteroidSplitter(app);
-    }
+  constructor(_app?: PIXI.Application) {
+    // Constructor available for future asteroid splitter integration
   }
   
   /**

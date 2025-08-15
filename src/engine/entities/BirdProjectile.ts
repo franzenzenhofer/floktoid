@@ -5,9 +5,7 @@
 
 import * as PIXI from 'pixi.js';
 import { EntityDestroyer } from '../utils/EntityDestroyer';
-import CentralConfig from '../CentralConfig';
-
-const { COLORS } = CentralConfig;
+import { VISUALS } from '../CentralConfig';
 
 export class BirdProjectile {
   public x: number;
@@ -28,7 +26,6 @@ export class BirdProjectile {
   public static readonly BASE_SIZE = 4;
   public static readonly SPEED = 400; // pixels per second
   public static readonly MAX_LIFETIME = 2; // seconds
-  private static readonly GLOW_SIZE_MULTIPLIER = 2.5;
   
   constructor(
     app: PIXI.Application,
@@ -59,28 +56,38 @@ export class BirdProjectile {
   }
   
   /**
-   * Draw the projectile with neon glow effect
+   * Draw laser beam like original Asteroids game
    */
   private draw(): void {
     const alpha = Math.max(0, 1 - (this.lifetime / this.maxLifetime));
     
-    // Main projectile - bright cyan energy ball
-    this.sprite.clear();
-    this.sprite.circle(0, 0, this.size);
-    this.sprite.fill({ color: COLORS.NEON.CYAN, alpha });
-    this.sprite.stroke({ width: 1, color: 0xFFFFFF, alpha: alpha * 0.8 });
+    // Calculate laser beam length based on velocity (faster = longer beam)
+    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    const beamLength = Math.max(8, speed * 0.05); // Minimum 8px, scales with speed
     
-    // Glow effect
+    // Main laser beam - thin bright cyan line
+    this.sprite.clear();
+    this.sprite.moveTo(-beamLength / 2, 0);
+    this.sprite.lineTo(beamLength / 2, 0);
+    this.sprite.stroke({ width: 2, color: VISUALS.COLORS.NEON_CYAN, alpha });
+    
+    // Inner core - even brighter white
+    this.sprite.moveTo(-beamLength / 2, 0);
+    this.sprite.lineTo(beamLength / 2, 0);
+    this.sprite.stroke({ width: 1, color: 0xFFFFFF, alpha: alpha * 0.9 });
+    
+    // Glow effect - wider, dimmer lines
     this.glowSprite.clear();
-    const glowSize = this.size * BirdProjectile.GLOW_SIZE_MULTIPLIER;
-    const pulseScale = 1 + Math.sin(this.pulseTime * 10) * 0.1;
+    const pulseScale = 1 + Math.sin(this.pulseTime * 15) * 0.2; // Faster pulse
+    const glowLength = beamLength * pulseScale;
     
     // Multiple glow layers for intensity
     for (let i = 3; i > 0; i--) {
-      const layerSize = glowSize * pulseScale * (i / 3);
-      const layerAlpha = alpha * 0.2 * (1 / i);
-      this.glowSprite.circle(0, 0, layerSize);
-      this.glowSprite.fill({ color: COLORS.NEON.CYAN, alpha: layerAlpha });
+      const layerWidth = (2 + i * 2);
+      const layerAlpha = alpha * 0.15 * (1 / i);
+      this.glowSprite.moveTo(-glowLength / 2, 0);
+      this.glowSprite.lineTo(glowLength / 2, 0);
+      this.glowSprite.stroke({ width: layerWidth, color: VISUALS.COLORS.NEON_CYAN, alpha: layerAlpha });
     }
   }
   
@@ -103,11 +110,14 @@ export class BirdProjectile {
       return false;
     }
     
-    // Update sprite positions
+    // Update sprite positions and rotation to align laser beam
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    this.sprite.rotation = Math.atan2(this.vy, this.vx);
+    
     this.glowSprite.x = this.x;
     this.glowSprite.y = this.y;
+    this.glowSprite.rotation = Math.atan2(this.vy, this.vx);
     
     // Redraw with updated alpha
     this.draw();

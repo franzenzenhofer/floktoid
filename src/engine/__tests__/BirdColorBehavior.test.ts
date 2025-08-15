@@ -7,13 +7,16 @@ describe('Bird Color Behavior', () => {
   let app: PIXI.Application;
   let boid: Boid;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     app = new PIXI.Application();
-    await app.init({
-      width: 800,
-      height: 600,
-      background: '#000000'
+    // Mock necessary properties for tests (no actual rendering needed)
+    Object.defineProperty(app, 'screen', {
+      value: { width: 800, height: 600 },
+      writable: false,
+      configurable: true
     });
+    (app as any).stage = { addChild: () => {}, removeChild: () => {} };
+    (app as any).canvas = document.createElement('canvas');
   });
 
   describe('Color Change on Dot Pickup', () => {

@@ -23,9 +23,14 @@ describe('Asteroid Color Consistency', () => {
       currentTime = 1000 + chargeTime;
       const releaseHue = (currentTime / 10) % 360;
       
-      // The asteroid should use release hue, NOT start hue
+      // The asteroid should use release hue
       expect(releaseHue).toBe(expectedHue);
-      expect(releaseHue).not.toBe(startHue);
+      
+      // Only expect different hue if charge time doesn't result in a full cycle
+      const fullCycle = 3600; // 360 degrees * 10ms per degree
+      if (chargeTime > 0 && chargeTime % fullCycle !== 0) {
+        expect(releaseHue).not.toBe(startHue);
+      }
       
       console.log(`Charge ${chargeTime}ms: Start hue=${startHue}, Release hue=${releaseHue}`);
     });

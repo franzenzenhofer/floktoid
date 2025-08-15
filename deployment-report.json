@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-08-15T11:16:41.371Z",
-  "duration": "113.00s",
+  "timestamp": "2025-08-15T13:31:05.952Z",
+  "duration": "127.13s",
   "deployment": {
-    "id": "2e4dcf40-06f9-4d89-9a84-ac83dc1f5a7a",
+    "id": "31ee12a5-8cc5-4f05-8874-ce01508a8ea2",
     "url": "https://floktoid.franzai.com",
-    "timestamp": "2025-08-15T11:16:14.012Z"
+    "timestamp": "2025-08-15T13:30:40.287Z"
   },
   "url": "https://floktoid.franzai.com",
   "checks": {
@@ -25,12 +25,12 @@
     },
     "build": {
       "success": true,
-      "size": "760K"
+      "size": "776K"
     },
     "deployment": {
-      "id": "2e4dcf40-06f9-4d89-9a84-ac83dc1f5a7a",
+      "id": "31ee12a5-8cc5-4f05-8874-ce01508a8ea2",
       "url": "https://floktoid.franzai.com",
-      "timestamp": "2025-08-15T11:16:14.012Z"
+      "timestamp": "2025-08-15T13:30:40.287Z"
     },
     "verification": {
       "http": {
@@ -40,27 +40,27 @@
           "alt-svc": "h3=\":443\"; ma=86400",
           "cache-control": "public, max-age=0, must-revalidate",
           "cf-cache-status": "HIT",
-          "cf-ray": "96f847556eda1c2a-FRA",
+          "cf-ray": "96f90c43be37d3b1-FRA",
           "connection": "keep-alive",
           "content-encoding": "br",
           "content-type": "text/html",
-          "date": "Fri, 15 Aug 2025 11:16:14 GMT",
+          "date": "Fri, 15 Aug 2025 13:30:40 GMT",
           "nel": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}",
-          "report-to": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=uI1hvkFXBgT9tHpi%2BZsWtxugDRWSGjaCphGCgE95S%2BgNRqHHMJoIg8yXpUgbjBPpff2Np73%2FiJd3iWsiwmz0vUuF43i2slNf0XhW%2BZ2h2CMDHNzoZhhDVBdWXvZsly6Sf%2Bo95TWIfHsxco8Ql9rxsJ4H4A%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+          "report-to": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=UXLvuXQygLq6UbVvjFql%2FkVE1RpAfuyEucfO3%2Fivy%2BcisO24KcT6MAmkbg3hpTdJtnLGhqHI5QQDKMIV7GTIb%2FH48IOW4pufLvL%2BbDhfrtIVIulaCCUTwWPHHx3avAuHkm03Ztix5wN9iEV7Vo0WgUU%2BAQ%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
           "server": "cloudflare",
-          "server-timing": "cfL4;desc=\"?proto=TCP&rtt=5416&min_rtt=5346&rtt_var=2054&sent=3&recv=5&lost=0&retrans=0&sent_bytes=219&recv_bytes=865&delivery_rate=252151&cwnd=250&unsent_bytes=0&cid=0471b6ae85589750&ts=65&x=0\"",
+          "server-timing": "cfL4;desc=\"?proto=TCP&rtt=5414&min_rtt=5386&rtt_var=2039&sent=3&recv=5&lost=0&retrans=0&sent_bytes=219&recv_bytes=865&delivery_rate=250278&cwnd=250&unsent_bytes=0&cid=5151de8402eb6d1e&ts=56&x=0\"",
           "speculation-rules": "\"/cdn-cgi/speculation\"",
           "transfer-encoding": "chunked",
           "vary": "Accept-Encoding"
         }
       },
       "performance": {
-        "loadTime": 1757,
+        "loadTime": 1724,
         "metrics": {
-          "firstPaint": 344,
-          "firstContentfulPaint": 1268,
-          "domContentLoaded": 1132,
-          "loadComplete": 1133
+          "firstPaint": 408,
+          "firstContentfulPaint": 1200,
+          "domContentLoaded": 1051,
+          "loadComplete": 1052
         },
         "consoleErrors": []
       },

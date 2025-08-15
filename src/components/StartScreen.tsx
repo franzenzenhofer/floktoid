@@ -10,12 +10,16 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-4">
       <div className="text-center space-y-4 md:space-y-8 max-w-lg">
         <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-2">
-          <span className="neon-text">NEON</span>{' '}
-          <span className="neon-pink">FLOCK</span>
+          <span className="neon-text">FLOCK</span>
+          <span className="neon-pink">DROID</span>
         </h1>
         
         <div className="text-sm sm:text-lg md:text-xl neon-yellow pulse-neon">
-          DEFEND YOUR ENERGY CORES
+          What if... the Asteroids were the good guys?
+        </div>
+        
+        <div className="text-xs sm:text-sm md:text-base text-gray-300 max-w-md">
+          Protecting the precious energy dots from the evil spaceships? This is this game.
         </div>
         
         <div className="space-y-2 md:space-y-4 text-gray-400">

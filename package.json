@@ -1,7 +1,7 @@
 {
   "name": "floktoid",
-  "version": "2.12.0",
-  "description": "NEON FLOCK - A high-octane flocking bird defense game with neon aesthetics",
+  "version": "2.29.0",
+  "description": "FLOCKDROID - What if the Asteroids were the good guys? Defend energy dots from evil spaceships!",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:worker\"",
@@ -10,9 +10,8 @@
     "prebuild": "npm run lint && npm run typecheck",
     "build": "vite build && npm run build:worker",
     "build:worker": "echo 'Worker uses static assets from dist/'",
-    "predeploy": "npm run version:bump:minor && npm run build",
+    "predeploy": "npm run version:bump:minor && npm run prebuild",
     "deploy": "node scripts/deploy-ultimate.js",
-    "deploy:quick": "wrangler deploy",
     "deploy:test": "node scripts/post-deploy-verification.js",
     "deploy:preview": "wrangler deploy --env preview",
     "tail": "wrangler tail",

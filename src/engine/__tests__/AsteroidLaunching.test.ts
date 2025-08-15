@@ -36,7 +36,7 @@ describe('Asteroid Launching', () => {
       const dx = 100;
       const dy = 0; // Horizontal
       const angle = Math.atan2(-dy, Math.abs(dx)) * (180 / Math.PI);
-      expect(angle).toBe(0); // 0 degrees horizontal
+      expect(Math.abs(angle)).toBe(0); // 0 degrees horizontal (handle -0 vs +0)
     });
 
     it('should calculate angle correctly for steep shots', () => {
