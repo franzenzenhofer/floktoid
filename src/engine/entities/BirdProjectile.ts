@@ -164,9 +164,11 @@ export class BirdProjectile {
       return new BirdProjectile(app, sourceX, sourceY, 0, -BirdProjectile.SPEED);
     }
     
-    // Normalize and apply speed
-    const vx = (dx / distance) * BirdProjectile.SPEED;
-    const vy = (dy / distance) * BirdProjectile.SPEED;
+    // Normalize and apply speed with RANDOM VARIABILITY (±20%)
+    const speedVariability = 0.8 + Math.random() * 0.4;  // 0.8 to 1.2
+    const actualSpeed = BirdProjectile.SPEED * speedVariability;
+    const vx = (dx / distance) * actualSpeed;
+    const vy = (dy / distance) * actualSpeed;
     
     return new BirdProjectile(app, sourceX, sourceY, vx, vy);
   }

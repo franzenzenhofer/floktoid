@@ -190,8 +190,8 @@ export const SIZES = {
     MIN: 10,
     MAX: 50,
     DEFAULT: 25,
-    CHARGE_GROWTH_RATE: 20,
-    MAX_CHARGE_SIZE: 60,
+    CHARGE_GROWTH_RATE: 35,  // FASTER growing when charging (was 20)
+    MAX_CHARGE_SIZE: 75,     // BIGGER asteroids allowed (was 60)
     SHRINK_ON_HIT_MULTIPLIER: 0.8,
     DESTROY_THRESHOLD: 10,
   },

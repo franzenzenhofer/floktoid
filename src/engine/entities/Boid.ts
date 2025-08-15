@@ -110,11 +110,11 @@ export class Boid {
     
     // SHOOTERS GET DIFFERENT ABILITIES!
     if (this.isShooter) {
-      this.personalityWeights.speedModifier *= 0.9;  // Slightly slower (focused on aiming)
+      this.personalityWeights.speedModifier *= 0.8;  // 20% slower than wave (was 0.9)
       this.personalityWeights.avoidance *= 1.3;      // Better at staying alive to shoot
-      this.maxShootCooldown = 45;                    // Faster shooting if also super navigator
+      this.maxShootCooldown = 75;                    // MORE delay between shots (was 45)
       if (this.isSuperNavigator) {
-        this.maxShootCooldown = 30;                  // Elite shooters fire faster!
+        this.maxShootCooldown = 60;                  // Elite shooters still slower (was 30)
       }
     }
     
@@ -503,8 +503,9 @@ export class Boid {
       targetY
     );
     
-    // Set cooldown
-    this.shootCooldown = this.maxShootCooldown;
+    // Set cooldown with RANDOM VARIABILITY (±30%)
+    const variability = 0.7 + Math.random() * 0.6;  // 0.7 to 1.3
+    this.shootCooldown = this.maxShootCooldown * variability;
     
     return projectile;
   }
