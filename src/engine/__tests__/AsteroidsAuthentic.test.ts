@@ -220,7 +220,7 @@ describe('AUTHENTIC ASTEROIDS SPLITTING MECHANICS', () => {
       expect(asteroid.y).toBe(400);
       
       // Access sprite via reflection for testing (normally private)
-      const sprite = (asteroid as unknown as { sprite: unknown }).sprite;
+      const sprite = (asteroid as unknown as { sprite: { x: number; y: number } }).sprite;
       expect(sprite).toBeDefined();
       
       // CRITICAL TEST: Sprite should be at asteroid position, NOT at (0,0)!

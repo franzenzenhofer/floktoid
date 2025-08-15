@@ -61,7 +61,7 @@ describe('Shooter Rotation', () => {
   describe('Rotation smoothing', () => {
     it('should rotate shooters more slowly than normal birds', () => {
       // Create a shooter
-      const shooter = new Boid(mockApp, 100, 100, 1);
+      const shooter = new Boid(mockApp as any, 100, 100, 1);
       shooter.isShooter = true;
       
       // Set initial rotation to 0
@@ -77,7 +77,7 @@ describe('Shooter Rotation', () => {
       expect(shooterRotation1).toBeLessThan(0.1); // Should be close to 0 still
       
       // Create a normal bird for comparison
-      const normalBird = new Boid(mockApp, 100, 100, 1);
+      const normalBird = new Boid(mockApp as any, 100, 100, 1);
       normalBird.isShooter = false;
       normalBird.sprite.rotation = 0;
       normalBird.vx = 10;
@@ -90,7 +90,7 @@ describe('Shooter Rotation', () => {
     });
     
     it('should gradually rotate shooter towards target angle', () => {
-      const shooter = new Boid(mockApp, 100, 100, 1);
+      const shooter = new Boid(mockApp as any, 100, 100, 1);
       shooter.isShooter = true;
       
       // Start facing right (0 radians)
@@ -124,7 +124,7 @@ describe('Shooter Rotation', () => {
     });
     
     it('should handle angle wrapping correctly', () => {
-      const shooter = new Boid(mockApp, 100, 100, 1);
+      const shooter = new Boid(mockApp as any, 100, 100, 1);
       shooter.isShooter = true;
       
       // Start at almost 2π (facing right)
@@ -148,7 +148,7 @@ describe('Shooter Rotation', () => {
     });
     
     it('should use rotation speed of 0.15 for lerping', () => {
-      const shooter = new Boid(mockApp, 100, 100, 1);
+      const shooter = new Boid(mockApp as any, 100, 100, 1);
       shooter.isShooter = true;
       
       // Start at 0
@@ -168,7 +168,7 @@ describe('Shooter Rotation', () => {
   
   describe('Normal bird rotation', () => {
     it('should rotate instantly for non-shooters', () => {
-      const bird = new Boid(mockApp, 100, 100, 1);
+      const bird = new Boid(mockApp as any, 100, 100, 1);
       bird.isShooter = false;
       
       // Test multiple angle changes
