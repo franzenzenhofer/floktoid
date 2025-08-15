@@ -43,7 +43,7 @@ export function StandaloneLeaderboard() {
   };
   
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-start p-4">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-start p-4 overflow-y-auto">
       <div className="w-full max-w-4xl space-y-6">
         {/* Header */}
         <div className="text-center space-y-2 mt-8">

@@ -28,8 +28,19 @@ vi.mock('pixi.js', () => ({
   }))
 }));
 
+interface MockApp {
+  stage: {
+    addChild: ReturnType<typeof vi.fn>;
+    removeChild: ReturnType<typeof vi.fn>;
+  };
+  screen: {
+    width: number;
+    height: number;
+  };
+}
+
 describe('Shooter Rotation', () => {
-  let mockApp: any;
+  let mockApp: MockApp;
   
   beforeEach(() => {
     // Create a proper mock app with stage

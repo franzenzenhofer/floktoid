@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 
-const https = require('https');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+import https from 'https';
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const BASE_URL = process.env.DEPLOY_URL || 'https://floktoid.franzai.com';
 const IS_LOCAL = BASE_URL.includes('localhost') || BASE_URL.includes('127.0.0.1');

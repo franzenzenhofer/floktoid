@@ -23,7 +23,7 @@
     "test:post-deploy": "node scripts/post-deploy-tests.js",
     "test:ai": "node scripts/ai-powered-testing.js",
     "test:all": "npm run test:coverage && npm run test:e2e && npm run test:game && npm run test:ai",
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --max-warnings 33",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --max-warnings 0",
     "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
