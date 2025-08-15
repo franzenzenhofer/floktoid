@@ -252,7 +252,8 @@ export class CollisionManager {
           
           // Create fragments if callback provided
           if (callbacks.onProjectileHit && this.asteroidSplitter) {
-            const fragments = this.asteroidSplitter.split(asteroid);
+            // AUTHENTIC: Pass current count for 26 asteroid limit
+            const fragments = this.asteroidSplitter.split(asteroid, asteroids.length);
             newAsteroids.push(...fragments);
             
             // Queue visual effect

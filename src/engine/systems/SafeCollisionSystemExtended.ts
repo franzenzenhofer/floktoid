@@ -67,9 +67,9 @@ export class SafeCollisionSystemExtended extends SafeCollisionSystem {
             callbacks.onProjectileHit(proj, ast);
           }
           
-          // Split asteroid
+          // Split asteroid (AUTHENTIC: Pass current count for 26 asteroid limit)
           if (this.asteroidSplitter) {
-            const fragments = this.asteroidSplitter.split(ast);
+            const fragments = this.asteroidSplitter.split(ast, asteroids.length);
             newAsteroids.push(...fragments);
           }
           

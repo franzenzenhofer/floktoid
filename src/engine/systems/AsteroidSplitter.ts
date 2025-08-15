@@ -5,9 +5,7 @@
 
 import * as PIXI from 'pixi.js';
 import { Asteroid } from '../entities/Asteroid';
-import CentralConfig from '../CentralConfig';
-
-const { SIZES } = CentralConfig;
+// Original Asteroids size categories
 
 // Original Asteroids size categories (in our game units)
 export enum AsteroidSize {
@@ -71,7 +69,6 @@ export class AsteroidSplitter {
     }
     
     const fragments: Asteroid[] = [];
-    const parentMomentum = { x: asteroid.vx * asteroid.size, y: asteroid.vy * asteroid.size };
     const parentShape = asteroid.getShapeData();
     
     // Create fragments with conservation of momentum + randomness
@@ -102,7 +99,10 @@ export class AsteroidSplitter {
         vx,
         vy,
         fragmentSize,
-        this.mutateShape(parentShape, fragmentSize / asteroid.size),
+        {
+          vertices: this.mutateShape(parentShape.vertices, fragmentSize / asteroid.size),
+          roughness: parentShape.roughness // Keep same roughness pattern
+        },
         asteroid.hue + (Math.random() * 20 - 10) // Slight color variation
       );
       
@@ -117,7 +117,7 @@ export class AsteroidSplitter {
    * Mutate asteroid shape for fragment (same logic as before)
    */
   private mutateShape(originalShape: number[], scaleFactor: number): number[] {
-    return originalShape.map((point, index) => {
+    return originalShape.map((point) => {
       const scaled = point * scaleFactor;
       // Add slight variation to make fragments look different
       const variation = 1 + (Math.random() - 0.5) * 0.2; // ±10% variation
