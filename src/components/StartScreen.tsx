@@ -69,7 +69,6 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
         
         
         <div className="text-xs sm:text-sm text-gray-600 mt-4 md:mt-8 space-y-1">
-          <div>Built with TypeScript + Pixi.js + Vite</div>
           <div className="text-cyan-400 font-mono">{VERSION_INFO.displayVersion}</div>
           <button 
             onClick={() => onStart(true)} 
