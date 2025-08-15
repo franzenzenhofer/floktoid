@@ -252,7 +252,7 @@ GEMINI_API_KEY=your-key-here  # For AI testing (optional)
 
 Created by Franz Enzenhofer
 
-Inspired by the original Asteroids (1979) by Atari
+100% developed via Claude Code - Code directed by Franz Enzenhofer
 
 Built with:
 - [Pixi.js](https://pixijs.com) - 2D WebGL renderer
