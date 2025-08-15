@@ -71,12 +71,23 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
         
         <div className="text-xs sm:text-sm text-gray-600 mt-4 md:mt-8 space-y-1">
           <div className="text-cyan-400 font-mono">{VERSION_INFO.displayVersion}</div>
-          <button 
-            onClick={() => onStart(true)} 
-            className="text-gray-700 hover:text-gray-500 text-xs underline"
-          >
-            dev
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button 
+              onClick={() => onStart(true)} 
+              className="text-gray-700 hover:text-gray-500 text-xs underline"
+            >
+              dev
+            </button>
+            <span className="text-gray-700">|</span>
+            <a 
+              href="https://github.com/franzenzenhofer/floktoid" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-600 hover:text-cyan-400 text-xs underline transition-colors"
+            >
+              GitHub
+            </a>
+          </div>
         </div>
       </div>
     </div>

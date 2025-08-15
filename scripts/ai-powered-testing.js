@@ -305,7 +305,7 @@ async function analyzeScreenshotsWithAI(screenshots) {
   console.log(`\n${colors.magenta}🤖 AI SCREENSHOT ANALYSIS${colors.reset}`);
   console.log(`${colors.cyan}${'='.repeat(50)}${colors.reset}`);
   
-  const geminiApiKey = 'YOUR_GEMINI_API_KEY_HERE';
+  const geminiApiKey = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE';
   
   for (const screenshot of screenshots) {
     try {

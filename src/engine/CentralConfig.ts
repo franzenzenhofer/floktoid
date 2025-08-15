@@ -308,8 +308,8 @@ export const ASTEROID_GEN = {
     VARIATION: 0.1,
   },
   ROTATION: {
-    MIN_SPEED: -0.05,
-    MAX_SPEED: 0.05,
+    MIN_SPEED: -0.5,   // Increased 10x for visible spin
+    MAX_SPEED: 0.5,    // Some clockwise, some counter-clockwise
   },
 } as const;
 

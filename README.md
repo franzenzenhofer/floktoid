@@ -1,442 +1,275 @@
-# 🎮 Color Me Same - Progressive Puzzle Game
+# FLOKTOID - Reverse Asteroids Defense Game
 
-A challenging and addictive puzzle game where you make all tiles the same color, featuring a revolutionary level progression system, mathematical puzzle generation, and comprehensive difficulty scaling.
+![Version](https://img.shields.io/badge/version-2.49.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
+![Pixi.js](https://img.shields.io/badge/Pixi.js-8.12-ff69b4)
+![React](https://img.shields.io/badge/React-18.3-61dafb)
 
-<img src="https://img.shields.io/badge/version-1.21.1-blue.svg" alt="Version" />
-<img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License" />
-<img src="https://img.shields.io/badge/deployment-Cloudflare_Workers-orange.svg" alt="Deployment" />
+**Play Now:** [floktoid.franzai.com](https://floktoid.franzai.com)
 
-**🎯 Play Now**: [https://color-me-same.franzai.com](https://color-me-same.franzai.com)
+## What if the Asteroids were the good guys?
 
-## 🎮 Game Features
+FLOKTOID flips the classic Asteroids game on its head. You defend energy dots from an evil flock of spaceships using asteroids as your weapons. Built with TypeScript, React, and Pixi.js for blazing-fast performance on any device.
 
-- **70+ Progressive Levels**: From beginner-friendly 3x3 to master-level 20x20 grids
-- **100% Solvable Puzzles**: Mathematical generation guarantees every puzzle can be solved
-- **Belt Progression System**: Advance from White to Black belt as you master the game
-- **Dynamic Difficulty**: Automatic progression through Easy → Medium → Hard modes
-- **Undo/Reset System**: Strategic gameplay with difficulty-appropriate undo limits
-- **Responsive Design**: Fully playable on all devices from mobile to desktop
-- **Hint System**: Smart hints that guide you along the optimal path
-- **XP & Achievements**: Track your progress and unlock rewards
+## Features
 
-## 📈 Level Progression System
+- **Reversed Gameplay**: Launch asteroids to destroy evil spaceships
+- **Smart AI Flocking**: Birds use Craig Reynolds' boids algorithm with advanced behaviors
+- **Special Enemy Types**: 
+  - Regular birds that steal energy
+  - Shooters that fire lasers at your asteroids
+  - Super navigators with enhanced pathfinding
+  - Boss birds with extreme health
+- **Scoring System**:
+  - 40 points for regular birds
+  - 80 points for shooters (2x)
+  - 80 points for super navigators (2x)
+  - 120 points for birds carrying energy dots (3x)
+  - Combo multipliers up to 3x
+- **Global Leaderboard**: Compete with players worldwide (24h and all-time)
+- **Authentic Asteroids Physics**: Realistic splitting mechanics from the 1979 original
+- **Stunning Visuals**: Neon cyberpunk aesthetic with particle effects
+- **Mobile Optimized**: Touch controls and 60 FPS performance
 
-### 🟢 Easy Mode (Levels 1-10)
-- **Grid Size**: 3x3 throughout
-- **Colors**: 3
-- **Starting Moves**: 2 clicks from solved state
-- **Progression**: Gradually increases to 8 moves
-- **Time Limit**: None - Play at your own pace
-- **Undos**: Unlimited - Perfect for learning
-- **Hints**: Auto-enabled on level 1
+## Quick Start
 
-### 🟡 Medium Mode (Levels 11-20)
-- **Grid Size**: 6x6 throughout
-- **Colors**: 4
-- **Starting Moves**: 4 clicks from solved state (challenging!)
-- **Progression**: Increases to 14 moves
-- **Time Limit**: 5 minutes per puzzle
-- **Undos**: 5 per puzzle
-- **Hints**: Auto-enabled on level 11
-
-### 🔴 Hard Mode (Levels 21+)
-- **Grid Size**: Progressive scaling
-  - Levels 21-30: 10x10
-  - Levels 31-40: 12x12
-  - Levels 41-50: 14x14
-  - Levels 51-60: 16x16
-  - Levels 61-70: 18x18
-  - Levels 71+: 20x20
-- **Colors**: 4+ (increases every 20 levels)
-- **Starting Moves**: 5 clicks from solved state (very challenging!)
-- **Progression**: Aggressive difficulty scaling
-- **Time Limit**: 3 minutes per puzzle
-- **Undos**: Only 1 per puzzle
-- **Hints**: Auto-enabled on level 21
-
-### 🥋 Belt Progression
-Progress through martial arts-inspired belts as you master the game:
-
-| Belt | Level Required | XP Required | Achievement |
-|------|----------------|-------------|-------------|
-| ⚪ White | 1 | 0 | Starting Belt |
-| 🟡 Yellow | 3+ | 500 | Novice Player |
-| 🟠 Orange | 6+ | 1,500 | Getting Good |
-| 🟢 Green | 11+ | 3,000 | Medium Master |
-| 🔵 Blue | 21+ | 5,000 | Hard Mode Hero |
-| 🟣 Purple | 30+ | 8,000 | Puzzle Expert |
-| ⚫ Black | 50+ | 15,000 | True Master |
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- Cloudflare account
-- Wrangler CLI (`npm install -g wrangler`)
+### Play Online
+Visit [floktoid.franzai.com](https://floktoid.franzai.com)
 
 ### Local Development
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/color-me-same.git
-cd color-me-same
+git clone https://github.com/franzenzenhofer/floktoid.git
+cd floktoid
 
 # Install dependencies
 npm install
 
-# Authenticate with Cloudflare
-wrangler login
-
 # Start development server
 npm run dev
+
+# Open http://localhost:3000
 ```
 
-Visit `http://localhost:8787` to play locally.
+## Game Controls
 
-### Deployment
+- **Click & Hold**: Charge an asteroid (size increases with hold time)
+- **Drag**: Aim the trajectory
+- **Release**: Launch the asteroid
+- **Dev Mode**: Press 'D' to toggle (skip waves, spawn boss)
 
-1. **Create KV Namespace**:
+## Technology Stack
+
+- **Game Engine**: Pixi.js 8.12 (WebGL rendering)
+- **UI Framework**: React 18.3 with TypeScript
+- **Build Tool**: Vite 5.0
+- **Deployment**: Cloudflare Workers + KV Storage
+- **Testing**: Vitest + Playwright
+- **Styling**: Tailwind CSS
+
+## Architecture
+
+```
+src/
+├── engine/                 # Pixi.js game engine
+│   ├── NeonFlockEngine.ts # Core game loop
+│   ├── entities/          # Game objects
+│   │   ├── Boid.ts       # Flocking spaceship AI
+│   │   ├── Asteroid.ts   # Player projectiles
+│   │   └── EnergyDot.ts  # Collectible targets
+│   ├── systems/          # Game systems
+│   │   ├── FlockingSystem.ts
+│   │   ├── CollisionSystem.ts
+│   │   ├── ParticleSystem.ts
+│   │   └── ScoringSystem.ts
+│   └── CentralConfig.ts  # Game configuration
+├── components/           # React UI components
+│   ├── GameUI.tsx       # HUD overlay
+│   ├── StartScreen.tsx  # Main menu
+│   └── Leaderboard.tsx  # Score display
+└── worker.js            # Cloudflare Worker API
+
+```
+
+## Development
+
+### Commands
+
 ```bash
-wrangler kv:namespace create "GAME_STATE"
-wrangler kv:namespace create "GAME_STATE" --preview
+npm run dev              # Start dev server
+npm run build           # Build production bundle
+npm run test            # Run unit tests
+npm run test:e2e        # Run Playwright E2E tests
+npm run lint            # ESLint (zero warnings policy)
+npm run typecheck       # TypeScript strict checking
+npm run deploy          # Deploy to Cloudflare (auto version bump)
 ```
 
-2. **Update wrangler.toml** with your KV namespace IDs:
+### Testing
+
+The project maintains high testing standards:
+- Unit tests with Vitest (80%+ coverage target)
+- E2E tests with Playwright
+- AI-powered visual testing
+- Post-deployment verification
+
+### Code Quality
+
+- TypeScript strict mode
+- ESLint with zero warnings policy
+- Prettier formatting
+- Atomic git commits
+- Comprehensive test coverage
+
+## Game Design
+
+### Flocking Algorithm
+
+The evil spaceships use an advanced implementation of Craig Reynolds' boids algorithm:
+
+1. **Separation**: Avoid crowding neighbors
+2. **Alignment**: Steer towards average heading
+3. **Cohesion**: Steer towards average position
+4. **Target Seeking**: Navigate to energy dots
+5. **Obstacle Avoidance**: Dodge asteroids
+6. **Energy Theft**: Steal and carry dots
+
+### Difficulty Progression
+
+- Exponential bird count increase (1.15x per wave)
+- Gradual speed increase (1.03x per wave)
+- Special enemy introduction at higher waves
+- Boss battles every 10 waves
+
+### Performance Optimizations
+
+- Object pooling for particles
+- Efficient spatial queries for collision detection
+- WebGL batch rendering via Pixi.js
+- Minimal React re-renders
+- 60 FPS target on mobile devices
+
+## Deployment
+
+The game is deployed on Cloudflare Workers for global edge performance:
+
 ```toml
+# wrangler.toml
+name = "floktoid"
+main = "src/worker.js"
+compatibility_date = "2024-01-01"
+
+[assets]
+directory = "./dist"
+
 [[kv_namespaces]]
-binding = "GAME_STATE"
+binding = "LEADERBOARD"
 id = "your-kv-namespace-id"
-preview_id = "your-preview-kv-namespace-id"
+
+[[routes]]
+pattern = "floktoid.franzai.com/*"
+zone_name = "franzai.com"
 ```
 
-3. **Deploy to Cloudflare**:
+### Deploy Process
+
 ```bash
-# Production deployment
+# Automatic deployment with tests and version bump
 npm run deploy
 
-# Preview deployment
-npm run deploy:preview
+# Manual deployment
+npm run build
+wrangler deploy
 ```
 
-## 🏗️ Architecture
+## API Endpoints
 
-### Tech Stack
-- **Frontend**: React 18 with TypeScript
-- **State Management**: React Context + useReducer
-- **Styling**: Tailwind CSS with custom design system
-- **Animations**: Framer Motion for smooth transitions
-- **Build Tool**: Vite with optimized production builds
-- **Deployment**: Cloudflare Workers with edge computing
-- **Package Manager**: npm with strict dependency management
+The Cloudflare Worker provides:
 
-### Core Components
+- `POST /api/leaderboard/submit` - Submit score
+- `GET /api/leaderboard/top` - Get top scores (24h and all-time)
 
-#### 🎮 Game Engine (`/src/utils/`)
-- **Grid System**: Pure functional grid manipulation
-- **Puzzle Generator**: Reverse-move algorithm for 100% solvability
-- **Hint System**: BFS-based optimal path calculation
-- **Score Engine**: Multi-factor scoring with efficiency tracking
+## Contributing
 
-#### 🧩 React Components (`/src/components/`)
-- **GameBoard**: Responsive grid with dynamic tile sizing
-- **Tile**: Interactive tiles with animation states
-- **StatusBar**: Real-time game stats and controls
-- **PowerUps**: Undo/Reset/Hint functionality
-- **VictoryModal**: Achievement and progression display
-
-#### 🔄 State Management (`/src/context/`)
-- **GameContext**: Centralized game state with reducer pattern
-- **Actions**: Type-safe action dispatch system
-- **Persistence**: Local storage for progress tracking
-
-#### 🎨 Design System
-- **Colors**: Carefully selected accessible palette
-- **Typography**: Mono font for consistency
-- **Spacing**: 8px grid system
-- **Animations**: 200ms transitions for smooth UX
-
-### Mathematical Foundation
-The puzzle generation uses a **reverse-move algorithm** that guarantees 100% solvability:
-
-1. Start with solved state (all tiles same color)
-2. Apply N reverse moves (subtract color instead of add)
-3. The scrambled state can always be solved in exactly N moves
-4. No BFS verification needed - solvability is mathematical certainty
-
-For detailed mathematical proof, see [Solvability Mathematics](./solvability-mathematics.md)
-
-## 🎯 Game Rules
-
-1. **Objective**: Make all tiles the same color
-2. **Clicking**: Changes tile and adjacent tiles (cross pattern)
-3. **Power Tiles** (⚡): Affect 3x3 area
-4. **Locked Tiles** (🔒): Cannot be clicked, unlock over time
-5. **Optimal Play**: Try to match the BFS solution move count
-
-## 🛠️ Development
-
-### Getting Started
-
-1. **Clone and Install**:
-```bash
-git clone https://github.com/yourusername/color-me-same.git
-cd color-me-same
-npm install
-```
-
-2. **Environment Setup**:
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Configure Cloudflare
-wrangler login
-```
-
-3. **Development Server**:
-```bash
-# Start local dev server (hot reload enabled)
-npm run dev
-
-# Open http://localhost:8787
-```
-
-### Code Standards
-
-#### TypeScript Guidelines
-- **Strict mode enabled** - No implicit any
-- **Functional programming** - Pure functions preferred
-- **Type safety** - Explicit types for all exports
-- **No magic numbers** - Use constants
-
-#### React Best Practices
-- **Functional components** - No class components
-- **Custom hooks** - Extract complex logic
-- **Memoization** - Use React.memo for expensive renders
-- **Error boundaries** - Graceful error handling
-
-#### Testing Strategy
-
-```bash
-# Unit tests (Vitest)
-npm test
-
-# E2E tests (Playwright)
-npm run test:e2e
-
-# Coverage report
-npm run test:coverage
-
-# Watch mode
-npm test -- --watch
-```
-
-#### Code Quality Tools
-
-```bash
-# ESLint - Code linting
-npm run lint
-npm run lint:fix
-
-# Prettier - Code formatting
-npm run format
-
-# TypeScript - Type checking
-npm run typecheck
-
-# Bundle analysis
-npm run analyze
-```
-
-### Performance Optimization
-
-#### Build Optimization
-- **Tree shaking** - Remove unused code
-- **Code splitting** - Lazy load components
-- **Asset optimization** - Compress images/fonts
-- **Minification** - Production builds optimized
-
-#### Runtime Performance
-- **Virtual DOM optimization** - Minimize re-renders
-- **Web Workers** - Offload heavy computation
-- **Request caching** - Cache API responses
-- **Progressive enhancement** - Core functionality first
-
-### Debugging
-
-```bash
-# Enable debug logs
-DEBUG=true npm run dev
-
-# Production debugging
-wrangler tail
-
-# Browser DevTools
-# Use React Developer Tools extension
-```
-
-### Git Workflow
-
-```bash
-# Feature branch
-git checkout -b feature/amazing-feature
-
-# Commit with conventional commits
-git commit -m "feat: add amazing feature"
-
-# Push and create PR
-git push origin feature/amazing-feature
-```
-
-#### Commit Convention
-- `feat:` New features
-- `fix:` Bug fixes
-- `docs:` Documentation changes
-- `style:` Code style changes
-- `refactor:` Code refactoring
-- `test:` Test additions/changes
-- `chore:` Build/tooling changes
-
-## 📦 Project Structure
-
-```
-color-me-same/
-├── src/
-│   ├── components/          # React components
-│   │   ├── board/          # GameBoard, Tile components
-│   │   ├── controls/       # StatusBar, PowerUps, Navigation
-│   │   ├── feedback/       # VictoryModal, achievements
-│   │   └── layout/         # PageShell, responsive containers
-│   ├── context/            # State management
-│   │   └── GameContext.tsx # Global game state & reducer
-│   ├── hooks/              # Custom React hooks
-│   │   ├── useGenerator.ts # Puzzle generation logic
-│   │   ├── useGame.ts      # Game state hook
-│   │   └── useTimer.ts     # Game timer management
-│   ├── utils/              # Core game utilities
-│   │   ├── grid.ts         # Grid manipulation functions
-│   │   ├── gridV2.ts       # Pure functional grid operations
-│   │   ├── score.ts        # Score calculation
-│   │   └── logger.ts       # Debug logging system
-│   ├── constants/          # Game configuration
-│   │   └── gameConfig.ts   # Difficulties, colors, belts
-│   ├── styles/             # CSS modules
-│   ├── App.tsx             # Main app component
-│   ├── index.tsx           # React entry point
-│   └── worker.ts           # Cloudflare Worker entry
-├── public/                 # Static assets
-│   └── favicon.png         # Game icon
-├── docs/                   # Documentation
-│   ├── API.md              # API reference
-│   ├── DEPLOYMENT_BEST_PRACTICES.md
-│   └── IMPLEMENTATION_ROADMAP.md
-├── scripts/                # Build & deployment
-│   ├── bump-version.js     # Version management
-│   └── deploy-cloudflare.sh # Deployment automation
-├── tests/                  # Test suites
-│   └── playwright/         # E2E tests
-├── wrangler.toml           # Cloudflare config
-├── vite.config.ts          # Vite build config
-├── tsconfig.json           # TypeScript config
-├── tailwind.config.js      # Tailwind CSS config
-└── package.json            # Dependencies & scripts
-```
-
-## 🌐 Custom Domain Setup
-
-1. Add custom route in `wrangler.toml`:
-```toml
-[[routes]]
-pattern = "color-me-same.yourdomain.com/*"
-zone_name = "yourdomain.com"
-```
-
-2. Deploy and configure DNS in Cloudflare dashboard
-
-## 🔧 Environment Variables
-
-Set in `wrangler.toml` or dashboard:
-
-```toml
-[vars]
-ENVIRONMENT = "production"
-SENTRY_DSN = "your-sentry-dsn"
-POSTHOG_API_KEY = "your-posthog-key"
-```
-
-## 📈 Analytics Integration
-
-The game tracks:
-- Player retention (D1, D7, D30)
-- Average session length
-- Puzzle completion rates
-- Power-up usage patterns
-- Device and browser stats
-
-## 🤝 Contributing
+We welcome contributions! Please:
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+2. Create a feature branch
+3. Make your changes with tests
+4. Ensure zero ESLint warnings
+5. Submit a pull request
 
-## 📄 License
+### Development Guidelines
 
-MIT License - see LICENSE file for details
+- Write TypeScript with no `any` types
+- Add tests for new features
+- Follow existing code patterns
+- Test on mobile devices
+- Keep performance in mind
 
-## 🎮 Play Now
+## Environment Variables
 
-- **Production**: https://color-me-same.franzai.com
-- **Preview**: https://preview.color-me-same.pages.dev
+For local development, create a `.env` file:
 
-## 🐛 Known Issues
+```env
+# Optional: Add your own API keys
+GEMINI_API_KEY=your-key-here  # For AI testing (optional)
+```
 
-- Mobile haptic feedback requires HTTPS
-- WebSocket connections limited to 1000 concurrent
-- KV storage has 1MB value limit
+## Performance Metrics
 
-## 📚 Documentation
+- Load time: <3 seconds
+- Time to Interactive: <2 seconds
+- 60 FPS on modern mobile devices
+- <100MB memory usage
+- Support for 100+ simultaneous entities
 
-### Core Documentation
-- **[README.md](./README.md)** - This file, main project documentation
-- **[SUMMARY.md](./SUMMARY.md)** - Project overview and key features
-- **[solvability-mathematics.md](./solvability-mathematics.md)** - Mathematical proof of 100% puzzle solvability
-- **[CHANGELOG-v1.19.0.md](./CHANGELOG-v1.19.0.md)** - Version history and updates
+## Browser Support
 
-### Development Guides
-- **[docs/API.md](./docs/API.md)** - Complete API reference
-- **[docs/IMPLEMENTATION_ROADMAP.md](./docs/IMPLEMENTATION_ROADMAP.md)** - Development roadmap and planning
-- **[docs/DEPLOYMENT_BEST_PRACTICES.md](./docs/DEPLOYMENT_BEST_PRACTICES.md)** - Production deployment guide
-- **[MIGRATION_PLAN.md](./MIGRATION_PLAN.md)** - Migration strategies for updates
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
+- Mobile Chrome/Safari
 
-### Technical Analysis
-- **[UI-ANALYSIS-REPORT.md](./UI-ANALYSIS-REPORT.md)** - UI/UX analysis and improvements
-- **[UI-ISSUES-ANALYSIS.md](./UI-ISSUES-ANALYSIS.md)** - Known UI issues and fixes
-- **[solveable-readme-md.md](./solveable-readme-md.md)** - Alternative solvability documentation
+## Known Issues
 
-## 🚀 Roadmap
+- Audio not yet implemented
+- Multiplayer mode planned but not available
+- Leaderboard requires JavaScript enabled
 
-### Version 2.0 Features
-- [ ] **Multiplayer Mode**: Real-time competitive puzzles
-- [ ] **Level Editor**: Create and share custom puzzles
-- [ ] **Tournament System**: Weekly competitions with prizes
-- [ ] **Mobile Apps**: Native iOS/Android apps
-- [ ] **AI Opponent**: Play against intelligent bots
-- [ ] **Custom Themes**: Dark mode, colorblind modes
-- [ ] **Achievement System**: 50+ achievements to unlock
-- [ ] **Daily Challenges**: New puzzle every day
-- [ ] **Replay System**: Watch and share game replays
-- [ ] **Global Leaderboards**: Compete worldwide
+## Future Roadmap
 
-### Technical Improvements
-- [ ] **WebAssembly**: Performance-critical paths in WASM
-- [ ] **PWA Support**: Offline play capability
-- [ ] **WebGL Renderer**: GPU-accelerated animations
-- [ ] **Social Integration**: Share progress on social media
-- [ ] **Analytics Dashboard**: Player statistics and insights
+- [ ] Sound effects and music
+- [ ] Power-up system
+- [ ] Achievements system
+- [ ] More enemy types
+- [ ] Multiplayer mode
+- [ ] Mobile app versions
+
+## Credits
+
+Created by Franz Enzenhofer
+
+Inspired by the original Asteroids (1979) by Atari
+
+Built with:
+- [Pixi.js](https://pixijs.com) - 2D WebGL renderer
+- [React](https://react.dev) - UI framework
+- [Cloudflare Workers](https://workers.cloudflare.com) - Edge computing
+- [Vite](https://vitejs.dev) - Build tool
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details
+
+## Support
+
+- Report issues: [GitHub Issues](https://github.com/franzenzenhofer/floktoid/issues)
+- Game URL: [floktoid.franzai.com](https://floktoid.franzai.com)
+- Leaderboard: [floktoid.franzai.com/leaderboard](https://floktoid.franzai.com/leaderboard)
 
 ---
 
-Built with ❤️ using React, TypeScript, and Cloudflare Workers
+**Remember**: In FLOKTOID, the asteroids are the heroes!

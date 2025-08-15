@@ -845,8 +845,21 @@ export class NeonFlockEngine {
               boid.hasDot = false;
             }
             
-            // Check if bird had energy for bonus points (do this sync too)
-            const event = hadDot ? ScoringEvent.BIRD_WITH_ENERGY_HIT : ScoringEvent.BIRD_HIT;
+            // Check what type of bird was hit for appropriate scoring
+            let event: ScoringEvent;
+            if (hadDot) {
+              // Triple points for birds with stolen energy dots
+              event = ScoringEvent.BIRD_WITH_ENERGY_HIT;
+            } else if (boid.isShooter) {
+              // Double points for shooters
+              event = ScoringEvent.SHOOTER_HIT;
+            } else if (boid.isSuperNavigator) {
+              // Double points for super navigators
+              event = ScoringEvent.SUPER_NAVIGATOR_HIT;
+            } else {
+              // Regular bird hit
+              event = ScoringEvent.BIRD_HIT;
+            }
             scoringSystem.addEvent(event);
             this.updateScoreDisplay();
             

@@ -20,6 +20,8 @@ export enum ScoringEvent {
   // REWARDS (Positive)
   BIRD_HIT = 'BIRD_HIT',
   BIRD_WITH_ENERGY_HIT = 'BIRD_WITH_ENERGY_HIT',
+  SHOOTER_HIT = 'SHOOTER_HIT',              // New: Shooter bird double points
+  SUPER_NAVIGATOR_HIT = 'SUPER_NAVIGATOR_HIT', // New: Super navigator double points
   BOSS_HIT = 'BOSS_HIT',
   BOSS_DEFEATED = 'BOSS_DEFEATED',
   ENERGY_DOT_RECLAIMED = 'ENERGY_DOT_RECLAIMED',
@@ -61,7 +63,9 @@ export const POINT_VALUES = {
   // BASIC REWARDS
   REWARDS: {
     BIRD_HIT: 40,                 // Basic bird hit - BASELINE as requested
-    BIRD_WITH_ENERGY_HIT: 60,     // Bird carrying energy dot (50% bonus)
+    BIRD_WITH_ENERGY_HIT: 120,    // Bird carrying energy dot (TRIPLE points)
+    SHOOTER_HIT: 80,              // Shooter bird (DOUBLE points)
+    SUPER_NAVIGATOR_HIT: 80,      // Super navigator bird (DOUBLE points)
     BOSS_HIT: 50,                 // Hitting boss bird
     BOSS_DEFEATED: 200,           // Defeating boss
     ENERGY_DOT_RECLAIMED: 80,     // Getting stolen dot back
@@ -241,6 +245,18 @@ export class ScoringSystem {
         
       case ScoringEvent.BIRD_WITH_ENERGY_HIT:
         points = POINT_VALUES.REWARDS.BIRD_WITH_ENERGY_HIT;
+        this.statistics.totalBirdsHit++;
+        this.incrementCombo();
+        break;
+        
+      case ScoringEvent.SHOOTER_HIT:
+        points = POINT_VALUES.REWARDS.SHOOTER_HIT;
+        this.statistics.totalBirdsHit++;
+        this.incrementCombo();
+        break;
+        
+      case ScoringEvent.SUPER_NAVIGATOR_HIT:
+        points = POINT_VALUES.REWARDS.SUPER_NAVIGATOR_HIT;
         this.statistics.totalBirdsHit++;
         this.incrementCombo();
         break;

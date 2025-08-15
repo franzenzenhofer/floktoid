@@ -42,7 +42,13 @@ export class Asteroid {
     this.baseSize = size;
     // CRITICAL FIX: Use provided hue to match what user saw during charging!
     this.hue = hue !== undefined ? hue : Math.random() * 360;
-    this.rotSpeed = ASTEROID_GEN.ROTATION.MIN_SPEED + Math.random() * (ASTEROID_GEN.ROTATION.MAX_SPEED - ASTEROID_GEN.ROTATION.MIN_SPEED);
+    // Random rotation speed between min and max, with more variation
+    const range = ASTEROID_GEN.ROTATION.MAX_SPEED - ASTEROID_GEN.ROTATION.MIN_SPEED;
+    this.rotSpeed = ASTEROID_GEN.ROTATION.MIN_SPEED + Math.random() * range;
+    // Add slight bias: 60% chance of slower rotation for realism
+    if (Math.random() < 0.6) {
+      this.rotSpeed *= 0.5; // Make some asteroids rotate more slowly
+    }
     
     this.sprite = new PIXI.Graphics();
     this.sprite.x = this.x;  // FIX: Initialize sprite position immediately
