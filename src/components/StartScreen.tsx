@@ -24,13 +24,13 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
         
         <div className="space-y-2 md:space-y-4 text-gray-400">
           <p className="text-sm sm:text-base md:text-lg">
-            🎯 Click and drag to launch asteroids
+            • Click and drag to launch asteroids
           </p>
           <p className="text-sm sm:text-base md:text-lg">
-            ⚡ Stop the flock from stealing energy
+            • Stop the flock from stealing energy
           </p>
           <p className="text-sm sm:text-base md:text-lg">
-            🌟 Survive increasingly intense waves
+            • Survive increasingly intense waves
           </p>
         </div>
         
@@ -47,16 +47,16 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
           START GAME
         </button>
         
-        <button
-          onClick={() => onStart(true)}
-          className="px-6 sm:px-10 py-2 sm:py-3 text-base sm:text-lg md:text-xl font-bold bg-transparent border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,0,0.5)]"
-        >
-          START IN DEV MODE
-        </button>
         
         <div className="text-xs sm:text-sm text-gray-600 mt-4 md:mt-8 space-y-1">
           <div>Built with TypeScript + Pixi.js + Vite</div>
           <div className="text-cyan-400 font-mono">{VERSION_INFO.displayVersion}</div>
+          <button 
+            onClick={() => onStart(true)} 
+            className="text-gray-700 hover:text-gray-500 text-xs underline"
+          >
+            dev
+          </button>
         </div>
       </div>
     </div>
