@@ -66,6 +66,9 @@ export class EnergyDot {
   
   public steal() {
     this.stolen = true;
+    // CRITICAL FIX: Clear graphics to prevent zombie dots
+    clearGraphics(this.sprite);
+    clearGraphics(this.glowSprite);
     this.sprite.visible = false;
     this.glowSprite.visible = false;
   }
@@ -74,6 +77,8 @@ export class EnergyDot {
     this.stolen = false;
     this.sprite.visible = true;
     this.glowSprite.visible = true;
+    // CRITICAL FIX: Immediately redraw to prevent zombie state
+    this.draw();
   }
   
   public destroy() {
