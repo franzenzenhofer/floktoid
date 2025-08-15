@@ -45,6 +45,8 @@ export class Asteroid {
     this.rotSpeed = ASTEROID_GEN.ROTATION.MIN_SPEED + Math.random() * (ASTEROID_GEN.ROTATION.MAX_SPEED - ASTEROID_GEN.ROTATION.MIN_SPEED);
     
     this.sprite = new PIXI.Graphics();
+    this.sprite.x = this.x;  // FIX: Initialize sprite position immediately
+    this.sprite.y = this.y;  // FIX: No more ghost asteroids at (0,0)
     app.stage.addChild(this.sprite);
     
     // Use provided shape or generate new one

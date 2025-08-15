@@ -207,6 +207,58 @@ describe('AUTHENTIC ASTEROIDS SPLITTING MECHANICS', () => {
     });
   });
 
+  describe('CRITICAL: Sprite Position Bug Fix', () => {
+    it('should initialize sprite at correct position immediately (NO GHOST AT 0,0)', () => {
+      const vertices = [10, 0, 8, 6, -8, 6, -10, 0, -8, -6, 8, -6];
+      const shapeData = { vertices, roughness: [1, 1, 1, 1, 1, 1] };
+      
+      // Create asteroid at specific position
+      const asteroid = new Asteroid(app, 300, 400, 10, 10, 40, shapeData, 180);
+      
+      // Check internal position is correct
+      expect(asteroid.x).toBe(300);
+      expect(asteroid.y).toBe(400);
+      
+      // Access sprite via reflection for testing (normally private)
+      const sprite = (asteroid as any).sprite;
+      expect(sprite).toBeDefined();
+      
+      // CRITICAL TEST: Sprite should be at asteroid position, NOT at (0,0)!
+      expect(sprite.x).toBe(300); // Should NOT be 0!
+      expect(sprite.y).toBe(400); // Should NOT be 0!
+      
+      console.log('✅ CRITICAL: No ghost asteroids at (0,0) - sprite positioned correctly!');
+    });
+    
+    it('should position fragment sprites correctly when splitting', () => {
+      const vertices = [10, 0, 8, 6, -8, 6, -10, 0, -8, -6, 8, -6];
+      const shapeData = { vertices, roughness: [1, 1, 1, 1, 1, 1] };
+      
+      // Create parent asteroid
+      const parent = new Asteroid(app, 500, 300, 20, 20, 40, shapeData, 180);
+      
+      // Split it
+      const fragments = splitter.split(parent, 5);
+      expect(fragments.length).toBe(2);
+      
+      // EVERY fragment sprite should be positioned correctly IMMEDIATELY
+      fragments.forEach((fragment, i) => {
+        const sprite = (fragment as any).sprite;
+        expect(sprite).toBeDefined();
+        
+        // Sprite should NEVER be at origin (0,0)
+        expect(sprite.x).not.toBe(0);
+        expect(sprite.y).not.toBe(0);
+        
+        // Sprite should match fragment position
+        expect(sprite.x).toBe(fragment.x);
+        expect(sprite.y).toBe(fragment.y);
+        
+        console.log(`✅ Fragment ${i}: sprite at (${sprite.x.toFixed(1)}, ${sprite.y.toFixed(1)}) matches position`);
+      });
+    });
+  });
+
   describe('CRITICAL: Memory Management & Performance', () => {
     it('should not leak memory during rapid splitting', () => {
       const initialMemory = process.memoryUsage().heapUsed;
