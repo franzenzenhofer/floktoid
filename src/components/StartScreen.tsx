@@ -6,10 +6,10 @@ import { leaderboardService, type LeaderboardEntry } from '../services/Leaderboa
 interface StartScreenProps {
   onStart: (devMode?: boolean) => void;
   highScore: number;
-  onShowLeaderboard: () => void;
+  onShowLeaderboard?: () => void;
 }
 
-export function StartScreen({ onStart, highScore, onShowLeaderboard }: StartScreenProps) {
+export function StartScreen({ onStart, highScore }: StartScreenProps) {
   const [username] = useState(() => UsernameGenerator.getSessionUsername());
   const [topPlayer, setTopPlayer] = useState<LeaderboardEntry | null>(null);
   
