@@ -639,6 +639,12 @@ export class NeonFlockEngine {
           if (dist < FLOCKING.RADIUS.FALLING_DOT_CATCH && !boid.hasDot) {
             // Bird catches the falling dot!
             boid.hasDot = true;
+            boid.targetDot = fallingDot.originalDot; // CRITICAL: Set the target dot!
+            
+            // CRITICAL: Ensure original dot stays stolen (it should already be)
+            if (!fallingDot.originalDot.stolen) {
+              fallingDot.originalDot.steal();
+            }
             
             // Create pickup effect
             this.particleSystem.createPickup(fallingDot.x, fallingDot.y, 120);
@@ -649,6 +655,26 @@ export class NeonFlockEngine {
             }
             if (!fallingDot.sprite.destroyed) {
               fallingDot.sprite.destroy();
+            }
+            
+            // Clean up falling dot's glow sprite too!
+            if (fallingDot.glowSprite && fallingDot.glowSprite.parent) {
+              this.app.stage.removeChild(fallingDot.glowSprite);
+            }
+            if (fallingDot.glowSprite && !fallingDot.glowSprite.destroyed) {
+              fallingDot.glowSprite.destroy();
+            }
+            
+            // Clean up trail
+            if (fallingDot.trail) {
+              fallingDot.trail.forEach(t => {
+                if (t.parent) {
+                  this.app.stage.removeChild(t);
+                }
+                if (!t.destroyed) {
+                  t.destroy();
+                }
+              });
             }
             
             // Mark falling dot for removal (will be cleaned up later)
@@ -989,9 +1015,11 @@ export class NeonFlockEngine {
             boid.hasDot = true;
             boid.targetDot = dot.originalDot;
             
-            // CRITICAL FIX: Re-steal the original dot to maintain consistent state
-            // This prevents the locked state bug where dot is neither stolen nor visible
-            dot.originalDot.steal();
+            // CRITICAL FIX: Only steal if not already stolen
+            // Prevents double-steal which causes zombie dots
+            if (!dot.originalDot.stolen) {
+              dot.originalDot.steal();
+            }
             
             this.particleSystem.createPickup(dot.x, dot.y, dot.originalDot.hue);
             
