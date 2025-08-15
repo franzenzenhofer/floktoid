@@ -781,7 +781,8 @@ export class NeonFlockEngine {
         {
           onProjectileHit: (_projectile, asteroid) => {
             // Split asteroid when hit by projectile
-            const fragments = this.asteroidSplitter.split(asteroid);
+            // AUTHENTIC ASTEROIDS: Pass current count for 26 asteroid limit
+            const fragments = this.asteroidSplitter.split(asteroid, this.asteroids.length);
             
             // Visual effect for split - just explosion, no annoying lines
             this.particleSystem.createExplosion(asteroid.x, asteroid.y, asteroid.hue, 15);
