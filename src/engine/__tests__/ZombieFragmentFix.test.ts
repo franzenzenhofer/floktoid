@@ -43,7 +43,7 @@ describe('Zombie Fragment Fix', () => {
     const originalSplit = asteroidSplitter.split.bind(asteroidSplitter);
     
     // Mock the callback to count splits
-    const onProjectileHit = vi.fn((proj: BirdProjectile, ast: Asteroid) => {
+    const onProjectileHit = vi.fn((_proj: BirdProjectile, ast: Asteroid) => {
       splitCallCount++;
       return originalSplit(ast, asteroids.length);
     });
