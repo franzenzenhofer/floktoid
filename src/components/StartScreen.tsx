@@ -38,12 +38,12 @@ export function StartScreen({ onStart, highScore, onShowLeaderboard }: StartScre
             <div className="text-sm sm:text-base text-yellow-400">
               24h Top Leader: {topPlayer.username} - {topPlayer.score.toLocaleString()}
             </div>
-            <button
-              onClick={onShowLeaderboard}
+            <a
+              href="/leaderboard"
               className="text-xs sm:text-sm text-cyan-400 hover:text-cyan-300 underline"
             >
               View Full Leaderboard
-            </button>
+            </a>
           </div>
         )}
         
@@ -51,16 +51,8 @@ export function StartScreen({ onStart, highScore, onShowLeaderboard }: StartScre
           Your username: <span className="text-cyan-300">{username}</span>
         </div>
         
-        <div className="space-y-2 md:space-y-4 text-gray-400">
-          <p className="text-sm sm:text-base md:text-lg">
-            • Click and drag to launch asteroids
-          </p>
-          <p className="text-sm sm:text-base md:text-lg">
-            • Stop the flock from stealing energy
-          </p>
-          <p className="text-sm sm:text-base md:text-lg">
-            • Survive increasingly intense waves
-          </p>
+        <div className="text-sm sm:text-base text-gray-400">
+          Click and drag to launch asteroids. Stop the flock from stealing energy. Survive increasingly intense waves.
         </div>
         
         {highScore > 0 && (

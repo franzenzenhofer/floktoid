@@ -27,6 +27,13 @@ export default {
       return handleGetLeaderboard(env, corsHeaders);
     }
     
+    // Handle leaderboard route
+    if (url.pathname === '/leaderboard' || url.pathname === '/leaderboard/') {
+      // Serve the leaderboard.html file
+      const leaderboardRequest = new Request(new URL('/leaderboard.html', request.url), request);
+      return env.ASSETS.fetch(leaderboardRequest);
+    }
+    
     // Serve static assets from the dist directory
     return env.ASSETS.fetch(request);
   },

@@ -35,7 +35,10 @@ export default defineConfig({
     // iOS compatibility: transpile to older syntax
     target: ['es2015', 'safari12'],
     rollupOptions: {
-      input: './index.html',
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        leaderboard: resolve(__dirname, 'leaderboard.html')
+      },
       output: {
         // Avoid dynamic imports on iOS
         manualChunks: undefined
