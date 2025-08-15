@@ -100,6 +100,7 @@ export function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
                       </div>
                       <div className="text-right">
                         <div className="text-white font-mono">{entry.score.toLocaleString()}</div>
+                        <div className="text-xs text-gray-400">Wave {entry.wave || '-'}</div>
                         <div className="text-xs text-gray-500">{formatDate(entry.timestamp)}</div>
                       </div>
                     </div>
@@ -140,6 +141,7 @@ export function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
                       </div>
                       <div className="text-right">
                         <div className="text-white font-mono">{entry.score.toLocaleString()}</div>
+                        <div className="text-xs text-gray-400">Wave {entry.wave || '-'}</div>
                         <div className="text-xs text-gray-500">{formatDate(entry.timestamp)}</div>
                       </div>
                     </div>

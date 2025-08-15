@@ -71,6 +71,10 @@ export class NeonFlockEngine {
     return scoringSystem.getScore();
   }
   
+  public getWave(): number {
+    return this.wave;
+  }
+  
   private gridOverlay!: PIXI.Graphics;
   private backgroundStars!: PIXI.Container;
   private container: HTMLDivElement;

@@ -7,6 +7,7 @@ import { UsernameGenerator } from '../utils/UsernameGenerator';
 export interface LeaderboardEntry {
   username: string;
   score: number;
+  wave?: number;
   timestamp?: number;
 }
 
@@ -29,7 +30,7 @@ class LeaderboardService {
   /**
    * Submit a score to the leaderboard
    */
-  async submitScore(score: number): Promise<boolean> {
+  async submitScore(score: number, wave?: number): Promise<boolean> {
     try {
       const username = UsernameGenerator.getSessionUsername();
       
@@ -38,7 +39,7 @@ class LeaderboardService {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ username, score })
+        body: JSON.stringify({ username, score, wave })
       });
       
       if (!response.ok) {

@@ -41,7 +41,7 @@ export default {
 
 async function handleScoreSubmit(request, env, corsHeaders) {
   try {
-    const { username, score } = await request.json();
+    const { username, score, wave } = await request.json();
     
     if (!username || typeof score !== 'number') {
       return new Response(JSON.stringify({ error: 'Invalid data' }), {
@@ -61,10 +61,11 @@ async function handleScoreSubmit(request, env, corsHeaders) {
     const timestamp = Date.now();
     const key = `score:${timestamp}:${username}`;
     
-    // Store in KV with score as value
+    // Store in KV with score and wave as value
     await env.LEADERBOARD.put(key, JSON.stringify({
       username,
       score,
+      wave: wave || null,  // Store wave or null if not provided
       timestamp
     }), {
       expirationTtl: 86400 * 30 // 30 days
@@ -79,6 +80,7 @@ async function handleScoreSubmit(request, env, corsHeaders) {
       await env.LEADERBOARD.put(allTimeKey, JSON.stringify({
         username,
         score,
+        wave: wave || null,
         timestamp
       }));
     }

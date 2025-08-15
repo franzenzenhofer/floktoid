@@ -40,9 +40,10 @@ export function Game() {
           engine.onWaveUpdate = setWave;
           engine.onEnergyStatus = (critical: boolean) => setEnergyCritical(critical);
           engine.onGameOver = () => {
-            // Submit score to leaderboard
+            // Submit score to leaderboard with wave number
             const finalScore = engine.getScore();
-            leaderboardService.submitScore(finalScore).catch(error => {
+            const finalWave = engine.getWave();
+            leaderboardService.submitScore(finalScore, finalWave).catch(error => {
               console.error('Failed to submit score:', error);
             });
             setGameState('gameover');
