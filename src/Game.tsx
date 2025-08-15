@@ -4,12 +4,13 @@ import { HUD } from './components/HUD';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
 import { DevConsole } from './components/DevConsole';
+import { LeaderboardScreen } from './components/LeaderboardScreen';
 import { leaderboardService } from './services/LeaderboardService';
 
 export function Game() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<NeonFlockEngine | null>(null);
-  const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameover'>('menu');
+  const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameover' | 'leaderboard'>('menu');
   const [score, setScore] = useState(0);
   const [wave, setWave] = useState(1);
   const [energyCritical, setEnergyCritical] = useState(false);
@@ -84,10 +85,18 @@ export function Game() {
     setGameState('menu');
   };
 
+  const handleShowLeaderboard = () => {
+    setGameState('leaderboard');
+  };
+
   return (
     <div className="fixed inset-0 w-screen h-screen bg-black overflow-hidden">
       {gameState === 'menu' && (
-        <StartScreen onStart={handleStart} highScore={highScore} />
+        <StartScreen 
+          onStart={handleStart} 
+          highScore={highScore} 
+          onShowLeaderboard={handleShowLeaderboard}
+        />
       )}
       
       {gameState === 'playing' && (
@@ -106,6 +115,10 @@ export function Game() {
           onRestart={handleRestart}
           onMenu={handleMenu}
         />
+      )}
+      
+      {gameState === 'leaderboard' && (
+        <LeaderboardScreen onBack={handleMenu} />
       )}
     </div>
   );

@@ -14,6 +14,8 @@ export interface LeaderboardData {
   allTime: LeaderboardEntry[];
   last24h: LeaderboardEntry[];
   topPlayer: LeaderboardEntry | null;
+  totalPlayers?: number;
+  playersLast24h?: number;
 }
 
 class LeaderboardService {

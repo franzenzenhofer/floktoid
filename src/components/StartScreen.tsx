@@ -6,9 +6,10 @@ import { leaderboardService, type LeaderboardEntry } from '../services/Leaderboa
 interface StartScreenProps {
   onStart: (devMode?: boolean) => void;
   highScore: number;
+  onShowLeaderboard: () => void;
 }
 
-export function StartScreen({ onStart, highScore }: StartScreenProps) {
+export function StartScreen({ onStart, highScore, onShowLeaderboard }: StartScreenProps) {
   const [username] = useState(() => UsernameGenerator.getSessionUsername());
   const [topPlayer, setTopPlayer] = useState<LeaderboardEntry | null>(null);
   
@@ -33,8 +34,16 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
         </div>
         
         {topPlayer && (
-          <div className="text-sm sm:text-base text-cyan-400">
-            Top Leader: {topPlayer.username} - {topPlayer.score.toLocaleString()}
+          <div className="space-y-1">
+            <div className="text-sm sm:text-base text-yellow-400">
+              24h Top Leader: {topPlayer.username} - {topPlayer.score.toLocaleString()}
+            </div>
+            <button
+              onClick={onShowLeaderboard}
+              className="text-xs sm:text-sm text-cyan-400 hover:text-cyan-300 underline"
+            >
+              View Full Leaderboard
+            </button>
           </div>
         )}
         

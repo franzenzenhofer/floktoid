@@ -139,10 +139,16 @@ async function handleGetLeaderboard(env, corsHeaders) {
     recentScores.sort((a, b) => b.score - a.score);
     const last24h = recentScores.slice(0, 10);
     
+    // Calculate stats
+    const uniquePlayersAll = new Set(validScores.map(s => s.username));
+    const uniquePlayers24h = new Set(recentScores.map(s => s.username));
+    
     return new Response(JSON.stringify({
       allTime,
       last24h,
-      topPlayer: allTime[0] || null
+      topPlayer: last24h[0] || null, // Changed to 24h top leader
+      totalPlayers: uniquePlayersAll.size,
+      playersLast24h: uniquePlayers24h.size
     }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
