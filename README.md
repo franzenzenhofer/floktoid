@@ -166,11 +166,11 @@ directory = "./dist"
 
 [[kv_namespaces]]
 binding = "LEADERBOARD"
-id = "your-kv-namespace-id"
+id = "YOUR_KV_NAMESPACE_ID_HERE"
 
 [[routes]]
-pattern = "floktoid.franzai.com/*"
-zone_name = "franzai.com"
+pattern = "your-domain.com/*"
+zone_name = "your-domain.com"
 ```
 
 ### Deploy Process
