@@ -8,17 +8,10 @@ import { Boid } from '../entities/Boid';
 import { BirdProjectile } from '../entities/BirdProjectile';
 import { Asteroid } from '../entities/Asteroid';
 import { EnergyDot } from '../entities/EnergyDot';
-import { AsteroidSplitter } from './AsteroidSplitter';
-import * as PIXI from 'pixi.js';
 
 export class SafeCollisionSystemExtended extends SafeCollisionSystem {
-  private asteroidSplitter: AsteroidSplitter | null = null;
-  
-  constructor(app?: PIXI.Application) {
+  constructor() {
     super();
-    if (app) {
-      this.asteroidSplitter = new AsteroidSplitter(app);
-    }
   }
   
   /**
@@ -32,7 +25,7 @@ export class SafeCollisionSystemExtended extends SafeCollisionSystem {
     callbacks: {
       onBoidHit?: (boid: Boid) => void;
       onAsteroidHit?: (ast: Asteroid) => boolean;
-      onProjectileHit?: (proj: BirdProjectile, ast: Asteroid) => void;
+      onProjectileHit?: (proj: BirdProjectile, ast: Asteroid) => Asteroid[] | void;
     }
   ): Asteroid[] {
     // First handle normal collisions
@@ -62,15 +55,12 @@ export class SafeCollisionSystemExtended extends SafeCollisionSystem {
           projectilesToRemove.push(i);
           asteroidsToSplit.push(j);
           
-          // Call callback
+          // Call callback - let it handle the splitting
           if (callbacks.onProjectileHit) {
-            callbacks.onProjectileHit(proj, ast);
-          }
-          
-          // Split asteroid (AUTHENTIC: Pass current count for 26 asteroid limit)
-          if (this.asteroidSplitter) {
-            const fragments = this.asteroidSplitter.split(ast, asteroids.length);
-            newAsteroids.push(...fragments);
+            const fragments = callbacks.onProjectileHit(proj, ast);
+            if (fragments) {
+              newAsteroids.push(...fragments);
+            }
           }
           
           break; // Each projectile can only hit one asteroid

@@ -112,7 +112,7 @@ export class NeonFlockEngine {
       this.particleSystem = new ParticleSystem(this.app);
       this.flockingSystem = new FlockingSystem();
       this.superNavigatorAI = new SuperNavigatorAI();
-      this.collisionSystem = new SafeCollisionSystemExtended(this.app);
+      this.collisionSystem = new SafeCollisionSystemExtended();
       this.comboEffects = new ComboEffects(this.app);
       this.devModeDisplay = new DevModeDisplay(this.app, this.debug);
       this.collisionDebugger = new CollisionDebugger();
