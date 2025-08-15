@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- Black background -->
+  <rect width="1200" height="630" fill="#000000"/>
+  
+  <!-- Starfield background -->
+  <circle cx="100" cy="100" r="1" fill="#444444"/>
+  <circle cx="300" cy="50" r="1" fill="#666666"/>
+  <circle cx="500" cy="150" r="1.5" fill="#888888"/>
+  <circle cx="700" cy="80" r="1" fill="#555555"/>
+  <circle cx="900" cy="120" r="1" fill="#777777"/>
+  <circle cx="1100" cy="90" r="1.5" fill="#999999"/>
+  <circle cx="200" cy="400" r="1" fill="#666666"/>
+  <circle cx="400" cy="450" r="1" fill="#555555"/>
+  <circle cx="800" cy="500" r="1.5" fill="#888888"/>
+  <circle cx="1000" cy="480" r="1" fill="#777777"/>
+  
+  <!-- Glow effects -->
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="bigGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Title -->
+  <g filter="url(#bigGlow)">
+    <text x="600" y="250" 
+          font-family="Arial, sans-serif" 
+          font-size="120" 
+          font-weight="bold" 
+          text-anchor="middle">
+      <tspan fill="#00FFFF">FLOK</tspan><tspan fill="#FF00FF">TOID</tspan>
+    </text>
+  </g>
+  
+  <!-- Tagline -->
+  <g filter="url(#glow)">
+    <text x="600" y="330" 
+          font-family="Arial, sans-serif" 
+          font-size="36" 
+          fill="#FFFF00" 
+          text-anchor="middle">
+      Asteroids vs Evil Spaceships
+    </text>
+  </g>
+  
+  <!-- Asteroid shapes -->
+  <g filter="url(#glow)">
+    <polygon points="150,400 180,410 200,440 180,470 150,480 120,470 100,440 120,410" 
+             fill="none" 
+             stroke="#FF00FF" 
+             stroke-width="3"/>
+    
+    <polygon points="1050,380 1080,390 1100,420 1080,450 1050,460 1020,450 1000,420 1020,390" 
+             fill="none" 
+             stroke="#00FFFF" 
+             stroke-width="3"/>
+  </g>
+  
+  <!-- Bird/spaceship triangles -->
+  <g filter="url(#glow)">
+    <path d="M 250 450 L 230 470 L 270 470 Z" 
+          fill="none" 
+          stroke="#00FF00" 
+          stroke-width="2"/>
+    
+    <path d="M 950 430 L 930 450 L 970 450 Z" 
+          fill="none" 
+          stroke="#FF00FF" 
+          stroke-width="2"/>
+  </g>
+  
+  <!-- Energy dots -->
+  <g filter="url(#glow)">
+    <circle cx="600" cy="450" r="8" fill="#FFFF00"/>
+    <circle cx="600" cy="450" r="4" fill="#FFFFFF"/>
+    
+    <circle cx="400" cy="480" r="8" fill="#FFFF00"/>
+    <circle cx="400" cy="480" r="4" fill="#FFFFFF"/>
+    
+    <circle cx="800" cy="480" r="8" fill="#FFFF00"/>
+    <circle cx="800" cy="480" r="4" fill="#FFFFFF"/>
+  </g>
+  
+  <!-- URL -->
+  <text x="600" y="570" 
+        font-family="monospace" 
+        font-size="24" 
+        fill="#888888" 
+        text-anchor="middle">
+    floktoid.franzai.com
+  </text>
+</svg>

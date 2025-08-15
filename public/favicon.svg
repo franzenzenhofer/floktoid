@@ -1,5 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Black background -->
   <rect width="32" height="32" fill="#000000"/>
-  <path d="M16 6 L8 20 L24 20 Z" fill="#00FFFF" stroke="#FF00FF" stroke-width="2"/>
-  <circle cx="16" cy="16" r="2" fill="#FFFF00"/>
+  
+  <!-- Neon glow effect -->
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- F letter in cyan -->
+  <g filter="url(#glow)">
+    <path d="M 8 6 L 8 26 M 8 6 L 18 6 M 8 15 L 16 15" 
+          stroke="#00FFFF" 
+          stroke-width="2" 
+          fill="none"
+          stroke-linecap="round"/>
+  </g>
+  
+  <!-- Asteroid shape in magenta -->
+  <g filter="url(#glow)">
+    <polygon points="22,8 26,10 28,14 26,18 22,20 18,18 16,14 18,10" 
+             fill="none" 
+             stroke="#FF00FF" 
+             stroke-width="1.5"/>
+  </g>
 </svg>

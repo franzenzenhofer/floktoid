@@ -196,6 +196,15 @@ class UltimateDeploymentPipeline {
       throw new Error('Game collision test failed - potential freeze bug detected');
     }
     
+    // Test image files exist
+    this.log('  🖼️ Testing image assets...', 'yellow');
+    try {
+      this.exec('node scripts/test-image-deployment.js', { env: { DEPLOY_URL: 'http://localhost:3000' } });
+      this.log('    ✅ Image assets verified', 'green');
+    } catch (error) {
+      this.log('    ⚠️ Image asset test failed', 'yellow');
+    }
+    
     // AI-POWERED COMPREHENSIVE TESTING - TEMPORARILY DISABLED DUE TO SYNTAX ERRORS
     this.log('  🤖 Running AI-powered device testing...', 'yellow');
     this.log('    Testing on iPhone, iPad, Android, Desktop...', 'cyan');
