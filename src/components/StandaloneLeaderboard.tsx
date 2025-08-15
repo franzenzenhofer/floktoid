@@ -43,8 +43,8 @@ export function StandaloneLeaderboard() {
   };
   
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-start p-4 overflow-y-auto">
-      <div className="w-full max-w-4xl space-y-6">
+    <div className="h-screen bg-black overflow-y-auto overflow-x-hidden">
+      <div className="w-full max-w-4xl mx-auto p-4 space-y-6">
         {/* Header */}
         <div className="text-center space-y-2 mt-8">
           <h1 className="text-4xl sm:text-6xl font-bold">
