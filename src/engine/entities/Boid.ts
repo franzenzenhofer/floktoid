@@ -442,7 +442,7 @@ export class Boid {
     if (this.isShooter) {
       // Smooth rotation for shooters - lerp towards target
       const rotationSpeed = 0.15; // Lower = slower rotation
-      let currentRotation = this.sprite.rotation;
+      const currentRotation = this.sprite.rotation;
       
       // Handle angle wrapping for shortest path
       let diff = targetRotation - currentRotation;

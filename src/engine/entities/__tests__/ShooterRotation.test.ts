@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Boid } from '../Boid';
-import * as PIXI from 'pixi.js';
 
 // Mock PIXI
 vi.mock('pixi.js', () => ({
@@ -123,7 +122,6 @@ describe('Shooter Rotation', () => {
       // Target just past 0 (slightly below right)
       shooter.vx = 10;
       shooter.vy = 1;
-      const targetAngle = Math.atan2(1, 10); // Small positive angle
       
       // Should rotate forward through 0, not backward through π
       const initialRotation = shooter.sprite.rotation;
