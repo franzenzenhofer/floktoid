@@ -67,6 +67,10 @@ export class NeonFlockEngine {
   public onEnergyStatus?: (critical: boolean) => void;
   public onGameOver?: () => void;
   
+  public getScore(): number {
+    return scoringSystem.getScore();
+  }
+  
   private gridOverlay!: PIXI.Graphics;
   private backgroundStars!: PIXI.Container;
   private container: HTMLDivElement;

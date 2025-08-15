@@ -60,7 +60,7 @@ export class Boid {
     speedModifier: number;
   };
   
-  protected sprite: PIXI.Graphics;
+  public sprite: PIXI.Graphics;
   protected trail: { x: number; y: number }[] = [];
   protected trailGraphics: PIXI.Graphics;
   protected app: PIXI.Application;
