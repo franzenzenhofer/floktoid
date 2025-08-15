@@ -51,9 +51,54 @@ export class FlockingSystem {
     // Target energy dots - PRIORITIZE FALLING DOTS!
     const target = { x: 0, y: 0 };
     let targetingFallingDot = false;
+    let targetingAsteroid = false;
     
-    // First check for falling dots to catch
-    if (fallingDots && fallingDots.length > 0) {
+    // SHOOTER SPECIAL BEHAVIOR: Target biggest nearby asteroid for better aim
+    if (boid.isShooter && asteroids.length > 0) {
+      let biggestAsteroid: Asteroid | null = null;
+      let biggestSize = 0;
+      const shooterViewRadius = FLOCKING.RADIUS.VIEW * 2; // Shooters have better vision
+      
+      // Find the biggest asteroid within view radius
+      for (const ast of asteroids) {
+        const dx = ast.x - boid.x;
+        const dy = ast.y - boid.y;
+        const dist = Math.hypot(dx, dy);
+        
+        if (dist < shooterViewRadius && ast.size > biggestSize) {
+          biggestSize = ast.size;
+          biggestAsteroid = ast;
+        }
+      }
+      
+      if (biggestAsteroid) {
+        // Aim towards the biggest asteroid to get in shooting position
+        const dx = biggestAsteroid.x - boid.x;
+        const dy = biggestAsteroid.y - boid.y;
+        
+        // Position at optimal shooting distance (not too close, not too far)
+        const optimalDistance = 150; // Good shooting distance
+        const currentDistance = Math.hypot(dx, dy);
+        
+        if (currentDistance > optimalDistance) {
+          // Move closer to asteroid
+          target.x = dx;
+          target.y = dy;
+        } else if (currentDistance < optimalDistance * 0.7) {
+          // Too close, back away slightly
+          target.x = -dx * 0.5;
+          target.y = -dy * 0.5;
+        } else {
+          // Good distance, circle around for better shot angle
+          target.x = -dy * 0.5; // Perpendicular movement
+          target.y = dx * 0.5;
+        }
+        targetingAsteroid = true;
+      }
+    }
+    
+    // If not targeting an asteroid (or not a shooter), check for falling dots
+    if (!targetingAsteroid && fallingDots && fallingDots.length > 0) {
       // Find closest falling dot that's catchable
       let closestDist = Infinity;
       let closestFallingDot: typeof fallingDots[0] | null = null;
@@ -84,8 +129,8 @@ export class FlockingSystem {
       }
     }
     
-    // If not targeting a falling dot, target regular energy dots
-    if (!targetingFallingDot) {
+    // If not targeting asteroid or falling dot, target regular energy dots
+    if (!targetingAsteroid && !targetingFallingDot) {
       if (!boid.targetDot || boid.targetDot.stolen) {
         // Find new target
         const available = energyDots.filter(d => !d.stolen);
