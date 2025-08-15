@@ -1,16 +1,21 @@
 import * as PIXI from 'pixi.js';
 import { Boid } from './entities/Boid';
+import { BirdProjectile } from './entities/BirdProjectile';
 import { EnergyDot } from './entities/EnergyDot';
 import { Asteroid } from './entities/Asteroid';
+import { AsteroidSplitter } from './systems/AsteroidSplitter';
 import { ParticleSystem } from './systems/ParticleSystem';
 import { FlockingSystem } from './systems/FlockingSystem';
+import { SuperNavigatorAI } from './systems/SuperNavigatorAI';
 import { InputManager } from './systems/InputManager';
-import { SafeCollisionSystem } from './systems/SafeCollisionSystem';
+import { SafeCollisionSystemExtended } from './systems/SafeCollisionSystemExtended';
 import { CollisionDebugger } from './systems/CollisionDebugger';
 import { CollisionEffects } from './effects/CollisionEffects';
+import { ComboEffects } from './effects/ComboEffects';
 import { GameConfig } from './GameConfig';
 import CentralConfig from './CentralConfig';
 import { scoringSystem, ScoringEvent } from './ScoringSystem';
+import { hueToRGB } from './utils/ColorUtils';
 
 const { VISUALS, SIZES, TIMING, ENTITY_LIMITS, PHYSICS, FLOCKING, ERRORS, UI, GAME_CONSTANTS } = CentralConfig;
 
@@ -29,6 +34,8 @@ export class NeonFlockEngine {
     vy: number;
     targetSlot: number;
     sprite: PIXI.Graphics;
+    glowSprite: PIXI.Graphics;
+    pulsePhase: number;
     originalDot: EnergyDot;
     trail: PIXI.Graphics[];
     trailPositions: { x: number, y: number }[];
@@ -38,8 +45,10 @@ export class NeonFlockEngine {
   
   private particleSystem!: ParticleSystem;
   private flockingSystem!: FlockingSystem;
+  private superNavigatorAI!: SuperNavigatorAI;
+  private comboEffects!: ComboEffects;
   private inputManager!: InputManager;
-  private collisionSystem!: SafeCollisionSystem;
+  private collisionSystem!: SafeCollisionSystemExtended;
   private collisionDebugger!: CollisionDebugger;
   private collisionEffects!: CollisionEffects;
   
@@ -100,9 +109,12 @@ export class NeonFlockEngine {
       // Initialize systems
       this.particleSystem = new ParticleSystem(this.app);
       this.flockingSystem = new FlockingSystem();
-      this.collisionSystem = new SafeCollisionSystem();
+      this.superNavigatorAI = new SuperNavigatorAI();
+      this.collisionSystem = new SafeCollisionSystemExtended(this.app);
+      this.comboEffects = new ComboEffects(this.app);
       this.collisionDebugger = new CollisionDebugger();
       this.collisionEffects = new CollisionEffects(this.app);
+      this.asteroidSplitter = new AsteroidSplitter(this.app);
       this.inputManager = new InputManager(this.app, this);
       
       // Setup game
@@ -234,7 +246,11 @@ export class NeonFlockEngine {
   }
   
   private createFallingDot(x: number, y: number, originalDot: EnergyDot) {
+    // Create sprites for falling dot - same structure as original!
+    const glowSprite = new PIXI.Graphics();
     const sprite = new PIXI.Graphics();
+    const pulsePhase = Math.random() * Math.PI * 2;
+    
     const targetSlot = this.energyDots.indexOf(originalDot);
     const targetX = (this.app.screen.width / (GameConfig.ENERGY_COUNT + 1)) * (targetSlot + 1);
     const targetY = this.app.screen.height * GameConfig.BASE_Y;
@@ -243,13 +259,13 @@ export class NeonFlockEngine {
     const dx = targetX - x;
     const angle = Math.atan2(targetY - y, dx);
     
-    sprite.circle(0, 0, GameConfig.ENERGY_RADIUS);
-    sprite.fill({ color: originalDot.hue, alpha: 1 });
+    // Add sprites to stage
+    this.app.stage.addChild(glowSprite);
     this.app.stage.addChild(sprite);
     
-    // Ultra slow falling speed - 10% of bird speed
+    // 75% of bird speed as requested!
     const birdSpeed = GameConfig.BASE_SPEED * this.speedMultiplier;
-    const fallSpeed = birdSpeed * 0.1; // Only 10% of bird speed
+    const fallSpeed = birdSpeed * 0.75; // 75% of bird speed
     
     // Create trail graphics for falling dot
     const trail: PIXI.Graphics[] = [];
@@ -264,9 +280,11 @@ export class NeonFlockEngine {
       x,
       y,
       vx: Math.cos(angle) * fallSpeed * 0.3 + (Math.random() - 0.5) * 5,
-      vy: fallSpeed, // Ultra slow fall speed
+      vy: fallSpeed, // 75% of bird speed
       targetSlot,
       sprite,
+      glowSprite,
+      pulsePhase,
       originalDot,
       trail,
       trailPositions: []
@@ -443,6 +461,12 @@ export class NeonFlockEngine {
             if (dot.sprite && !dot.sprite.destroyed) {
               dot.sprite.destroy();
             }
+            if (dot.glowSprite && dot.glowSprite.parent) {
+              this.app.stage.removeChild(dot.glowSprite);
+            }
+            if (dot.glowSprite && !dot.glowSprite.destroyed) {
+              dot.glowSprite.destroy();
+            }
           } catch (e) {
             console.error('[EMERGENCY CLEANUP] Failed to destroy falling dot:', e);
           }
@@ -522,15 +546,40 @@ export class NeonFlockEngine {
           continue;
         }
       } else {
-        // Flocking behavior - now with falling dot awareness!
-        const forces = this.flockingSystem.calculateForces(
-          boid,
-          this.boids,
-          this.energyDots,
-          this.asteroids,
-          this.fallingDots
-        );
+        // Super navigators use their own AI!
+        let forces: { x: number; y: number };
+        
+        if (boid.isSuperNavigator) {
+          // SUPER NAVIGATOR AI - Advanced movement algorithm!
+          forces = this.superNavigatorAI.calculateSuperForces(
+            boid,
+            this.boids,
+            this.energyDots,
+            this.asteroids,
+            this.fallingDots
+          );
+        } else {
+          // Regular flocking behavior - now with falling dot awareness!
+          forces = this.flockingSystem.calculateForces(
+            boid,
+            this.boids,
+            this.energyDots,
+            this.asteroids,
+            this.fallingDots
+          );
+        }
+        
         boid.applyForces(forces, dt);
+        
+        // SHOOTER BIRDS - Check if they should shoot!
+        if (boid.isShooter && boid.canShoot() && this.asteroids.length > 0) {
+          const projectile = boid.shoot(this.asteroids);
+          if (projectile) {
+            this.projectiles.push(projectile);
+            // Visual feedback for shooting
+            this.particleSystem.createExplosion(boid.x, boid.y, 0xFF4400, 5);
+          }
+        }
         
         // Check dot pickup - both stationary and falling dots
         for (const dot of this.energyDots) {
@@ -670,6 +719,16 @@ export class NeonFlockEngine {
       }
     }
     
+    // Update projectiles
+    this.projectiles = this.projectiles.filter(projectile => {
+      const keepProjectile = projectile.update(dt);
+      if (!keepProjectile || projectile.isOffScreen(this.app.screen) || projectile.isExpired()) {
+        projectile.destroy();
+        return false;
+      }
+      return true;
+    });
+    
     // Update asteroids
     this.asteroids = this.asteroids.filter(asteroid => {
       const keepAsteroid = asteroid.update(dt);
@@ -689,12 +748,27 @@ export class NeonFlockEngine {
         console.log(`[COLLISION] Frame ${this.frameCount}: ${this.asteroids.length} asteroids, ${this.boids.length} boids`);
       }
       
-      // Use new safe collision system
-      this.collisionSystem.handleCollisions(
+      // Use extended collision system with projectiles
+      const newFragments = this.collisionSystem.handleCollisionsWithProjectiles(
         this.boids,
         this.asteroids,
         this.energyDots,
+        this.projectiles,
         {
+          onProjectileHit: (projectile, asteroid) => {
+            // Split asteroid when hit by projectile
+            const fragments = this.asteroidSplitter.split(asteroid);
+            
+            // Visual effect for split
+            this.particleSystem.createExplosion(asteroid.x, asteroid.y, asteroid.hue, 15);
+            this.collisionEffects.createImpact(asteroid.x, asteroid.y, asteroid.size);
+            
+            // Score for shooting asteroid
+            scoringSystem.addEvent(ScoringEvent.ASTEROID_HIT);
+            this.updateScoreDisplay();
+            
+            return fragments;
+          },
           onBoidHit: (boid) => {
             // SAFE: Validate boid before processing
             if (!boid || typeof boid.x !== 'number' || typeof boid.y !== 'number' || !isFinite(boid.x) || !isFinite(boid.y)) {
@@ -702,28 +776,35 @@ export class NeonFlockEngine {
               return;
             }
             
+            // CRITICAL: Capture bird state BEFORE async operations!
+            const hadDot = boid.hasDot;
+            const targetDot = boid.targetDot;
+            const boidX = boid.x;
+            const boidY = boid.y;
+            const boidHue = boid.hue;
+            
+            // If bird had a dot, make it fall IMMEDIATELY (before bird is destroyed)
+            if (hadDot && targetDot) {
+              // The dot WAS stolen by this bird, now it falls
+              this.createFallingDot(boidX, boidY, targetDot);
+              boid.targetDot = null;
+              boid.hasDot = false;
+            }
+            
+            // Check if bird had energy for bonus points (do this sync too)
+            const event = hadDot ? ScoringEvent.BIRD_WITH_ENERGY_HIT : ScoringEvent.BIRD_HIT;
+            scoringSystem.addEvent(event);
+            this.updateScoreDisplay();
+            
             // Deferred visual effects - won't freeze!
             requestAnimationFrame(() => {
               try {
-                // Double-check boid still valid after async delay
-                if (!boid || !boid.alive || !isFinite(boid.x) || !isFinite(boid.y)) {
-                  return;
-                }
-                
+                // Use the new spaceship explosion animation
+                // Note: boid might be destroyed already, so we use captured values
+                this.particleSystem.createExplosion(boidX, boidY, boidHue, 15);
+                this.particleSystem.createBirdExplosion(boidX, boidY, boidHue, 0, 0);
                 // Add crash lines animation showing bird was hit
-                this.collisionEffects.createCrashLines(boid.x, boid.y, boid.hue);
-                // Simple particle explosion too
-                this.particleSystem.createExplosion(boid.x, boid.y, boid.hue, 10);
-                // Check if bird had energy for bonus points
-                const event = boid.hasDot ? ScoringEvent.BIRD_WITH_ENERGY_HIT : ScoringEvent.BIRD_HIT;
-                scoringSystem.addEvent(event);
-                this.updateScoreDisplay();
-                
-                // If bird had a dot, make it fall
-                if (boid.hasDot && boid.targetDot && !boid.targetDot.stolen) {
-                  this.createFallingDot(boid.x, boid.y, boid.targetDot);
-                  boid.targetDot = null;
-                }
+                this.collisionEffects.createCrashLines(boidX, boidY, boidHue);
               } catch (e) {
                 console.error('[VISUAL EFFECT ERROR]:', e);
               }
@@ -764,6 +845,11 @@ export class NeonFlockEngine {
         }
       );
       
+      // Add new asteroid fragments from projectile hits
+      if (newFragments && newFragments.length > 0) {
+        this.asteroids.push(...newFragments);
+      }
+      
       // End collision performance tracking  
       if (this.debug) {
         this.collisionDebugger.mark('collisions_done');
@@ -799,9 +885,9 @@ export class NeonFlockEngine {
         fallingDotsToRemove.push(i);
         continue;
       }
-      // Apply physics with ultra slow fall
+      // Apply physics - 75% of bird speed
       const birdSpeed = GameConfig.BASE_SPEED * this.speedMultiplier;
-      const maxFallSpeed = birdSpeed * 0.1; // Cap at 10% of bird speed
+      const maxFallSpeed = birdSpeed * 0.75; // Cap at 75% of bird speed
       
       dot.vy += PHYSICS.GRAVITY.BASE * dt; // Very gentle gravity
       if (dot.vy > maxFallSpeed) {
@@ -811,9 +897,27 @@ export class NeonFlockEngine {
       dot.x += dot.vx * dt;
       dot.y += dot.vy * dt;
       
-      // Update visual
-      dot.sprite.x = dot.x;
-      dot.sprite.y = dot.y;
+      // DRY: Draw falling dot EXACTLY like original energy dot!
+      const color = hueToRGB(dot.originalDot.hue);
+      
+      // Pulsing animation - same as original!
+      const pulse = Math.sin(performance.now() / 1000 * 5 + dot.pulsePhase) * 
+        (SIZES.ENERGY_DOT.PULSE_MAX_SCALE - SIZES.ENERGY_DOT.PULSE_MIN_SCALE) / 2 + 
+        (SIZES.ENERGY_DOT.PULSE_MIN_SCALE + SIZES.ENERGY_DOT.PULSE_MAX_SCALE) / 2;
+      
+      // Draw glow - EXACT same as original
+      dot.glowSprite.clear();
+      dot.glowSprite.circle(dot.x, dot.y, SIZES.ENERGY_DOT.RADIUS * SIZES.ENERGY_DOT.GLOW_RADIUS_MULTIPLIER * pulse);
+      dot.glowSprite.fill({ color, alpha: VISUALS.ALPHA.LOW * pulse });
+      
+      // Draw main dot - EXACT same as original
+      dot.sprite.clear();
+      dot.sprite.circle(dot.x, dot.y, SIZES.ENERGY_DOT.RADIUS * pulse);
+      dot.sprite.fill({ color, alpha: VISUALS.ALPHA.FULL });
+      
+      // White core - EXACT same as original
+      dot.sprite.circle(dot.x, dot.y, SIZES.ENERGY_DOT.RADIUS * 0.3);
+      dot.sprite.fill({ color: VISUALS.COLORS.WHITE, alpha: VISUALS.ALPHA.FULL });
       
       // Update trail positions
       dot.trailPositions.unshift({ x: dot.x, y: dot.y });
@@ -870,6 +974,12 @@ export class NeonFlockEngine {
             if (!dot.sprite.destroyed) {
               dot.sprite.destroy();
             }
+            if (dot.glowSprite.parent) {
+              this.app.stage.removeChild(dot.glowSprite);
+            }
+            if (!dot.glowSprite.destroyed) {
+              dot.glowSprite.destroy();
+            }
             dot.trail.forEach(t => {
               if (t.parent) {
                 this.app.stage.removeChild(t);
@@ -901,6 +1011,12 @@ export class NeonFlockEngine {
         if (!dot.sprite.destroyed) {
           dot.sprite.destroy();
         }
+        if (dot.glowSprite.parent) {
+          this.app.stage.removeChild(dot.glowSprite);
+        }
+        if (!dot.glowSprite.destroyed) {
+          dot.glowSprite.destroy();
+        }
         dot.trail.forEach(t => {
           if (t.parent) {
             this.app.stage.removeChild(t);
@@ -920,6 +1036,12 @@ export class NeonFlockEngine {
         }
         if (!dot.sprite.destroyed) {
           dot.sprite.destroy();
+        }
+        if (dot.glowSprite.parent) {
+          this.app.stage.removeChild(dot.glowSprite);
+        }
+        if (!dot.glowSprite.destroyed) {
+          dot.glowSprite.destroy();
         }
         fallingDotsToRemove.push(i);
         continue;
@@ -952,6 +1074,11 @@ export class NeonFlockEngine {
     
     // Update combo timer in scoring system
     scoringSystem.updateComboTimer(dt * 1000);
+    
+    // Update combo effects (screen shake, animations, etc.)
+    if (this.comboEffects) {
+      this.comboEffects.update(dt);
+    }
     
     // Check wave complete
     if (this.birdsToSpawn === 0 && this.boids.filter(b => !b.hasDot).length === 0) {
@@ -1015,88 +1142,19 @@ export class NeonFlockEngine {
     // Get current score info from scoring system
     const scoreInfo = scoringSystem.getScoreBreakdown();
     
-    // Visual feedback for combo
+    // Use new advanced combo effects system with game designer improvements
     if (scoreInfo.combo > 1) {
-      // Create combo text effect
-      const comboText = new PIXI.Text(`COMBO x${scoreInfo.combo}!`, {
-        fontFamily: UI.FONTS.PRIMARY,
-        fontSize: UI.FONTS.SIZES.LARGE + scoreInfo.combo * 2,
-        fill: [VISUALS.COLORS.NEON_CYAN, VISUALS.COLORS.NEON_MAGENTA],
-        stroke: { color: VISUALS.COLORS.BLACK, width: VISUALS.STROKE.VERY_THICK },
-        dropShadow: {
-          color: VISUALS.COLORS.NEON_CYAN,
-          blur: VISUALS.GLOW.BLUR_AMOUNT,
-          distance: 2,
-          angle: Math.PI / 4,
-          alpha: VISUALS.ALPHA.HIGH
-        }
-      });
-      
-      comboText.anchor.set(0.5);
-      comboText.x = this.app.screen.width / 2;
-      comboText.y = this.app.screen.height * 0.3;
-      this.app.stage.addChild(comboText);
-      
-      // Animate and remove safely
-      let alpha = VISUALS.ALPHA.FULL;
-      let scale = 1;
-      let animationFrames = 0;
-      const maxFrames = 100;
-      
-      const ticker = () => {
-        animationFrames++;
-        
-        if (!comboText || comboText.destroyed || animationFrames > maxFrames) {
-          try {
-            this.app.ticker.remove(ticker);
-            if (comboText && !comboText.destroyed) {
-              comboText.destroy();
-            }
-          } catch (cleanupError) {
-            console.error('[COMBO TEXT CLEANUP ERROR]:', cleanupError);
-          }
-          return;
-        }
-        
-        try {
-          alpha -= VISUALS.TRAIL.FADE_RATE;
-          scale += 0.01;
-          comboText.alpha = alpha;
-          comboText.scale.set(scale);
-          comboText.y -= 2;
-          
-          if (alpha <= 0) {
-            this.app.ticker.remove(ticker);
-            if (!comboText.destroyed) {
-              comboText.destroy();
-            }
-          }
-        } catch (animationError) {
-          console.error('[COMBO TEXT ANIMATION ERROR]:', animationError);
-          try {
-            this.app.ticker.remove(ticker);
-            if (comboText && !comboText.destroyed) {
-              comboText.destroy();
-            }
-          } catch (emergencyError) {
-            console.error('[COMBO TEXT EMERGENCY CLEANUP ERROR]:', emergencyError);
-          }
-        }
-      };
-      
-      try {
-        this.app.ticker.add(ticker);
-      } catch (addError) {
-        console.error('[COMBO TEXT ADD TICKER ERROR]:', addError);
-        if (comboText && !comboText.destroyed) {
-          comboText.destroy();
-        }
-      }
-      
-      // Show additional combo feedback
       const comboX = this.app.screen.width / 2;
-      const comboY = this.app.screen.height * 0.3;
-      this.particleSystem.createComboText(comboX, comboY, `${scoreInfo.combo}x COMBO!`, scoreInfo.multiplier);
+      const comboY = this.app.screen.height * 0.25; // Higher up for better visibility
+      
+      // Update wave for combo threshold and create display
+      this.comboEffects.setWave(this.wave);
+      this.comboEffects.createComboDisplay(
+        scoreInfo.combo,
+        comboX,
+        comboY,
+        scoreInfo.multiplier
+      );
     }
     
     // Update score display with combo info
@@ -1198,7 +1256,13 @@ export class NeonFlockEngine {
     
     window.removeEventListener('resize', this.handleResize);
     this.app.ticker.stop();
-    this.boids.forEach(b => b.destroy());
+    // Clean up super navigator memory
+    this.boids.forEach(b => {
+      if (b.isSuperNavigator) {
+        this.superNavigatorAI.cleanupMemory(b);
+      }
+      b.destroy();
+    });
     this.energyDots.forEach(d => d.destroy());
     this.asteroids.forEach(a => a.destroy());
     this.inputManager?.destroy();

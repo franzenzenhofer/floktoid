@@ -1,4 +1,6 @@
 
+import { useEffect, useRef, useState } from 'react';
+
 interface HUDProps {
   score: number;
   wave: number;
@@ -6,10 +8,59 @@ interface HUDProps {
 }
 
 export function HUD({ score, wave, energyCritical }: HUDProps) {
+  const [displayScore, setDisplayScore] = useState(score);
+  const prevScoreRef = useRef(score);
+  const animationRef = useRef<number>();
+  
+  useEffect(() => {
+    const prevScore = prevScoreRef.current;
+    
+    if (score < prevScore) {
+      // Score decreased - animate countdown ULTRA FAST
+      const difference = prevScore - score;
+      const duration = Math.min(300, difference * 2); // Ultra fast: max 300ms
+      const startTime = performance.now();
+      const startScore = displayScore;
+      
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smooth deceleration
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const currentValue = Math.floor(startScore - (difference * easeOut));
+        
+        setDisplayScore(currentValue);
+        
+        if (progress < 1) {
+          animationRef.current = requestAnimationFrame(animate);
+        } else {
+          setDisplayScore(score);
+        }
+      };
+      
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      animationRef.current = requestAnimationFrame(animate);
+    } else if (score > prevScore) {
+      // Score increased - update immediately
+      setDisplayScore(score);
+    }
+    
+    prevScoreRef.current = score;
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [score, displayScore]);
+  
   return (
     <>
       <div className="fixed top-2 sm:top-3 md:top-5 left-2 sm:left-3 md:left-5 font-bold text-2xl sm:text-3xl md:text-5xl neon-text select-none pointer-events-none">
-        {score.toString().padStart(6, '0')}
+        {displayScore.toString().padStart(6, '0')}
       </div>
       <div className="fixed top-2 sm:top-3 md:top-5 right-2 sm:right-3 md:right-5 font-bold text-xl sm:text-2xl md:text-3xl neon-pink select-none pointer-events-none">
         WAVE {wave}

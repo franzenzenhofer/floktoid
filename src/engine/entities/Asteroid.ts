@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { generateAsteroid } from '../utils/AsteroidGenerator';
 import { renderAsteroid } from '../utils/AsteroidRenderer';
 import CentralConfig from '../CentralConfig';
+import { EntityDestroyer } from '../utils/EntityDestroyer';
 
 const { SIZES, ASTEROID_GEN } = CentralConfig;
 
@@ -139,12 +140,14 @@ export class Asteroid {
     if (this.destroyed) return;
     this.destroyed = true;
     
-    // Safely remove and destroy sprite
-    if (this.sprite.parent) {
-      this.app.stage.removeChild(this.sprite);
-    }
-    if (!this.sprite.destroyed) {
-      this.sprite.destroy();
-    }
+    EntityDestroyer.destroyEntity(
+      {
+        sprite: this.sprite,
+        app: this.app
+      },
+      {
+        markAsDestroyed: false // Already marked destroyed above
+      }
+    );
   }
 }

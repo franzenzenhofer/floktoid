@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameConfig } from '../GameConfig';
 import CentralConfig from '../CentralConfig';
+import { hueToRGB } from '../utils/ColorUtils';
 
 const { ENTITY_LIMITS, PHYSICS, VISUALS } = CentralConfig;
 
@@ -44,13 +45,7 @@ export class ParticleSystem {
   }
   
   createPickup(x: number, y: number, hue: number) {
-    const color = Math.floor(
-      (Math.cos(hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 16 | Math.floor(
-      (Math.sin(hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 8 | Math.floor(
-      (Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
-    );
+    const color = hueToRGB(hue);
     
     for (let i = 0; i < 10; i++) {
       this.addParticle(
@@ -65,13 +60,7 @@ export class ParticleSystem {
   
   // Create 3 colored lines explosion when bird is hit
   createBirdExplosion(x: number, y: number, hue: number, vx: number, vy: number) {
-    const color = Math.floor(
-      (Math.cos(hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 16 | Math.floor(
-      (Math.sin(hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 8 | Math.floor(
-      (Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
-    );
+    const color = hueToRGB(hue);
     
     // SIMPLIFIED: Just use regular particles in 3 directions
     // This avoids creating complex Graphics objects during collision
@@ -122,29 +111,10 @@ export class ParticleSystem {
     });
   }
   
-  createComboText(x: number, y: number, text: string, multiplier: number) {
-    const comboText = new PIXI.Text({
-      text,
-      style: {
-        fontFamily: 'Space Mono',
-        fontSize: 32 + multiplier * 4,
-        fill: [0xFFFF00, 0xFF00FF],
-        stroke: { color: 0xFFFFFF, width: 2 },
-        dropShadow: {
-          color: 0x000000,
-          blur: 4,
-          angle: Math.PI / 4,
-          distance: 3
-        }
-      }
-    });
-    
-    comboText.anchor.set(0.5);
-    comboText.x = x;
-    comboText.y = y;
-    
-    this.app.stage.addChild(comboText);
-    this.comboTexts.push({ text: comboText, life: 1.5, vy: -50 });
+  createComboText(_x: number, _y: number, _text: string, _multiplier: number) {
+    // REMOVED: Duplicate yellow combo display
+    // Using NeonFlockEngine's neon cyan combo display instead
+    return; // Method kept for compatibility but does nothing
   }
   
   update(dt: number) {
@@ -171,18 +141,13 @@ export class ParticleSystem {
       }
     }
     
-    // Update combo texts
-    for (let i = this.comboTexts.length - 1; i >= 0; i--) {
-      const combo = this.comboTexts[i];
-      combo.life -= dt;
-      combo.text.y += combo.vy * dt;
-      combo.text.alpha = Math.max(0, combo.life);
-      combo.text.scale.set(1 + (1.5 - combo.life) * 0.2);
-      
-      if (combo.life <= 0) {
+    // REMOVED: Combo text update logic - using NeonFlockEngine's display
+    // Clear any leftover combo texts
+    while (this.comboTexts.length > 0) {
+      const combo = this.comboTexts.pop();
+      if (combo && combo.text && !combo.text.destroyed) {
         this.app.stage.removeChild(combo.text);
         combo.text.destroy();
-        this.comboTexts.splice(i, 1);
       }
     }
   }

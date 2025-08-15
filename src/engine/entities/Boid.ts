@@ -2,6 +2,12 @@ import * as PIXI from 'pixi.js';
 import { GameConfig } from '../GameConfig';
 import { EnergyDot } from './EnergyDot';
 import CentralConfig from '../CentralConfig';
+import { hueToRGB } from '../utils/ColorUtils';
+import { EntityDestroyer } from '../utils/EntityDestroyer';
+import { clearGraphics } from '../utils/SpriteFactory';
+import { VectorUtils } from '../utils/VectorUtils';
+import { BirdProjectile } from './BirdProjectile';
+import { Asteroid } from './Asteroid';
 
 const { FLOCKING, VISUALS, SIZES, PHYSICS } = CentralConfig;
 
@@ -30,6 +36,16 @@ export class Boid {
   public targetDot: EnergyDot | null = null;
   public shimmerTime = 0;
   
+  // SUPER NAVIGATOR - 10% chance of being elite!
+  public isSuperNavigator: boolean;
+  private superShimmerTime = 0;
+  
+  // SHOOTER - 10% chance of being a shooter!
+  public isShooter: boolean;
+  public shootCooldown = 0;
+  public maxShootCooldown = 60; // 1 second at 60fps
+  private shooterGlowTime = 0;
+  
   // PERSONALITY SYSTEM - Each bird is unique!
   public personality: BirdPersonality;
   public personalityWeights: {
@@ -57,12 +73,35 @@ export class Boid {
     this.x = x;
     this.y = y;
     
+    // SUPER NAVIGATOR - 10% chance!
+    this.isSuperNavigator = Math.random() < 0.1;
+    
+    // SHOOTER - 10% chance (independent of super navigator)
+    this.isShooter = Math.random() < 0.1;
+    
     // ASSIGN RANDOM PERSONALITY
     const personalities = Object.values(BirdPersonality);
     this.personality = personalities[Math.floor(Math.random() * personalities.length)];
     
     // SET PERSONALITY WEIGHTS
     this.personalityWeights = this.getPersonalityWeights(this.personality);
+    
+    // SUPER NAVIGATORS GET ENHANCED ABILITIES!
+    if (this.isSuperNavigator) {
+      this.personalityWeights.speedModifier *= 1.3;  // 30% faster
+      this.personalityWeights.avoidance *= 1.5;      // 50% better at avoiding asteroids
+      this.personalityWeights.targetSeek *= 1.2;     // 20% better at finding targets
+    }
+    
+    // SHOOTERS GET DIFFERENT ABILITIES!
+    if (this.isShooter) {
+      this.personalityWeights.speedModifier *= 0.9;  // Slightly slower (focused on aiming)
+      this.personalityWeights.avoidance *= 1.3;      // Better at staying alive to shoot
+      this.maxShootCooldown = 45;                    // Faster shooting if also super navigator
+      if (this.isSuperNavigator) {
+        this.maxShootCooldown = 30;                  // Elite shooters fire faster!
+      }
+    }
     
     // Use provided velocity or generate based on personality
     if (initialVelocity) {
@@ -186,13 +225,16 @@ export class Boid {
   
   private draw() {
     // Use normal bird color for fill
-    const fillColor = Math.floor(
-      (Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 16 | Math.floor(
-      (Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 8 | Math.floor(
-      (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
-    );
+    let fillColor = hueToRGB(this.hue);
+    
+    // Super navigators have a subtle blue tint
+    if (this.isSuperNavigator) {
+      // Blend with blue (hue 200-220)
+      const blueHue = 210;
+      const blendFactor = 0.3; // 30% blue blend
+      const targetHue = this.hue * (1 - blendFactor) + blueHue * blendFactor;
+      fillColor = hueToRGB(targetHue);
+    }
     
     // If carrying dot, shimmer outline between orange and red
     let strokeColor = fillColor;
@@ -208,7 +250,37 @@ export class Boid {
       );
     }
     
-    this.sprite.clear();
+    clearGraphics(this.sprite);
+    
+    // Super Navigator blueish shimmer effect
+    if (this.isSuperNavigator) {
+      const shimmerPhase = Math.sin(this.superShimmerTime * 8) * 0.5 + 0.5;
+      const shimmerAlpha = 0.3 + shimmerPhase * 0.3; // Oscillate between 0.3 and 0.6
+      const blueGlowColor = 0x00AAFF; // Bright blue glow
+      
+      // Draw outer glow for super navigators
+      this.sprite.poly([
+        SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER * 1.3, 0,
+        -SIZES.BIRD.BASE * 1.3, SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER * 1.3,
+        -SIZES.BIRD.BASE * 1.3, -SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER * 1.3
+      ]);
+      this.sprite.fill({ color: blueGlowColor, alpha: shimmerAlpha });
+    }
+    
+    // Shooter bird red/orange pulsing glow
+    if (this.isShooter) {
+      const shooterPhase = Math.sin(this.shooterGlowTime * 6) * 0.5 + 0.5;
+      const shooterAlpha = 0.2 + shooterPhase * 0.4; // Oscillate between 0.2 and 0.6
+      const shooterGlowColor = this.shootCooldown <= 0 ? 0xFF4400 : 0xFF8800; // Red when ready, orange when cooling
+      
+      // Draw targeting reticle effect
+      this.sprite.circle(0, 0, SIZES.BIRD.BASE * 2);
+      this.sprite.stroke({ width: 1, color: shooterGlowColor, alpha: shooterAlpha });
+      
+      // Draw weapon glow at front
+      this.sprite.circle(SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER * 0.8, 0, 3);
+      this.sprite.fill({ color: shooterGlowColor, alpha: shooterAlpha * 2 });
+    }
     
     // Draw triangle with shimmer on outline only
     this.sprite.poly([
@@ -216,45 +288,47 @@ export class Boid {
       -SIZES.BIRD.BASE, SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER,
       -SIZES.BIRD.BASE, -SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER
     ]);
-    this.sprite.stroke({ width: this.hasDot ? VISUALS.STROKE.THICK : VISUALS.STROKE.NORMAL, color: strokeColor, alpha: VISUALS.ALPHA.FULL });
+    
+    // Super navigators get a blue-tinted stroke
+    let finalStrokeColor = strokeColor;
+    if (this.isSuperNavigator) {
+      finalStrokeColor = 0x00CCFF; // Cyan-blue stroke
+    }
+    // Shooters get a red-tinted stroke
+    if (this.isShooter) {
+      finalStrokeColor = 0xFF6600; // Orange-red stroke
+    }
+    
+    this.sprite.stroke({ width: this.hasDot ? VISUALS.STROKE.THICK : VISUALS.STROKE.NORMAL, color: finalStrokeColor, alpha: VISUALS.ALPHA.FULL });
     this.sprite.fill({ color: fillColor, alpha: this.hasDot ? VISUALS.ALPHA.HIGH : VISUALS.ALPHA.MEDIUM });
     
     // Dot indicator - show stolen dot color
     if (this.hasDot && this.targetDot) {
-      const dotColor = Math.floor(
-        (Math.cos(this.targetDot.hue * Math.PI / 180) * 0.5 + 0.5) * 255
-      ) << 16 | Math.floor(
-        (Math.sin(this.targetDot.hue * Math.PI / 180) * 0.5 + 0.5) * 255
-      ) << 8 | Math.floor(
-        (Math.cos((this.targetDot.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
-      );
+      const dotColor = hueToRGB(this.targetDot.hue);
       this.sprite.circle(0, 0, SIZES.BIRD.DOT_INDICATOR_RADIUS);
       this.sprite.fill({ color: dotColor, alpha: VISUALS.ALPHA.FULL });
     }
   }
   
   public applyForces(forces: { x: number; y: number }, dt: number) {
-    const ax = Math.max(-this.maxForce, Math.min(this.maxForce, forces.x));
-    const ay = Math.max(-this.maxForce, Math.min(this.maxForce, forces.y));
+    // DRY: Use VectorUtils for clamping
+    const clamped = VectorUtils.clamp(forces, -this.maxForce, this.maxForce);
     
-    this.vx += ax * dt;
-    this.vy += ay * dt;
+    this.vx += clamped.x * dt;
+    this.vy += clamped.y * dt;
     
-    // CRITICAL FIX: Prevent NaN/Infinity freeze from Math.hypot division by zero
-    const speed = Math.hypot(this.vx, this.vy);
+    // DRY: Use VectorUtils for speed limiting and safety
+    const velocity = { x: this.vx, y: this.vy };
+    const limited = VectorUtils.limitMagnitude(velocity, this.maxSpeed);
     
-    // SAFETY: Check for NaN/Infinity that could cause freeze
-    if (!isFinite(speed) || speed === 0 || !isFinite(this.vx) || !isFinite(this.vy)) {
-      console.warn('[BOID] Invalid speed/velocity detected, resetting:', {speed, vx: this.vx, vy: this.vy});
-      this.vx = 0;
-      this.vy = -PHYSICS.SPEED.BASE_BIRD_SPEED * 1.25; // Default upward movement
-      return;
-    }
+    // Ensure valid velocity
+    const safe = VectorUtils.ensureValid(limited, { 
+      x: 0, 
+      y: -PHYSICS.SPEED.BASE_BIRD_SPEED * 1.25 
+    });
     
-    if (speed > this.maxSpeed) {
-      this.vx = (this.vx / speed) * this.maxSpeed;
-      this.vy = (this.vy / speed) * this.maxSpeed;
-    }
+    this.vx = safe.x;
+    this.vy = safe.y;
   }
   
   public moveToTop(_dt: number) {
@@ -263,19 +337,11 @@ export class Boid {
   }
   
   public checkDotPickup(dot: EnergyDot): boolean {
-    // SAFETY: Check for valid positions before distance calculation
-    if (!isFinite(dot.x) || !isFinite(dot.y) || !isFinite(this.x) || !isFinite(this.y)) {
-      console.warn('[BOID] Invalid positions in checkDotPickup, skipping');
-      return false;
-    }
-    
-    const dist = Math.hypot(dot.x - this.x, dot.y - this.y);
-    
-    // SAFETY: Validate distance result
-    if (!isFinite(dist)) {
-      console.warn('[BOID] Invalid distance calculated in checkDotPickup');
-      return false;
-    }
+    // DRY: Use VectorUtils for safe distance calculation
+    const dist = VectorUtils.distance(
+      { x: this.x, y: this.y },
+      { x: dot.x, y: dot.y }
+    );
     
     return dist < FLOCKING.RADIUS.DOT_DETECTION;
   }
@@ -286,6 +352,19 @@ export class Boid {
       this.shimmerTime += dt;
     } else {
       this.shimmerTime = 0;
+    }
+    
+    // Update super navigator shimmer
+    if (this.isSuperNavigator) {
+      this.superShimmerTime += dt;
+    }
+    
+    // Update shooter mechanics
+    if (this.isShooter) {
+      this.shooterGlowTime += dt;
+      if (this.shootCooldown > 0) {
+        this.shootCooldown -= 1; // Frame-based cooldown
+      }
     }
     
     // Update position
@@ -323,14 +402,15 @@ export class Boid {
         const shimmerPhase = Math.sin(this.shimmerTime * 10) * 0.5 + 0.5;
         trailHue = 30 * (1 - shimmerPhase);
       }
+      // Super navigators have blue-tinted trails
+      else if (this.isSuperNavigator) {
+        // Blend with blue for trail
+        const blueHue = 210;
+        const blendFactor = 0.5; // 50% blue blend for trail
+        trailHue = this.hue * (1 - blendFactor) + blueHue * blendFactor;
+      }
       
-      const color = Math.floor(
-        (Math.cos(trailHue * Math.PI / 180) * 0.5 + 0.5) * 255
-      ) << 16 | Math.floor(
-        (Math.sin(trailHue * Math.PI / 180) * 0.5 + 0.5) * 255
-      ) << 8 | Math.floor(
-        (Math.cos((trailHue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
-      );
+      const color = hueToRGB(trailHue);
       
       for (let i = 1; i < this.trail.length; i++) {
         const alpha = (i / this.trail.length) * VISUALS.ALPHA.MEDIUM;
@@ -350,26 +430,114 @@ export class Boid {
     this.draw();
   }
   
+  public explode(particleSystem?: { 
+    createExplosion: (x: number, y: number, color: number, count: number) => void;
+    createBirdExplosion: (x: number, y: number, hue: number, vx: number, vy: number) => void;
+  }) {
+    // Create spaceship explosion animation
+    if (particleSystem && this.alive) {
+      // Create multi-stage explosion effect
+      const baseColor = hueToRGB(this.hue);
+      
+      // Stage 1: Initial burst
+      particleSystem.createExplosion(this.x, this.y, baseColor, 15);
+      
+      // Stage 2: Delayed secondary explosions
+      setTimeout(() => {
+        if (!this.sprite.destroyed) {
+          particleSystem.createExplosion(this.x + 10, this.y - 5, 0xFFFF00, 8);
+          particleSystem.createExplosion(this.x - 10, this.y + 5, 0xFF00FF, 8);
+        }
+      }, 50);
+      
+      // Stage 3: Final shockwave
+      setTimeout(() => {
+        if (!this.sprite.destroyed) {
+          particleSystem.createBirdExplosion(this.x, this.y, this.hue, this.vx, this.vy);
+        }
+      }, 100);
+    }
+    
+    // Then destroy the boid
+    this.destroy();
+  }
+
+  /**
+   * Shoot a projectile at the nearest asteroid
+   */
+  public shoot(asteroids?: Asteroid[]): BirdProjectile | null {
+    // Check if can shoot
+    if (!this.isShooter || this.shootCooldown > 0 || !this.alive) {
+      return null;
+    }
+    
+    // Find nearest asteroid if provided
+    let targetX = this.x + this.vx * 10; // Default: shoot in movement direction
+    let targetY = this.y + this.vy * 10;
+    
+    if (asteroids && asteroids.length > 0) {
+      let nearestAsteroid: Asteroid | null = null;
+      let nearestDist = Infinity;
+      
+      for (const asteroid of asteroids) {
+        if (asteroid.destroyed) continue;
+        const dist = VectorUtils.distance(
+          { x: this.x, y: this.y },
+          { x: asteroid.x, y: asteroid.y }
+        );
+        
+        // Only target asteroids within reasonable range
+        if (dist < 300 && dist < nearestDist) {
+          nearestDist = dist;
+          nearestAsteroid = asteroid;
+        }
+      }
+      
+      if (nearestAsteroid) {
+        // Predict where asteroid will be
+        const timeToHit = nearestDist / BirdProjectile.SPEED;
+        targetX = nearestAsteroid.x + nearestAsteroid.vx * timeToHit * 0.5;
+        targetY = nearestAsteroid.y + nearestAsteroid.vy * timeToHit * 0.5;
+      }
+    }
+    
+    // Create projectile
+    const projectile = BirdProjectile.createAimed(
+      this.app,
+      this.x,
+      this.y,
+      targetX,
+      targetY
+    );
+    
+    // Set cooldown
+    this.shootCooldown = this.maxShootCooldown;
+    
+    return projectile;
+  }
+  
+  /**
+   * Check if ready to shoot
+   */
+  public canShoot(): boolean {
+    return this.isShooter && this.shootCooldown <= 0 && this.alive;
+  }
+  
   public destroy() {
     // Prevent double destruction
     if (!this.alive) return;
     
     this.alive = false;
     
-    // Safely remove and destroy sprites
-    if (this.sprite.parent) {
-      this.app.stage.removeChild(this.sprite);
-    }
-    if (this.trailGraphics.parent) {
-      this.app.stage.removeChild(this.trailGraphics);
-    }
-    
-    // Destroy only if not already destroyed
-    if (!this.sprite.destroyed) {
-      this.sprite.destroy();
-    }
-    if (!this.trailGraphics.destroyed) {
-      this.trailGraphics.destroy();
-    }
+    EntityDestroyer.destroyEntity(
+      {
+        sprite: this.sprite,
+        trailSprite: this.trailGraphics,
+        app: this.app
+      },
+      {
+        markAsDestroyed: false // Already marked alive=false above
+      }
+    );
   }
 }

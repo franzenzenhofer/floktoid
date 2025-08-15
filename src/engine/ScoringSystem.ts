@@ -60,36 +60,36 @@ export const POINT_VALUES = {
   
   // BASIC REWARDS
   REWARDS: {
-    BIRD_HIT: 25,                 // Basic bird hit
-    BIRD_WITH_ENERGY_HIT: 100,    // Bird carrying energy dot
+    BIRD_HIT: 40,                 // Basic bird hit - BASELINE as requested
+    BIRD_WITH_ENERGY_HIT: 60,     // Bird carrying energy dot (50% bonus)
     BOSS_HIT: 50,                 // Hitting boss bird
-    BOSS_DEFEATED: 1000,          // Defeating boss
-    ENERGY_DOT_RECLAIMED: 150,    // Getting stolen dot back
-    ENERGY_DOT_CAUGHT_FALLING: 75, // Catching falling dot
-    ASTEROID_SPLIT: 10,           // When asteroid splits
-    WAVE_COMPLETE: 250,           // Completing a wave
-    PERFECT_WAVE: 500,            // No dots lost in wave
+    BOSS_DEFEATED: 200,           // Defeating boss
+    ENERGY_DOT_RECLAIMED: 80,     // Getting stolen dot back
+    ENERGY_DOT_CAUGHT_FALLING: 40, // Catching falling dot
+    ASTEROID_SPLIT: 5,            // When asteroid splits
+    WAVE_COMPLETE: 100,           // Completing a wave
+    PERFECT_WAVE: 200,            // No dots lost in wave
   },
   
-  // COMBO MULTIPLIERS
+  // COMBO MULTIPLIERS - MUCH MORE REASONABLE!
   COMBOS: {
-    COMBO_2X: 2.0,
-    COMBO_3X: 3.0,
-    COMBO_5X: 5.0,
-    COMBO_10X: 10.0,
-    COMBO_EPIC: 20.0,
+    COMBO_2X: 1.2,   // 20% bonus
+    COMBO_3X: 1.3,   // 30% bonus
+    COMBO_5X: 1.5,   // 50% bonus
+    COMBO_10X: 2.0,  // 100% bonus (double)
+    COMBO_EPIC: 3.0, // 200% bonus (triple) for epic 20+ combos
   },
   
   // SPECIAL BONUSES
   SPECIAL: {
-    MULTI_KILL: 50,               // Per extra bird in multi-kill
-    RICOCHET_KILL: 100,           // Bouncing asteroid kill
-    LONG_SHOT: 75,                // Long distance hit
-    CLOSE_CALL: 200,              // Last moment save
-    LAST_SECOND_SAVE: 300,        // Saving dot at last second
-    FLAWLESS_DEFENSE: 1000,       // Perfect defense for whole wave
-    SPEED_BONUS: 50,              // Quick wave completion
-    ACCURACY_BONUS: 100,          // High accuracy in wave
+    MULTI_KILL: 20,               // Per extra bird in multi-kill
+    RICOCHET_KILL: 30,            // Bouncing asteroid kill
+    LONG_SHOT: 20,                // Long distance hit
+    CLOSE_CALL: 50,               // Last moment save
+    LAST_SECOND_SAVE: 80,         // Saving dot at last second
+    FLAWLESS_DEFENSE: 300,        // Perfect defense for whole wave
+    SPEED_BONUS: 20,              // Quick wave completion
+    ACCURACY_BONUS: 40,           // High accuracy in wave
   },
 } as const;
 
@@ -162,18 +162,26 @@ export class ScoringSystem {
   
   /**
    * Calculate asteroid launch cost based on size
+   * Smallest: 1% of current score (minimum 10 points)
+   * Largest: 10% of current score (minimum 200 points)
    */
   calculateAsteroidCost(asteroidSize: number): number {
     const minSize = SIZES.ASTEROID.MIN;
     const maxSize = SIZES.ASTEROID.MAX_CHARGE_SIZE;
-    const minCost = POINT_VALUES.COSTS.ASTEROID_LAUNCH_MIN;
-    const maxCost = POINT_VALUES.COSTS.ASTEROID_LAUNCH_MAX;
+    const currentScore = this.getScore();
     
-    // Linear interpolation between min and max cost
+    // Calculate percentage based on size
     const sizeFactor = (asteroidSize - minSize) / (maxSize - minSize);
-    const cost = Math.round(minCost + (maxCost - minCost) * sizeFactor);
     
-    return Math.max(minCost, Math.min(maxCost, cost));
+    // Smallest = 1% of score, Largest = 10% of score
+    const percentage = 0.01 + (0.09 * sizeFactor); // 1% to 10%
+    const percentageCost = Math.round(currentScore * percentage);
+    
+    // Apply minimums: smallest >= 10, largest >= 200
+    const minCost = 10 + Math.round(190 * sizeFactor); // 10 to 200
+    
+    // Return the greater of percentage or minimum
+    return Math.max(percentageCost, minCost);
   }
   
   /**

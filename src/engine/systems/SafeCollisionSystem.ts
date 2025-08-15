@@ -4,12 +4,15 @@
  */
 
 import { Boid } from '../entities/Boid';
+import { BirdProjectile } from '../entities/BirdProjectile';
 import { Asteroid } from '../entities/Asteroid';
 import { EnergyDot } from '../entities/EnergyDot';
+import { AsteroidSplitter } from './AsteroidSplitter';
 import { GameConfig } from '../GameConfig';
+import * as PIXI from 'pixi.js';
 
 interface CollisionPair {
-  type: 'ast-boid' | 'ast-ast' | 'boid-dot';
+  type: 'ast-boid' | 'ast-ast' | 'boid-dot' | 'proj-ast';
   index1: number;
   index2: number;
   distance: number;
@@ -19,6 +22,13 @@ export class SafeCollisionSystem {
   private maxChecksPerFrame = 1000; // Limit checks to prevent freeze
   private collisionPairs: CollisionPair[] = [];
   private frameCounter = 0;
+  private asteroidSplitter: AsteroidSplitter | null = null;
+  
+  constructor(app?: PIXI.Application) {
+    if (app) {
+      this.asteroidSplitter = new AsteroidSplitter(app);
+    }
+  }
   
   /**
    * Phase 1: Detection only - NO modifications, NO callbacks
@@ -26,7 +36,8 @@ export class SafeCollisionSystem {
   detectCollisions(
     boids: Boid[],
     asteroids: Asteroid[],
-    _dots: EnergyDot[]
+    _dots: EnergyDot[],
+    projectiles?: BirdProjectile[]
   ): CollisionPair[] {
     this.frameCounter++;
     this.collisionPairs = [];
@@ -72,6 +83,39 @@ export class SafeCollisionSystem {
       }
     }
     
+    // Projectile-Asteroid collisions
+    if (projectiles) {
+      for (let i = 0; i < projectiles.length && checkCount < this.maxChecksPerFrame; i++) {
+        const proj = projectiles[i];
+        if (!proj || proj.destroyed || !isFinite(proj.x) || !isFinite(proj.y)) {
+          continue;
+        }
+        
+        for (let j = 0; j < asteroids.length && checkCount < this.maxChecksPerFrame; j++) {
+          const ast = asteroids[j];
+          if (!ast || ast.destroyed || !isFinite(ast.x) || !isFinite(ast.y) || !isFinite(ast.size)) {
+            continue;
+          }
+          
+          checkCount++;
+          
+          const dx = proj.x - ast.x;
+          const dy = proj.y - ast.y;
+          const distSq = dx * dx + dy * dy;
+          const threshold = (proj.size + ast.size) * (proj.size + ast.size);
+          
+          if (distSq < threshold) {
+            this.collisionPairs.push({
+              type: 'proj-ast',
+              index1: i, // projectile index
+              index2: j, // asteroid index
+              distance: Math.sqrt(distSq)
+            });
+          }
+        }
+      }
+    }
+    
     return this.collisionPairs;
   }
   
@@ -110,8 +154,8 @@ export class SafeCollisionSystem {
           processedBoids.add(boidIndex);
           const boid = boids[boidIndex];
           if (boid && callbacks.onBoidHit) {
-            // Defer callback to avoid stage modifications
-            setTimeout(() => callbacks.onBoidHit!(boid), 0);
+            // Call immediately - handler should capture state before any async ops
+            callbacks.onBoidHit(boid);
           }
         }
         

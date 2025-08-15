@@ -9,12 +9,15 @@
  * - Full logging in dev mode
  */
 
+import * as PIXI from 'pixi.js';
 import { Boid } from '../entities/Boid';
 import { Asteroid } from '../entities/Asteroid';
 import { EnergyDot } from '../entities/EnergyDot';
+import { BirdProjectile } from '../entities/BirdProjectile';
+import { AsteroidSplitter } from './AsteroidSplitter';
 
 export interface CollisionEvent {
-  type: 'asteroid-boid' | 'asteroid-asteroid' | 'boid-dot';
+  type: 'asteroid-boid' | 'asteroid-asteroid' | 'boid-dot' | 'projectile-asteroid';
   entities: [unknown, unknown];
   timestamp: number;
   processed: boolean;
@@ -25,6 +28,7 @@ export interface CollisionCallbacks {
   onAsteroidHit: (asteroid: Asteroid) => boolean;
   onAsteroidFragment?: (asteroid: Asteroid, fragments: number) => void;
   onDotPickup?: (boid: Boid, dot: EnergyDot) => void;
+  onProjectileHit?: (projectile: BirdProjectile, asteroid: Asteroid) => Asteroid[];
 }
 
 export class CollisionManager {
@@ -32,9 +36,13 @@ export class CollisionManager {
   private processedPairs = new Set<string>();
   private frameCount = 0;
   private debug = false;
+  private asteroidSplitter: AsteroidSplitter | null = null;
   
-  constructor(debug = false) {
+  constructor(debug = false, app?: PIXI.Application) {
     this.debug = debug;
+    if (app) {
+      this.asteroidSplitter = new AsteroidSplitter(app);
+    }
   }
   
   /**
@@ -43,7 +51,8 @@ export class CollisionManager {
   detectCollisions(
     boids: Boid[],
     asteroids: Asteroid[],
-    _energyDots: EnergyDot[]
+    _energyDots: EnergyDot[],
+    projectiles?: BirdProjectile[]
   ): CollisionEvent[] {
     const events: CollisionEvent[] = [];
     const timestamp = performance.now();
@@ -84,6 +93,41 @@ export class CollisionManager {
           
           if (this.debug) {
             console.log(`  Collision: Asteroid ${i} -> Boid ${j} (dist: ${Math.sqrt(distSq)})`);
+          }
+        }
+      }
+    }
+    
+    // Projectile-Asteroid collisions
+    if (projectiles) {
+      for (let i = 0; i < projectiles.length; i++) {
+        const proj = projectiles[i];
+        if (!proj || proj.destroyed) continue;
+        
+        for (let j = 0; j < asteroids.length; j++) {
+          const ast = asteroids[j];
+          if (!ast || ast.destroyed) continue;
+          
+          const pairKey = `proj${i}-ast${j}`;
+          if (this.processedPairs.has(pairKey)) continue;
+          
+          const dx = proj.x - ast.x;
+          const dy = proj.y - ast.y;
+          const distSq = dx * dx + dy * dy;
+          const threshold = (proj.size + ast.size) * (proj.size + ast.size);
+          
+          if (distSq < threshold) {
+            this.processedPairs.add(pairKey);
+            events.push({
+              type: 'projectile-asteroid',
+              entities: [proj, ast],
+              timestamp,
+              processed: false
+            });
+            
+            if (this.debug) {
+              console.log(`  Collision: Projectile ${i} -> Asteroid ${j} (dist: ${Math.sqrt(distSq)})`);
+            }
           }
         }
       }
@@ -131,8 +175,9 @@ export class CollisionManager {
     events: CollisionEvent[],
     callbacks: CollisionCallbacks,
     boids: Boid[],
-    asteroids: Asteroid[]
-  ): void {
+    asteroids: Asteroid[],
+    projectiles?: BirdProjectile[]
+  ): Asteroid[] {
     if (this.debug) {
       console.log(`Processing ${events.length} collision events`);
     }
@@ -140,6 +185,8 @@ export class CollisionManager {
     // Track what needs removal
     const boidsToRemove = new Set<Boid>();
     const asteroidsToRemove = new Set<Asteroid>();
+    const projectilesToRemove = new Set<BirdProjectile>();
+    const newAsteroids: Asteroid[] = [];
     const visualEffects: (() => void)[] = [];
     
     // Process each event
@@ -191,11 +238,50 @@ export class CollisionManager {
           event.processed = true;
           break;
         }
+        
+        case 'projectile-asteroid': {
+          const [projectile, asteroid] = event.entities as [BirdProjectile, Asteroid];
+          
+          if (projectilesToRemove.has(projectile) || asteroidsToRemove.has(asteroid)) {
+            continue;
+          }
+          
+          // Mark projectile for removal
+          projectilesToRemove.add(projectile);
+          asteroidsToRemove.add(asteroid);
+          
+          // Create fragments if callback provided
+          if (callbacks.onProjectileHit && this.asteroidSplitter) {
+            const fragments = this.asteroidSplitter.split(asteroid);
+            newAsteroids.push(...fragments);
+            
+            // Queue visual effect
+            visualEffects.push(() => {
+              if (callbacks.onProjectileHit) {
+                callbacks.onProjectileHit(projectile, asteroid);
+              }
+            });
+          }
+          
+          event.processed = true;
+          break;
+        }
       }
     }
     
     // Remove entities safely
     this.removeEntities(boids, boidsToRemove, asteroids, asteroidsToRemove);
+    
+    // Remove projectiles
+    if (projectiles) {
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        if (projectilesToRemove.has(projectiles[i])) {
+          const projectile = projectiles[i];
+          projectile.destroy();
+          projectiles.splice(i, 1);
+        }
+      }
+    }
     
     // Process visual effects after all removals
     for (const effect of visualEffects) {
@@ -205,6 +291,8 @@ export class CollisionManager {
         console.error('Visual effect error:', e);
       }
     }
+    
+    return newAsteroids;
   }
   
   /**

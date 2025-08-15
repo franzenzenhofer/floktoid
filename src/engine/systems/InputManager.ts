@@ -3,6 +3,7 @@ import { NeonFlockEngine } from '../NeonFlockEngine';
 import { GameConfig } from '../GameConfig';
 import { generateAsteroid } from '../utils/AsteroidGenerator';
 import { renderAsteroidPreview } from '../utils/AsteroidRenderer';
+import { hueToRGB } from '../utils/ColorUtils';
 import CentralConfig from '../CentralConfig';
 import { scoringSystem } from '../ScoringSystem';
 
@@ -166,11 +167,17 @@ export class InputManager {
     
     // Only show cursor when charging (like the dashed line!)
     if (this.charging) {
-      const cursorColor = this.charging ? VISUALS.COLORS.NEON_YELLOW : VISUALS.COLORS.NEON_CYAN;
+      // Get the same color as the dashed line!
+      const canAfford = scoringSystem.canAffordAsteroid(this.chargeSize);
+      const hue = canAfford ? (performance.now() / 10) % 360 : 0;
+      
+      // Convert hue to RGB for cursor color (same as aim line)
+      const cursorColor = canAfford ? hueToRGB(hue) : 0xFF0000; // Red if can't afford
+      
       // Show spawn zone indicator
       if (this.currentPos.y < this.app.screen.height * 0.67) {
         this.cursor.circle(this.currentPos.x, this.currentPos.y, SIZES.BIRD.BASE);
-        this.cursor.stroke({ width: VISUALS.STROKE.NORMAL, color: VISUALS.COLORS.NEON_RED, alpha: VISUALS.ALPHA.MEDIUM }); // Red when out of spawn zone (top 2/3)
+        this.cursor.stroke({ width: VISUALS.STROKE.NORMAL, color: 0x808080, alpha: VISUALS.ALPHA.MEDIUM }); // Gray when out of spawn zone
       } else {
         this.cursor.circle(this.currentPos.x, this.currentPos.y, SIZES.BIRD.BASE);
         this.cursor.stroke({ width: VISUALS.STROKE.NORMAL, color: cursorColor, alpha: VISUALS.ALPHA.FULL });
@@ -246,11 +253,7 @@ export class InputManager {
       const angle = Math.abs(Math.atan2(dy * segments, dx * segments) * (180 / Math.PI));
       const validAngle = angle > 15 && angle < 165;
       // Get color from hue for aim line - red if can't afford
-      const aimColor = canAfford ? 
-        (Math.floor((Math.cos(hue * Math.PI / 180) * 0.5 + 0.5) * 255) << 16 | 
-         Math.floor((Math.sin(hue * Math.PI / 180) * 0.5 + 0.5) * 255) << 8 | 
-         Math.floor((Math.cos((hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255)) :
-        0xFF0000; // Red if can't afford
+      const aimColor = canAfford ? hueToRGB(hue) : 0xFF0000; // Red if can't afford
       const lineColor = !validAngle ? 0x808080 : aimColor; // Gray if invalid angle, colored otherwise
       
       // Keep the dashed aim line visible (important for gameplay)

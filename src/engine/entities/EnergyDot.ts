@@ -1,5 +1,8 @@
 import * as PIXI from 'pixi.js';
 import CentralConfig from '../CentralConfig';
+import { hueToRGB } from '../utils/ColorUtils';
+import { EntityDestroyer } from '../utils/EntityDestroyer';
+import { createGraphics, clearGraphics } from '../utils/SpriteFactory';
 
 const { SIZES, VISUALS } = CentralConfig;
 
@@ -21,8 +24,8 @@ export class EnergyDot {
     this.hue = hue;
     this.pulsePhase = Math.random() * Math.PI * 2;
     
-    this.glowSprite = new PIXI.Graphics();
-    this.sprite = new PIXI.Graphics();
+    this.glowSprite = createGraphics();
+    this.sprite = createGraphics();
     
     app.stage.addChild(this.glowSprite);
     app.stage.addChild(this.sprite);
@@ -38,23 +41,17 @@ export class EnergyDot {
       return;
     }
     
-    const color = Math.floor(
-      (Math.cos(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 16 | Math.floor(
-      (Math.sin(this.hue * Math.PI / 180) * 0.5 + 0.5) * 255
-    ) << 8 | Math.floor(
-      (Math.cos((this.hue + 120) * Math.PI / 180) * 0.5 + 0.5) * 255
-    );
+    const color = hueToRGB(this.hue);
     
     const pulse = Math.sin(performance.now() / 1000 * 5 + this.pulsePhase) * (SIZES.ENERGY_DOT.PULSE_MAX_SCALE - SIZES.ENERGY_DOT.PULSE_MIN_SCALE) / 2 + (SIZES.ENERGY_DOT.PULSE_MIN_SCALE + SIZES.ENERGY_DOT.PULSE_MAX_SCALE) / 2;
     
     // Draw glow
-    this.glowSprite.clear();
+    clearGraphics(this.glowSprite);
     this.glowSprite.circle(this.x, this.y, SIZES.ENERGY_DOT.RADIUS * SIZES.ENERGY_DOT.GLOW_RADIUS_MULTIPLIER * pulse);
     this.glowSprite.fill({ color, alpha: VISUALS.ALPHA.LOW * pulse });
     
     // Draw dot
-    this.sprite.clear();
+    clearGraphics(this.sprite);
     this.sprite.circle(this.x, this.y, SIZES.ENERGY_DOT.RADIUS * pulse);
     this.sprite.fill({ color, alpha: VISUALS.ALPHA.FULL });
     
@@ -80,27 +77,16 @@ export class EnergyDot {
   }
   
   public destroy() {
-    // SAFE: Remove ticker callback to prevent memory leak
-    try {
-      this.app.ticker.remove(this.update);
-    } catch (e) {
-      console.warn('[EnergyDot] Failed to remove ticker callback:', e);
-    }
-    
-    // SAFE: Remove sprites only if they have parents
-    if (this.sprite.parent) {
-      this.app.stage.removeChild(this.sprite);
-    }
-    if (this.glowSprite.parent) {
-      this.app.stage.removeChild(this.glowSprite);
-    }
-    
-    // SAFE: Destroy only if not already destroyed
-    if (!this.sprite.destroyed) {
-      this.sprite.destroy();
-    }
-    if (!this.glowSprite.destroyed) {
-      this.glowSprite.destroy();
-    }
+    EntityDestroyer.destroyEntity(
+      {
+        sprite: this.sprite,
+        glowSprite: this.glowSprite,
+        app: this.app,
+        update: this.update
+      },
+      {
+        removeTickerCallbacks: true
+      }
+    );
   }
 }
