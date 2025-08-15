@@ -7,8 +7,12 @@ describe('Boid - CRITICAL ENTITY SPAWNING & PERSONALITIES', () => {
   
   beforeEach(() => {
     app = new Application();
-    // Mock screen property for tests
-    (app as any).screen = { width: 800, height: 600 };
+    // Mock screen property for tests (use defineProperty for readonly properties)
+    Object.defineProperty(app, 'screen', {
+      value: { width: 800, height: 600 },
+      writable: false,
+      configurable: true
+    });
   });
   
   describe('CRITICAL: Constructor Validation', () => {
