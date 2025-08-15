@@ -1,4 +1,7 @@
+import { useState, useEffect } from 'react';
 import { VERSION_INFO } from '../version';
+import { UsernameGenerator } from '../utils/UsernameGenerator';
+import { leaderboardService, type LeaderboardEntry } from '../services/LeaderboardService';
 
 interface StartScreenProps {
   onStart: (devMode?: boolean) => void;
@@ -6,6 +9,13 @@ interface StartScreenProps {
 }
 
 export function StartScreen({ onStart, highScore }: StartScreenProps) {
+  const [username] = useState(() => UsernameGenerator.getSessionUsername());
+  const [topPlayer, setTopPlayer] = useState<LeaderboardEntry | null>(null);
+  
+  useEffect(() => {
+    // Fetch top player on mount
+    leaderboardService.getTopPlayer().then(setTopPlayer);
+  }, []);
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-4">
       <div className="text-center space-y-4 md:space-y-8 max-w-lg">
@@ -20,6 +30,16 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
         
         <div className="text-xs sm:text-sm md:text-base text-gray-300 max-w-md">
           Defend the energy dots!
+        </div>
+        
+        {topPlayer && (
+          <div className="text-sm sm:text-base text-cyan-400">
+            Top Leader: {topPlayer.username} - {topPlayer.score.toLocaleString()}
+          </div>
+        )}
+        
+        <div className="text-xs sm:text-sm text-gray-500">
+          Your username: <span className="text-cyan-300">{username}</span>
         </div>
         
         <div className="space-y-2 md:space-y-4 text-gray-400">

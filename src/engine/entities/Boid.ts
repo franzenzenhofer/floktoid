@@ -434,7 +434,26 @@ export class Boid {
     // Update sprite position and rotation
     this.sprite.x = this.x;
     this.sprite.y = this.y;
-    this.sprite.rotation = Math.atan2(this.vy, this.vx);
+    
+    // Calculate target rotation
+    const targetRotation = Math.atan2(this.vy, this.vx);
+    
+    // Shooters rotate more slowly for authentic Asteroids feel
+    if (this.isShooter) {
+      // Smooth rotation for shooters - lerp towards target
+      const rotationSpeed = 0.15; // Lower = slower rotation
+      let currentRotation = this.sprite.rotation;
+      
+      // Handle angle wrapping for shortest path
+      let diff = targetRotation - currentRotation;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      
+      this.sprite.rotation = currentRotation + diff * rotationSpeed;
+    } else {
+      // Normal birds rotate instantly
+      this.sprite.rotation = targetRotation;
+    }
     
     // Redraw if state changed
     this.draw();

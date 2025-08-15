@@ -4,6 +4,7 @@ import { HUD } from './components/HUD';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
 import { DevConsole } from './components/DevConsole';
+import { leaderboardService } from './services/LeaderboardService';
 
 export function Game() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -37,7 +38,14 @@ export function Game() {
           
           engine.onWaveUpdate = setWave;
           engine.onEnergyStatus = (critical: boolean) => setEnergyCritical(critical);
-          engine.onGameOver = () => setGameState('gameover');
+          engine.onGameOver = () => {
+            // Submit score to leaderboard
+            const finalScore = engine.getScore();
+            leaderboardService.submitScore(finalScore).catch(error => {
+              console.error('Failed to submit score:', error);
+            });
+            setGameState('gameover');
+          };
           
           engine.start();
           engineRef.current = engine;
