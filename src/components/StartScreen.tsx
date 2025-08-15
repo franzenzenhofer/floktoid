@@ -15,7 +15,7 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
         </h1>
         
         <div className="text-sm sm:text-lg md:text-xl neon-yellow pulse-neon">
-          Asteroids vs Evil Birds
+          Asteroids vs Evil Spaceships
         </div>
         
         <div className="text-xs sm:text-sm md:text-base text-gray-300 max-w-md">
