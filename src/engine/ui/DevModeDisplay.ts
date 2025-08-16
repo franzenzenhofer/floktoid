@@ -177,9 +177,9 @@ export class DevModeDisplay {
    * Log to on-screen console
    */
   public logToConsole(message: string): void {
-    if (!this.enabled || !this.consoleText) return;
+    if (!this.enabled || !this.consoleText || !this.consoleText.text) return;
     
-    const lines = this.consoleText.text.split('\n');
+    const lines = (this.consoleText.text || '').split('\n');
     lines.push(`[${new Date().toLocaleTimeString()}] ${message}`);
     
     // Keep only last 8 lines

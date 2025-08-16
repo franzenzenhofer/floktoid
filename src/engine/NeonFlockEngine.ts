@@ -1320,8 +1320,8 @@ export class NeonFlockEngine {
       this.devModeDisplay.update(dt);
     }
     
-    // Check wave complete - FIX: Check for NO BIRDS AT ALL, not just birds without dots
-    // Wave completes when all birds are gone, not when all birds have dots
+    // Check wave complete - wave ends when all birds are destroyed (not when they have dots)
+    // This prevents wave 5 skip: bosses must be killed, not just have dots
     if (this.birdsToSpawn === 0 && this.boids.length === 0 && !this.isTransitioningWave) {
       // Prevent re-entrant wave transitions
       this.isTransitioningWave = true;

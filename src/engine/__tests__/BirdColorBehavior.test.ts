@@ -15,8 +15,12 @@ describe('Bird Color Behavior', () => {
       writable: false,
       configurable: true
     });
+    Object.defineProperty(app, 'canvas', {
+      value: document.createElement('canvas'),
+      writable: false,
+      configurable: true
+    });
     (app as any).stage = { addChild: () => {}, removeChild: () => {} };
-    (app as any).canvas = document.createElement('canvas');
   });
 
   describe('Color Change on Dot Pickup', () => {
