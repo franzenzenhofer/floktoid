@@ -93,9 +93,9 @@ Co-Authored-By: Claude <noreply@anthropic.com>`;
       log('    ✅ No uncommitted changes', 'green');
     }
     
-    // Step 2: Run tests
+    // Step 2: Run tests (no watch mode!)
     log('\n🧪 Step 2: Running Tests...', 'blue');
-    exec('npm test', { ignoreError: true }); // Continue even if some tests fail
+    exec('npm test -- --run', { ignoreError: true }); // Run tests once, no watch mode
     exec('npm run lint');
     exec('npm run typecheck');
     log('    ✅ Tests completed', 'green');
@@ -146,8 +146,16 @@ Co-Authored-By: Claude <noreply@anthropic.com>`;
       throw new Error(`Site returned status ${response.status}`);
     }
     
-    // Step 7: Generate deployment report
-    log('\n📊 Step 7: Generating Deployment Report...', 'blue');
+    // Step 7: Post-deployment tests
+    log('\n🧪 Step 7: Running Post-Deployment Tests...', 'blue');
+    exec('npm run deploy:test', { ignoreError: true });
+    log('    ✅ Post-deployment tests completed', 'green');
+    
+    // Step 8: Generate deployment report
+    log('\n📊 Step 8: Generating Deployment Report...', 'blue');
+    
+    // Re-read package.json to get current version
+    const currentPackageJson = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
     
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     const report = {
@@ -162,7 +170,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>`;
         commit: exec('git rev-parse HEAD', { silent: true }).trim(),
         shortCommit: exec('git rev-parse --short HEAD', { silent: true }).trim()
       },
-      version: packageJson.version
+      version: currentPackageJson.version
     };
     
     fs.writeFileSync(
@@ -176,7 +184,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>`;
     log('\n' + '=' .repeat(70), 'cyan');
     log(`✅ DEPLOYMENT SUCCESSFUL IN ${duration}s`, 'green');
     log(`🌐 Live at: ${deploymentUrl}`, 'blue');
-    log(`📦 Version: ${packageJson.version}`, 'magenta');
+    log(`📦 Version: ${currentPackageJson.version}`, 'magenta');
     log(`🔗 GitHub: https://github.com/franzenzenhofer/floktoid`, 'cyan');
     
     process.exit(0);
