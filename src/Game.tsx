@@ -51,6 +51,11 @@ export function Game() {
           
           engine.start();
           engineRef.current = engine;
+          
+          // Expose autopilot to window for testing
+          (window as any).gameEngine = engine;
+          (window as any).enableAutopilot = () => engine.enableAutopilot();
+          (window as any).disableAutopilot = () => engine.disableAutopilot();
         } catch (error) {
           console.error('[GAME] Failed to initialize engine:', error);
         }

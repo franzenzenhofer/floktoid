@@ -65,6 +65,11 @@ export class NeonFlockEngine {
   private DOT_RESPAWN_DELAY = TIMING.DOT_RESPAWN_DELAY_MS;
   private waveStartTime = 0; // Time when wave started
   
+  // Autopilot mode for testing
+  private autopilotEnabled = false;
+  private autopilotInterval = 0;
+  private lastAutopilotShot = 0;
+  
   public onScoreUpdate?: (score: number, combo: number, multiplier: number) => void;
   public onWaveUpdate?: (wave: number) => void;
   public onEnergyStatus?: (critical: boolean) => void;
@@ -1321,6 +1326,9 @@ export class NeonFlockEngine {
       this.devModeDisplay.update(dt);
     }
     
+    // Run autopilot if enabled
+    this.runAutopilot(dt);
+    
     // KISS: Wave ends when ALL birds are gone and none left to spawn
     // Simple rule: No birds = next wave
     if (this.birdsToSpawn === 0 && this.boids.length === 0) {
@@ -1496,6 +1504,70 @@ export class NeonFlockEngine {
       return;
     }
     this.app.start();
+  }
+  
+  // Autopilot mode for testing
+  public enableAutopilot() {
+    this.autopilotEnabled = true;
+    console.log('[AUTOPILOT] Enabled - will automatically shoot at birds');
+  }
+  
+  public disableAutopilot() {
+    this.autopilotEnabled = false;
+    console.log('[AUTOPILOT] Disabled');
+  }
+  
+  public isAutopilotEnabled(): boolean {
+    return this.autopilotEnabled;
+  }
+  
+  private runAutopilot(dt: number) {
+    if (!this.autopilotEnabled) return;
+    
+    // Shoot every 500ms if there are birds
+    const now = Date.now();
+    if (now - this.lastAutopilotShot < 500) return;
+    
+    if (this.boids.length > 0) {
+      // Find closest bird to any energy dot
+      let closestBird: Boid | null = null;
+      let minDistance = Infinity;
+      
+      for (const bird of this.boids) {
+        for (const dot of this.energyDots) {
+          if (!dot.stolen) {
+            const dx = bird.x - dot.x;
+            const dy = bird.y - dot.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < minDistance) {
+              minDistance = dist;
+              closestBird = bird;
+            }
+          }
+        }
+      }
+      
+      if (closestBird) {
+        // Shoot asteroid at the bird
+        const power = 0.7 + Math.random() * 0.3; // Random power 70-100%
+        const startX = this.app.screen.width / 2;
+        const startY = this.app.screen.height - 100;
+        
+        // Calculate trajectory to hit the bird
+        const dx = closestBird.x - startX;
+        const dy = closestBird.y - startY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        const vx = (dx / distance) * power * 400;
+        const vy = (dy / distance) * power * 400;
+        
+        const asteroid = new Asteroid(this.app, startX, startY, vx, vy, power);
+        this.asteroids.push(asteroid);
+        
+        this.lastAutopilotShot = now;
+        console.log(`[AUTOPILOT] Shot at bird - Wave ${this.wave}, Birds: ${this.boids.length}`);
+      }
+    }
   }
   
   public destroy() {
