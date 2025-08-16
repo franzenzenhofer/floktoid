@@ -141,9 +141,6 @@ export class SafeCollisionSystem {
           continue;
         }
         
-        // Mark boid for removal
-        removeBoids.add(boidIndex);
-        
         // Only call callback once per boid
         if (!processedBoids.has(boidIndex)) {
           processedBoids.add(boidIndex);
@@ -151,6 +148,14 @@ export class SafeCollisionSystem {
           if (boid && callbacks.onBoidHit) {
             // Call immediately - handler should capture state before any async ops
             callbacks.onBoidHit(boid);
+            
+            // Check if boid is still alive after callback (for bosses)
+            if (!boid.alive) {
+              removeBoids.add(boidIndex);
+            }
+          } else {
+            // No callback, just mark for removal
+            removeBoids.add(boidIndex);
           }
         }
         

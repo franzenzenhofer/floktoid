@@ -331,6 +331,71 @@ export class NeonFlockEngine {
   }
   
   /**
+   * Show BOSS LEVEL message
+   */
+  private showBossLevelMessage(): void {
+    const bossText = new PIXI.Text('BOSS LEVEL!', {
+      fontFamily: 'Space Mono, monospace',
+      fontSize: 72,
+      fontWeight: 'bold',
+      fill: [0xFF00FF, 0xFF0066], // Gradient from magenta to red
+      stroke: {
+        color: 0x000000,
+        width: 6
+      },
+      dropShadow: {
+        color: 0xFF00FF,
+        blur: 10,
+        distance: 0,
+        alpha: 1,
+        angle: 0
+      },
+      letterSpacing: 4
+    });
+    
+    bossText.anchor.set(0.5);
+    bossText.x = this.app.screen.width / 2;
+    bossText.y = this.app.screen.height / 3;
+    bossText.scale.set(0.1); // Start small
+    bossText.alpha = 0;
+    bossText.zIndex = 2000; // Above everything
+    this.app.stage.addChild(bossText);
+    
+    // Animate in with punch effect
+    let animTime = 0;
+    const animateBossText = (ticker: PIXI.Ticker) => {
+      animTime += ticker.deltaTime / 60;
+      
+      if (animTime < 0.5) {
+        // Punch in
+        const t = animTime * 2;
+        bossText.scale.set(t * 1.5);
+        bossText.alpha = t;
+        bossText.rotation = Math.sin(t * Math.PI * 4) * 0.1;
+      } else if (animTime < 2.5) {
+        // Hold
+        bossText.scale.set(1.5);
+        bossText.alpha = 1;
+        bossText.rotation = Math.sin(animTime * Math.PI * 8) * 0.02;
+        // Pulsing effect via scale
+        bossText.scale.set(1.5 + Math.sin(animTime * Math.PI * 2) * 0.1);
+      } else if (animTime < 3) {
+        // Fade out
+        const t = (animTime - 2.5) * 2;
+        bossText.scale.set(1.5 + t * 0.5);
+        bossText.alpha = 1 - t;
+      } else {
+        // Remove
+        this.app.ticker.remove(animateBossText);
+        this.app.stage.removeChild(bossText);
+        bossText.destroy();
+      }
+    };
+    
+    this.app.ticker.add(animateBossText);
+  }
+  
+  /**
    * Get boss configuration for current wave
    * Pattern: 5/10/15, 5s/10s/15s, 2x5/2x10/2x15, 3x5/3x10/3x15, etc.
    */
@@ -378,6 +443,9 @@ export class NeonFlockEngine {
     
     // If boss wave, spawn bosses instead of regular birds
     if (this.bossesToSpawn > 0) {
+      // Display BOSS LEVEL message
+      this.showBossLevelMessage();
+      
       // Spawn bosses
       for (let i = 0; i < bossConfig.count; i++) {
         const shouldShoot = Math.random() < (bossConfig.shootingPercent / 100);
