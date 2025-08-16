@@ -53,8 +53,11 @@ export function Game() {
           engineRef.current = engine;
           
           // Expose autopilot to window for testing
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (window as any).gameEngine = engine;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (window as any).enableAutopilot = () => engine.enableAutopilot();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (window as any).disableAutopilot = () => engine.disableAutopilot();
         } catch (error) {
           console.error('[GAME] Failed to initialize engine:', error);

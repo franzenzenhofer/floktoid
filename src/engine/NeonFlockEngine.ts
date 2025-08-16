@@ -67,7 +67,6 @@ export class NeonFlockEngine {
   
   // Autopilot mode for testing
   private autopilotEnabled = false;
-  private autopilotInterval = 0;
   private lastAutopilotShot = 0;
   
   public onScoreUpdate?: (score: number, combo: number, multiplier: number) => void;
@@ -1531,7 +1530,7 @@ export class NeonFlockEngine {
     return this.autopilotEnabled;
   }
   
-  private runAutopilot(dt: number) {
+  private runAutopilot(_dt: number) {
     if (!this.autopilotEnabled) return;
     
     // Shoot every 200ms if there are birds (more aggressive)
