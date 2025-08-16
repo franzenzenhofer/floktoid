@@ -63,6 +63,7 @@ export class NeonFlockEngine {
   private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
   private bossesToSpawn = 0; // Number of bosses to spawn this wave
   private DOT_RESPAWN_DELAY = TIMING.DOT_RESPAWN_DELAY_MS;
+  private isTransitioningWave = false; // Prevent re-entrant wave transitions
   
   public onScoreUpdate?: (score: number, combo: number, multiplier: number) => void;
   public onWaveUpdate?: (wave: number) => void;
@@ -428,7 +429,7 @@ export class NeonFlockEngine {
   }
 
   private startWave() {
-    console.log(`[WAVE] Starting wave ${this.wave}`);
+    console.log(`[WAVE] Starting wave ${this.wave}, boids before start: ${this.boids.length}`);
     
     // Check for perfect wave from previous wave
     if (this.wave > 1 && this.waveDotsLost === 0) {
@@ -484,6 +485,11 @@ export class NeonFlockEngine {
     this.speedMultiplier = Math.pow(GameConfig.SPEED_GROWTH, this.wave - 1);
     this.nextSpawnTime = 0;
     this.onWaveUpdate?.(this.wave);
+    
+    console.log(`[WAVE] End of startWave(): wave=${this.wave}, birdsToSpawn=${this.birdsToSpawn}, boids.length=${this.boids.length}`);
+    if (this.wave === 5) {
+      console.log(`[WAVE 5 CHECK] After startWave, boids without dots:`, this.boids.filter(b => !b.hasDot).length);
+    }
   }
   
   public spawnBird(x?: number, y?: number) {
@@ -1346,9 +1352,12 @@ export class NeonFlockEngine {
       }
     }
     
-    if (this.birdsToSpawn === 0 && birdsWithoutDots.length === 0) {
+    if (this.birdsToSpawn === 0 && birdsWithoutDots.length === 0 && !this.isTransitioningWave) {
       console.log(`[WAVE] Wave ${this.wave} complete, moving to wave ${this.wave + 1}`);
       console.log(`[WAVE] Completion check: birdsToSpawn=${this.birdsToSpawn}, birdsWithoutDots=${birdsWithoutDots.length}, totalBoids=${this.boids.length}`);
+      
+      // Prevent re-entrant wave transitions
+      this.isTransitioningWave = true;
       
       scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
       this.updateScoreDisplay();
@@ -1356,6 +1365,9 @@ export class NeonFlockEngine {
       this.wave = nextWave;
       console.log(`[WAVE] Set wave to ${this.wave}, calling startWave()`);
       this.startWave();
+      
+      // Reset flag after transition
+      this.isTransitioningWave = false;
     }
     
     // Check if all dots are stolen - if so, pause respawn
