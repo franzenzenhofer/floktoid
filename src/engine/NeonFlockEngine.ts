@@ -1343,8 +1343,8 @@ export class NeonFlockEngine {
     if (this.birdsToSpawn === 0 && this.boids.length === 0) {
       // Wait a tiny bit after wave starts to prevent double-triggering
       const timeSinceWaveStart = Date.now() - this.waveStartTime;
-      if (timeSinceWaveStart > 100) { // 100ms minimum between waves
-        console.log(`[WAVE] Completing wave ${this.wave} -> ${this.wave + 1} (time since start: ${timeSinceWaveStart}ms)`);
+      if (timeSinceWaveStart > 500) { // Increase to 500ms minimum between waves
+        console.log(`[WAVE] Completing wave ${this.wave} -> ${this.wave + 1} (time since start: ${timeSinceWaveStart}ms, birdsToSpawn: ${this.birdsToSpawn}, boids: ${this.boids.length})`);
         scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
         this.updateScoreDisplay();
         this.wave++;
