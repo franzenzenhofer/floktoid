@@ -434,6 +434,8 @@ export class NeonFlockEngine {
   }
 
   private startWave() {
+    console.log(`[WAVE] Starting wave ${this.wave}`);
+    
     // Check for perfect wave from previous wave
     if (this.wave > 1 && this.waveDotsLost === 0) {
       scoringSystem.addEvent(ScoringEvent.PERFECT_WAVE);
@@ -447,6 +449,7 @@ export class NeonFlockEngine {
     // Check for boss wave
     const bossConfig = this.getBossConfig();
     this.bossesToSpawn = bossConfig.count;
+    console.log(`[WAVE] Boss config for wave ${this.wave}:`, bossConfig);
     
     // If boss wave, spawn bosses instead of regular birds
     if (this.bossesToSpawn > 0) {
@@ -466,6 +469,7 @@ export class NeonFlockEngine {
           shouldShoot
         );
         this.boids.push(boss);
+        console.log(`[WAVE] Spawned boss ${i+1}/${bossConfig.count}, boids now: ${this.boids.length}`);
       }
       
       // Reduce regular birds on boss waves (half the normal amount)
@@ -474,6 +478,7 @@ export class NeonFlockEngine {
         ? GameConfig.BIRDS_PER_WAVE[waveIndex]
         : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
       this.birdsToSpawn = Math.floor(baseCount / 2);
+      console.log(`[WAVE] Boss wave ${this.wave}: birdsToSpawn=${this.birdsToSpawn}, boids.length=${this.boids.length}`);
     } else {
       // Normal wave
       const waveIndex = this.wave - 1;
@@ -481,6 +486,7 @@ export class NeonFlockEngine {
         ? GameConfig.BIRDS_PER_WAVE[waveIndex]
         : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
       this.birdsToSpawn = count;
+      console.log(`[WAVE] Normal wave ${this.wave}: birdsToSpawn=${this.birdsToSpawn}, boids.length=${this.boids.length}`);
     }
     
     this.speedMultiplier = Math.pow(GameConfig.SPEED_GROWTH, this.wave - 1);
@@ -1043,6 +1049,9 @@ export class NeonFlockEngine {
                 console.error('[VISUAL EFFECT ERROR]:', e);
               }
             });
+            
+            // CRITICAL FIX: Return true to destroy the bird!
+            return true;
           },
           onAsteroidHit: (asteroid) => {
             try {
@@ -1335,6 +1344,7 @@ export class NeonFlockEngine {
       // Wait a tiny bit after wave starts to prevent double-triggering
       const timeSinceWaveStart = Date.now() - this.waveStartTime;
       if (timeSinceWaveStart > 100) { // 100ms minimum between waves
+        console.log(`[WAVE] Completing wave ${this.wave} -> ${this.wave + 1} (time since start: ${timeSinceWaveStart}ms)`);
         scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
         this.updateScoreDisplay();
         this.wave++;
