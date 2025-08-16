@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wave 5 Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        #log {
+            white-space: pre;
+            border: 1px solid #0f0;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wave 5 Skip Test</h1>
+    <div>
+        <button onclick="startTest()">Start Test</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    <div id="log"></div>
+    
+    <script>
+        const logDiv = document.getElementById('log');
+        
+        function log(msg) {
+            const time = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${time}] ${msg}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            logDiv.textContent = '';
+        }
+        
+        async function startTest() {
+            log('Opening game in iframe...');
+            
+            // Create iframe
+            const iframe = document.createElement('iframe');
+            iframe.src = 'http://localhost:3000';
+            iframe.style.width = '800px';
+            iframe.style.height = '600px';
+            iframe.style.border = '2px solid #0f0';
+            document.body.appendChild(iframe);
+            
+            // Wait for iframe to load
+            await new Promise(resolve => {
+                iframe.onload = resolve;
+            });
+            
+            log('Game loaded. Monitoring console...');
+            
+            // Try to access the iframe's console
+            try {
+                const iframeWindow = iframe.contentWindow;
+                
+                // Override console.log in the iframe
+                const originalLog = iframeWindow.console.log;
+                iframeWindow.console.log = function(...args) {
+                    const msg = args.join(' ');
+                    if (msg.includes('[WAVE]')) {
+                        log('GAME: ' + msg);
+                    }
+                    originalLog.apply(iframeWindow.console, args);
+                };
+                
+                log('Console monitoring active. Please play the game manually.');
+                log('Watch for wave progression from 4 to 5 to 6...');
+                
+            } catch (e) {
+                log('ERROR: Cannot access iframe console due to CORS. Opening in new window instead...');
+                window.open('http://localhost:3000', '_blank');
+                log('Please check the browser console in the new window for [WAVE] logs.');
+            }
+        }
+    </script>
+</body>
+</html>

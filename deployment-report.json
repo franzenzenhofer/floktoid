@@ -1,76 +1,14 @@
 {
-  "timestamp": "2025-08-16T11:39:30.748Z",
-  "duration": "138.95s",
+  "timestamp": "2025-08-16T14:55:59.418Z",
+  "duration": "252.10s",
   "deployment": {
-    "id": "57803535-c679-4164-98cd-0ccfd8424cca",
     "url": "https://floktoid.franzai.com",
-    "timestamp": "2025-08-16T11:38:53.420Z"
+    "timestamp": "2025-08-16T14:55:59.428Z"
   },
-  "url": "https://floktoid.franzai.com",
-  "checks": {
-    "preDeployment": false,
-    "build": true,
-    "deployment": true,
-    "httpHealth": true,
-    "performance": true,
-    "noConsoleErrors": false,
-    "lighthouse": false
+  "git": {
+    "branch": "master",
+    "commit": "bb0d4e3502ebf9dce01d28e77ce70e6cda78116e",
+    "shortCommit": "bb0d4e3"
   },
-  "fullResults": {
-    "preChecks": {
-      "gitStatus": false,
-      "dependencies": true,
-      "environment": true,
-      "diskSpace": true
-    },
-    "build": {
-      "success": true,
-      "size": "940K"
-    },
-    "deployment": {
-      "id": "57803535-c679-4164-98cd-0ccfd8424cca",
-      "url": "https://floktoid.franzai.com",
-      "timestamp": "2025-08-16T11:38:53.420Z"
-    },
-    "verification": {
-      "http": {
-        "status": 200,
-        "ok": true,
-        "headers": {
-          "alt-svc": "h3=\":443\"; ma=86400",
-          "cache-control": "public, max-age=0, must-revalidate",
-          "cf-cache-status": "HIT",
-          "cf-ray": "9700a5e5fae0d28c-FRA",
-          "connection": "keep-alive",
-          "content-encoding": "br",
-          "content-type": "text/html",
-          "date": "Sat, 16 Aug 2025 11:38:53 GMT",
-          "nel": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}",
-          "report-to": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=hPFT%2FqeKiXfoIRDcnji%2FPiU4xL7Ce1WKa8V%2FsaxOH60Z0hXS%2B%2B6tUlVp3Pz6Gi6Ce3LnIN8%2BM%2FZYi%2Fe%2F%2B6K4kdK0E3YPskFAmY7dvetwRucrC5JJOW0VJW7xwtZuAqchrP%2FFv47gtnaOehM94Z22%2Bgeb5A%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
-          "server": "cloudflare",
-          "server-timing": "cfL4;desc=\"?proto=TCP&rtt=5650&min_rtt=5622&rtt_var=2129&sent=2&recv=5&lost=0&retrans=0&sent_bytes=219&recv_bytes=865&delivery_rate=239772&cwnd=250&unsent_bytes=0&cid=1d8706a04a50b6b5&ts=38&x=0\"",
-          "speculation-rules": "\"/cdn-cgi/speculation\"",
-          "transfer-encoding": "chunked",
-          "vary": "Accept-Encoding"
-        }
-      },
-      "performance": {
-        "loadTime": 1452,
-        "metrics": {
-          "firstPaint": 176,
-          "firstContentfulPaint": 948,
-          "domContentLoaded": 848,
-          "loadComplete": 849
-        },
-        "consoleErrors": []
-      },
-      "lighthouse": {
-        "performance": 40,
-        "accessibility": 79
-      }
-    },
-    "aiAnalysis": {
-      "output": "🤖 AI Analyzing: desktop.png\n🤖 AI Analyzing: mobile.png\n🤖 AI Analyzing: tablet.png\n\n📊 AI Analysis Complete:\n✅ Passed: 3/3\n❌ Failed: 0/3\n⭐ Average Quality: 1.0/10\n\n⚠️ Issues Found:\n  - Screen appears to be mostly black - possible rendering failure\n  - Screen appears to be mostly black - possible rendering failure\n  - Screen appears to be mostly black - possible rendering failure\n"
-    }
-  }
+  "version": "2.64.0"
 }
