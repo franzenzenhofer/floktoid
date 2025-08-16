@@ -1524,9 +1524,9 @@ export class NeonFlockEngine {
   private runAutopilot(dt: number) {
     if (!this.autopilotEnabled) return;
     
-    // Shoot every 500ms if there are birds
+    // Shoot every 200ms if there are birds (more aggressive)
     const now = Date.now();
-    if (now - this.lastAutopilotShot < 500) return;
+    if (now - this.lastAutopilotShot < 200) return;
     
     if (this.boids.length > 0) {
       // Find closest bird to any energy dot
@@ -1548,18 +1548,23 @@ export class NeonFlockEngine {
       }
       
       if (closestBird) {
-        // Shoot asteroid at the bird
-        const power = 0.7 + Math.random() * 0.3; // Random power 70-100%
+        // Shoot asteroid at the bird with prediction
+        const power = 1.0; // Always full power for testing
         const startX = this.app.screen.width / 2;
         const startY = this.app.screen.height - 100;
         
-        // Calculate trajectory to hit the bird
-        const dx = closestBird.x - startX;
-        const dy = closestBird.y - startY;
+        // Predict where bird will be (simple lead calculation)
+        const timeToHit = 0.3; // Estimate time to hit
+        const predictedX = closestBird.x + closestBird.vx * timeToHit;
+        const predictedY = closestBird.y + closestBird.vy * timeToHit;
+        
+        // Calculate trajectory to hit predicted position
+        const dx = predictedX - startX;
+        const dy = predictedY - startY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        const vx = (dx / distance) * power * 400;
-        const vy = (dy / distance) * power * 400;
+        const vx = (dx / distance) * power * 600; // Faster projectiles
+        const vy = (dy / distance) * power * 600;
         
         const asteroid = new Asteroid(this.app, startX, startY, vx, vy, power);
         this.asteroids.push(asteroid);
