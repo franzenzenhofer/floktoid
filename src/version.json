@@ -1,11 +1,11 @@
 {
-  "version": "2.64.0",
-  "buildDate": "2025-08-16T17:33:12.248Z",
-  "buildTimestamp": 1755365592249,
-  "gitCommit": "bb0d4e3502ebf9dce01d28e77ce70e6cda78116e",
+  "version": "2.65.0",
+  "buildDate": "2025-08-16T18:01:36.054Z",
+  "buildTimestamp": 1755367296055,
+  "gitCommit": "3d4062a07c47c91fd40211008b9131623e896f62",
   "gitBranch": "master",
   "environment": "development",
-  "displayVersion": "v2.64.0",
-  "displayDate": "8/16/2025 5:33:12 PM",
-  "displayCommit": "bb0d4e3"
+  "displayVersion": "v2.65.0",
+  "displayDate": "8/16/2025 6:01:36 PM",
+  "displayCommit": "3d4062a"
 }
