@@ -445,48 +445,15 @@ export class NeonFlockEngine {
     this.waveDotsLost = 0;
     this.waveStartTime = Date.now(); // Track when wave starts
     
-    // Check for boss wave
-    const bossConfig = this.getBossConfig();
-    this.bossesToSpawn = bossConfig.count;
-    console.log(`[WAVE] Boss config for wave ${this.wave}:`, bossConfig);
+    // KISS: ALL WAVES ARE NORMAL - NO EXCEPTIONS!
+    // Just spawn the correct number of birds for this wave
+    const waveIndex = this.wave - 1;
+    const count = waveIndex < GameConfig.BIRDS_PER_WAVE.length 
+      ? GameConfig.BIRDS_PER_WAVE[waveIndex]
+      : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
+    this.birdsToSpawn = count;
     
-    // If boss wave, spawn bosses instead of regular birds
-    if (this.bossesToSpawn > 0) {
-      // Display BOSS LEVEL message
-      this.showBossLevelMessage();
-      
-      // Spawn bosses
-      for (let i = 0; i < bossConfig.count; i++) {
-        const shouldShoot = Math.random() < (bossConfig.shootingPercent / 100);
-        const x = (this.app.screen.width / (bossConfig.count + 1)) * (i + 1);
-        const boss = new BossBird(
-          this.app,
-          x,
-          -50, // Start above screen
-          this.speedMultiplier,
-          bossConfig.health,
-          shouldShoot
-        );
-        this.boids.push(boss);
-        console.log(`[WAVE] Spawned boss ${i+1}/${bossConfig.count}, boids now: ${this.boids.length}`);
-      }
-      
-      // Reduce regular birds on boss waves (half the normal amount)
-      const waveIndex = this.wave - 1;
-      const baseCount = waveIndex < GameConfig.BIRDS_PER_WAVE.length 
-        ? GameConfig.BIRDS_PER_WAVE[waveIndex]
-        : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
-      this.birdsToSpawn = Math.floor(baseCount / 2);
-      console.log(`[WAVE] Boss wave ${this.wave}: birdsToSpawn=${this.birdsToSpawn}, boids.length=${this.boids.length}`);
-    } else {
-      // Normal wave
-      const waveIndex = this.wave - 1;
-      const count = waveIndex < GameConfig.BIRDS_PER_WAVE.length 
-        ? GameConfig.BIRDS_PER_WAVE[waveIndex]
-        : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
-      this.birdsToSpawn = count;
-      console.log(`[WAVE] Normal wave ${this.wave}: birdsToSpawn=${this.birdsToSpawn}, boids.length=${this.boids.length}`);
-    }
+    console.log(`[WAVE] Wave ${this.wave}: birdsToSpawn=${this.birdsToSpawn}, boids.length=${this.boids.length}`);
     
     this.speedMultiplier = Math.pow(GameConfig.SPEED_GROWTH, this.wave - 1);
     this.nextSpawnTime = 0;
@@ -1340,10 +1307,10 @@ export class NeonFlockEngine {
     // KISS: Wave ends when ALL birds are gone and none left to spawn
     // Simple rule: No birds = next wave
     if (this.birdsToSpawn === 0 && this.boids.length === 0) {
-      // Wait 2 seconds after wave starts to prevent issues with boss spawning
+      // Small delay to prevent double-triggering
       const timeSinceWaveStart = Date.now() - this.waveStartTime;
-      if (timeSinceWaveStart > 2000) { // 2 second minimum between waves
-        console.log(`[WAVE] Completing wave ${this.wave} -> ${this.wave + 1} (time since start: ${timeSinceWaveStart}ms, birdsToSpawn: ${this.birdsToSpawn}, boids: ${this.boids.length})`);
+      if (timeSinceWaveStart > 100) { // 100ms minimum to prevent double-trigger
+        console.log(`[WAVE] Completing wave ${this.wave} -> ${this.wave + 1}`);
         scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
         this.updateScoreDisplay();
         this.wave++;
