@@ -151,7 +151,7 @@ export class SafeCollisionSystem {
           }
         }
 
-        if (!boid || !boid.isBoss || !boid.alive) {
+        if (!boid || !boid.alive || !boid.isBoss) {
           removeBoids.add(boidIndex);
         }
 
