@@ -91,7 +91,7 @@ export function Game() {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-black overflow-hidden">
+    <div className={gameState === 'leaderboard' ? '' : 'game-container'}>
       {gameState === 'menu' && (
         <StartScreen 
           onStart={handleStart} 

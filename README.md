@@ -1,6 +1,6 @@
 # FLOKTOID - Reverse Asteroids Defense Game
 
-![Version](https://img.shields.io/badge/version-2.49.0-blue)
+![Version](https://img.shields.io/badge/version-2.55.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
 ![Pixi.js](https://img.shields.io/badge/Pixi.js-8.12-ff69b4)
@@ -183,6 +183,12 @@ npm run deploy
 npm run build
 wrangler deploy
 ```
+
+## Documentation
+
+- [Boss Mechanics](documentation/BOSS_MECHANICS.md) - Detailed boss bird system (currently inactive)
+- [Game Design Document](documentation/GAME_DESIGN_DOCUMENT.md) - Complete game design specifications
+- [Root Cause Analysis](documentation/ROOT_CAUSE_ANALYSIS_BIRD_SPAWN_FREEZE.md) - Technical debugging documentation
 
 ## API Endpoints
 

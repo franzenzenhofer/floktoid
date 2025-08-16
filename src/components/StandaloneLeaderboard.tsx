@@ -43,7 +43,7 @@ export function StandaloneLeaderboard() {
   };
   
   return (
-    <div className="h-screen bg-black overflow-y-auto overflow-x-hidden">
+    <div className="min-h-screen bg-black overflow-y-auto overflow-x-hidden">
       <div className="w-full max-w-4xl mx-auto p-4 space-y-6">
         {/* Header */}
         <div className="text-center space-y-2 mt-8">
@@ -155,7 +155,7 @@ export function StandaloneLeaderboard() {
         )}
         
         {/* Play Game Button */}
-        <div className="text-center pb-8">
+        <div className="text-center pb-20">
           <a
             href="/"
             className="inline-block px-8 py-3 text-lg font-bold bg-transparent border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)]"

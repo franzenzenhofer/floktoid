@@ -45,7 +45,7 @@ export function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
   
   return (
     <div className="fixed inset-0 bg-black overflow-y-auto overflow-x-hidden">
-      <div className="w-full max-w-4xl mx-auto p-4 space-y-6">
+      <div className="w-full max-w-4xl mx-auto p-4 pb-20 space-y-6">
         {/* Header */}
         <div className="text-center space-y-2 mt-8">
           <h1 className="text-4xl sm:text-6xl font-bold">
@@ -153,7 +153,7 @@ export function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
         )}
         
         {/* Back Button */}
-        <div className="text-center pb-8">
+        <div className="text-center pb-20">
           <button
             onClick={onBack}
             className="px-6 py-2 text-lg font-bold bg-transparent border-2 border-gray-600 text-gray-400 hover:bg-gray-800 hover:text-white transition-all duration-300"
