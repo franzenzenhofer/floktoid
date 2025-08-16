@@ -841,7 +841,8 @@ export class NeonFlockEngine {
               return;
             }
             if (boid.isBoss) {
-              const boss = boid as BossBird;
+            if (isBossBird(boid)) {
+              const boss = boid;
               const boidX = boss.x;
               const boidY = boss.y;
               const boidHue = boss.hue;
