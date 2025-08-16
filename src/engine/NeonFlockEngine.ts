@@ -1341,9 +1341,9 @@ export class NeonFlockEngine {
     // KISS: Wave ends when ALL birds are gone and none left to spawn
     // Simple rule: No birds = next wave
     if (this.birdsToSpawn === 0 && this.boids.length === 0) {
-      // Wait a tiny bit after wave starts to prevent double-triggering
+      // Wait 2 seconds after wave starts to prevent issues with boss spawning
       const timeSinceWaveStart = Date.now() - this.waveStartTime;
-      if (timeSinceWaveStart > 500) { // Increase to 500ms minimum between waves
+      if (timeSinceWaveStart > 2000) { // 2 second minimum between waves
         console.log(`[WAVE] Completing wave ${this.wave} -> ${this.wave + 1} (time since start: ${timeSinceWaveStart}ms, birdsToSpawn: ${this.birdsToSpawn}, boids: ${this.boids.length})`);
         scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
         this.updateScoreDisplay();
