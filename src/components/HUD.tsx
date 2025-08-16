@@ -1,5 +1,6 @@
 
 import { useEffect, useRef, useState } from 'react';
+import { GameConfig } from '../engine/GameConfig';
 
 interface HUDProps {
   score: number;
@@ -63,7 +64,7 @@ export function HUD({ score, wave, energyCritical }: HUDProps) {
         {displayScore.toString().padStart(6, '0')}
       </div>
       <div className="fixed top-2 sm:top-3 md:top-5 right-2 sm:right-3 md:right-5 font-bold text-xl sm:text-2xl md:text-3xl neon-pink select-none pointer-events-none">
-        WAVE {wave}
+        {wave % GameConfig.BOSS_WAVE_INTERVAL === 0 ? 'BOSS WAVE!' : `WAVE ${wave}`}
       </div>
       {energyCritical && (
         <div className="fixed top-1/4 left-1/2 transform -translate-x-1/2 font-bold text-3xl sm:text-4xl md:text-6xl text-red-500 animate-pulse select-none pointer-events-none">

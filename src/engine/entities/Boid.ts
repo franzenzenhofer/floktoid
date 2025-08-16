@@ -35,6 +35,7 @@ export class Boid {
   public hue: number;
   public originalHue: number;
   public alive = true;
+  public isBoss = false;
   public hasDot = false;
   public targetDot: EnergyDot | null = null;
   public shimmerTime = 0;

@@ -141,19 +141,20 @@ export class SafeCollisionSystem {
           continue;
         }
         
-        // Mark boid for removal
-        removeBoids.add(boidIndex);
-        
-        // Only call callback once per boid
+        const boid = boids[boidIndex];
+
         if (!processedBoids.has(boidIndex)) {
           processedBoids.add(boidIndex);
-          const boid = boids[boidIndex];
           if (boid && callbacks.onBoidHit) {
             // Call immediately - handler should capture state before any async ops
             callbacks.onBoidHit(boid);
           }
         }
-        
+
+        if (!boid || !boid.isBoss || !boid.alive) {
+          removeBoids.add(boidIndex);
+        }
+
         // Handle asteroid
         const ast = asteroids[astIndex];
         if (ast && callbacks.onAsteroidHit) {
