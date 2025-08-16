@@ -429,8 +429,6 @@ export class NeonFlockEngine {
   }
 
   private startWave() {
-    console.log(`[WAVE] Starting wave ${this.wave}, boids before start: ${this.boids.length}`);
-    
     // Check for perfect wave from previous wave
     if (this.wave > 1 && this.waveDotsLost === 0) {
       scoringSystem.addEvent(ScoringEvent.PERFECT_WAVE);
@@ -443,7 +441,6 @@ export class NeonFlockEngine {
     // Check for boss wave
     const bossConfig = this.getBossConfig();
     this.bossesToSpawn = bossConfig.count;
-    console.log(`[WAVE] Boss config for wave ${this.wave}:`, bossConfig);
     
     // If boss wave, spawn bosses instead of regular birds
     if (this.bossesToSpawn > 0) {
@@ -463,7 +460,6 @@ export class NeonFlockEngine {
           shouldShoot
         );
         this.boids.push(boss);
-        console.log(`[WAVE] Added boss to boids array. Boss alive=${boss.alive}, hasDot=${boss.hasDot}`);
       }
       
       // Reduce regular birds on boss waves (half the normal amount)
@@ -472,7 +468,6 @@ export class NeonFlockEngine {
         ? GameConfig.BIRDS_PER_WAVE[waveIndex]
         : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
       this.birdsToSpawn = Math.floor(baseCount / 2);
-      console.log(`[WAVE] Boss wave ${this.wave}: spawned ${bossConfig.count} bosses, birdsToSpawn=${this.birdsToSpawn}`);
     } else {
       // Normal wave
       const waveIndex = this.wave - 1;
@@ -485,11 +480,6 @@ export class NeonFlockEngine {
     this.speedMultiplier = Math.pow(GameConfig.SPEED_GROWTH, this.wave - 1);
     this.nextSpawnTime = 0;
     this.onWaveUpdate?.(this.wave);
-    
-    console.log(`[WAVE] End of startWave(): wave=${this.wave}, birdsToSpawn=${this.birdsToSpawn}, boids.length=${this.boids.length}`);
-    if (this.wave === 5) {
-      console.log(`[WAVE 5 CHECK] After startWave, boids without dots:`, this.boids.filter(b => !b.hasDot).length);
-    }
   }
   
   public spawnBird(x?: number, y?: number) {
@@ -1330,40 +1320,15 @@ export class NeonFlockEngine {
       this.devModeDisplay.update(dt);
     }
     
-    // Check wave complete
-    const birdsWithoutDots = this.boids.filter(b => !b.hasDot);
-    
-    // Debug log for wave 4 and 5 completion
-    if ((this.wave === 4 || this.wave === 5) && this.birdsToSpawn === 0 && birdsWithoutDots.length === 0) {
-      console.log(`[WAVE ${this.wave} COMPLETING] birdsToSpawn=${this.birdsToSpawn}, birdsWithoutDots=${birdsWithoutDots.length}, boids=${this.boids.length}`);
-      console.log(`[WAVE ${this.wave} COMPLETING] About to increment to wave ${this.wave + 1}`);
-    }
-    
-    // Debug log for wave 5 specifically
-    if (this.wave === 5) {
-      console.log(`[WAVE 5 FRAME] birdsToSpawn=${this.birdsToSpawn}, birdsWithoutDots=${birdsWithoutDots.length}, boids=${this.boids.length}`);
-      if (this.boids.length > 0) {
-        console.log(`[WAVE 5 FRAME] Boid details:`, this.boids.map((b, i) => ({
-          index: i,
-          isBoss: (b as any).isBoss,
-          alive: b.alive,
-          hasDot: b.hasDot
-        })));
-      }
-    }
-    
-    if (this.birdsToSpawn === 0 && birdsWithoutDots.length === 0 && !this.isTransitioningWave) {
-      console.log(`[WAVE] Wave ${this.wave} complete, moving to wave ${this.wave + 1}`);
-      console.log(`[WAVE] Completion check: birdsToSpawn=${this.birdsToSpawn}, birdsWithoutDots=${birdsWithoutDots.length}, totalBoids=${this.boids.length}`);
-      
+    // Check wave complete - FIX: Check for NO BIRDS AT ALL, not just birds without dots
+    // Wave completes when all birds are gone, not when all birds have dots
+    if (this.birdsToSpawn === 0 && this.boids.length === 0 && !this.isTransitioningWave) {
       // Prevent re-entrant wave transitions
       this.isTransitioningWave = true;
       
       scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
       this.updateScoreDisplay();
-      const nextWave = this.wave + 1;
-      this.wave = nextWave;
-      console.log(`[WAVE] Set wave to ${this.wave}, calling startWave()`);
+      this.wave++;
       this.startWave();
       
       // Reset flag after transition
