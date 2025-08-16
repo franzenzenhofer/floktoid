@@ -63,7 +63,7 @@ export class NeonFlockEngine {
   private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
   private bossesToSpawn = 0; // Number of bosses to spawn this wave
   private DOT_RESPAWN_DELAY = TIMING.DOT_RESPAWN_DELAY_MS;
-  private isTransitioningWave = false; // Prevent re-entrant wave transitions
+  private waveStartTime = 0; // Time when wave started
   
   public onScoreUpdate?: (score: number, combo: number, multiplier: number) => void;
   public onWaveUpdate?: (wave: number) => void;
@@ -437,6 +437,7 @@ export class NeonFlockEngine {
     
     // Reset wave tracking
     this.waveDotsLost = 0;
+    this.waveStartTime = Date.now(); // Track when wave starts
     
     // Check for boss wave
     const bossConfig = this.getBossConfig();
@@ -1320,20 +1321,18 @@ export class NeonFlockEngine {
       this.devModeDisplay.update(dt);
     }
     
-    // Check wave complete - wave ends when no birds without dots remain
-    // Birds with dots will reach top and despawn, birds without dots must be killed
-    const birdsWithoutDots = this.boids.filter(b => !b.hasDot);
-    if (this.birdsToSpawn === 0 && birdsWithoutDots.length === 0 && !this.isTransitioningWave) {
-      // Prevent re-entrant wave transitions
-      this.isTransitioningWave = true;
-      
-      scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
-      this.updateScoreDisplay();
-      this.wave++;
-      this.startWave();
-      
-      // Reset flag after transition
-      this.isTransitioningWave = false;
+    // KISS: Wave ends when ALL birds are gone and none left to spawn
+    // Simple rule: No birds = next wave
+    if (this.birdsToSpawn === 0 && this.boids.length === 0) {
+      // Wait a tiny bit after wave starts to prevent double-triggering
+      const timeSinceWaveStart = Date.now() - this.waveStartTime;
+      if (timeSinceWaveStart > 100) { // 100ms minimum between waves
+        scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
+        this.updateScoreDisplay();
+        this.wave++;
+        this.waveStartTime = Date.now(); // Record when new wave starts
+        this.startWave();
+      }
     }
     
     // Check if all dots are stolen - if so, pause respawn
