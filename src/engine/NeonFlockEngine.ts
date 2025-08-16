@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Boid } from './entities/Boid';
-import { BossBird } from './entities/BossBird';
+// import { BossBird } from './entities/BossBird'; // Removed - keeping game simple
 import type { BirdProjectile } from './entities/BirdProjectile';
 import { EnergyDot } from './entities/EnergyDot';
 import { Asteroid } from './entities/Asteroid';
@@ -61,7 +61,6 @@ export class NeonFlockEngine {
   private speedMultiplier = 1;
   private waveDotsLost = 0; // Track dots lost in current wave
   private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
-  private bossesToSpawn = 0; // Number of bosses to spawn this wave
   private DOT_RESPAWN_DELAY = TIMING.DOT_RESPAWN_DELAY_MS;
   private waveStartTime = 0; // Time when wave started
   
@@ -338,100 +337,7 @@ export class NeonFlockEngine {
   /**
    * Show BOSS LEVEL message
    */
-  private showBossLevelMessage(): void {
-    const bossText = new PIXI.Text('BOSS LEVEL!', {
-      fontFamily: 'Space Mono, monospace',
-      fontSize: 72,
-      fontWeight: 'bold',
-      fill: [0xFF00FF, 0xFF0066], // Gradient from magenta to red
-      stroke: {
-        color: 0x000000,
-        width: 6
-      },
-      dropShadow: {
-        color: 0xFF00FF,
-        blur: 10,
-        distance: 0,
-        alpha: 1,
-        angle: 0
-      },
-      letterSpacing: 4
-    });
-    
-    bossText.anchor.set(0.5);
-    bossText.x = this.app.screen.width / 2;
-    bossText.y = this.app.screen.height / 3;
-    bossText.scale.set(0.1); // Start small
-    bossText.alpha = 0;
-    bossText.zIndex = 2000; // Above everything
-    this.app.stage.addChild(bossText);
-    
-    // Animate in with punch effect
-    let animTime = 0;
-    const animateBossText = (ticker: PIXI.Ticker) => {
-      animTime += ticker.deltaTime / 60;
-      
-      if (animTime < 0.5) {
-        // Punch in
-        const t = animTime * 2;
-        bossText.scale.set(t * 1.5);
-        bossText.alpha = t;
-        bossText.rotation = Math.sin(t * Math.PI * 4) * 0.1;
-      } else if (animTime < 2.5) {
-        // Hold
-        bossText.scale.set(1.5);
-        bossText.alpha = 1;
-        bossText.rotation = Math.sin(animTime * Math.PI * 8) * 0.02;
-        // Pulsing effect via scale
-        bossText.scale.set(1.5 + Math.sin(animTime * Math.PI * 2) * 0.1);
-      } else if (animTime < 3) {
-        // Fade out
-        const t = (animTime - 2.5) * 2;
-        bossText.scale.set(1.5 + t * 0.5);
-        bossText.alpha = 1 - t;
-      } else {
-        // Remove
-        this.app.ticker.remove(animateBossText);
-        this.app.stage.removeChild(bossText);
-        bossText.destroy();
-      }
-    };
-    
-    this.app.ticker.add(animateBossText);
-  }
-  
-  /**
-   * Get boss configuration for current wave
-   * Pattern: 5/10/15, 5s/10s/15s, 2x5/2x10/2x15, 3x5/3x10/3x15, etc.
-   */
-  private getBossConfig(): { count: number, health: number, shootingPercent: number } {
-    // Every 5 waves is a boss wave
-    if (this.wave % 5 !== 0) {
-      return { count: 0, health: 0, shootingPercent: 0 };
-    }
-    
-    // Which boss wave is this? (1st, 2nd, 3rd, etc.)
-    const bossWaveNumber = Math.floor(this.wave / 5);
-    
-    // Determine cycle (groups of 3: 5/10/15 health pattern)
-    const cycleNumber = Math.floor((bossWaveNumber - 1) / 3); // 0-based cycle
-    const positionInCycle = ((bossWaveNumber - 1) % 3); // 0=5hp, 1=10hp, 2=15hp
-    
-    // Base health: 5, 10, or 15
-    const health = (positionInCycle + 1) * 5;
-    
-    // Boss count increases each cycle: 1, 2, 3, 4...
-    const count = Math.min(cycleNumber + 1, 5); // Cap at 5 bosses max
-    
-    // Shooting percentage: 0% for cycle 0, 50% for cycle 1, 60% for cycle 2, etc.
-    let shootingPercent = 0;
-    if (cycleNumber > 0) {
-      shootingPercent = Math.min(50 + (cycleNumber - 1) * 10, 100);
-    }
-    
-    return { count, health, shootingPercent };
-  }
-
+  // Removed boss methods - keeping game simple (KISS)
   private startWave() {
     console.log(`[WAVE] Starting wave ${this.wave}`);
     
@@ -951,31 +857,8 @@ export class NeonFlockEngine {
             const boidY = boid.y;
             const boidHue = boid.hue;
             
-            // Check if it's a boss bird
-            if (boid instanceof BossBird) {
-              const destroyed = (boid as BossBird).takeDamage();
-              
-              if (destroyed) {
-                // Boss destroyed - big explosion and points
-                this.particleSystem.createExplosion(boidX, boidY, 0xFF00FF, 30); // Big purple explosion
-                this.particleSystem.createBirdExplosion(boidX, boidY, 0xFF00FF, 0, 0);
-                scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
-                
-                // If boss had a dot, make it fall
-                if (hadDot && targetDot) {
-                  this.createFallingDot(boidX, boidY, targetDot);
-                }
-                // Boss destroyed, allow removal
-                return true;
-              } else {
-                // Boss damaged but not destroyed
-                this.particleSystem.createExplosion(boidX, boidY, 0xFFFF00, 10); // Small yellow hit effect
-                scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
-                this.updateScoreDisplay();
-                // Boss survives, prevent removal
-                return false;
-              }
-            }
+            // Boss logic removed - keeping game simple (KISS)
+            // All birds are destroyed in one hit
             
             // If bird had a dot, make it fall IMMEDIATELY (before bird is destroyed)
             if (hadDot && targetDot) {
