@@ -986,14 +986,16 @@ export class NeonFlockEngine {
                 if (hadDot && targetDot) {
                   this.createFallingDot(boidX, boidY, targetDot);
                 }
+                // Boss destroyed, allow removal
+                return true;
               } else {
                 // Boss damaged but not destroyed
                 this.particleSystem.createExplosion(boidX, boidY, 0xFFFF00, 10); // Small yellow hit effect
                 scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+                this.updateScoreDisplay();
+                // Boss survives, prevent removal
+                return false;
               }
-              
-              this.updateScoreDisplay();
-              return; // Don't continue with normal bird destruction
             }
             
             // If bird had a dot, make it fall IMMEDIATELY (before bird is destroyed)

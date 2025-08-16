@@ -24,7 +24,7 @@ export interface CollisionEvent {
 }
 
 export interface CollisionCallbacks {
-  onBoidHit: (boid: Boid) => void;
+  onBoidHit: (boid: Boid) => boolean | void; // Return false to prevent removal
   onAsteroidHit: (asteroid: Asteroid) => boolean;
   onAsteroidFragment?: (asteroid: Asteroid, fragments: number) => void;
   onDotPickup?: (boid: Boid, dot: EnergyDot) => void;

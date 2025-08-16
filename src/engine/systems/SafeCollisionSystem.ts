@@ -145,17 +145,18 @@ export class SafeCollisionSystem {
         if (!processedBoids.has(boidIndex)) {
           processedBoids.add(boidIndex);
           const boid = boids[boidIndex];
+          
+          // Default behavior: mark for removal
+          let shouldRemove = true;
+          
           if (boid && callbacks.onBoidHit) {
-            // Call immediately - handler should capture state before any async ops
-            callbacks.onBoidHit(boid);
-            
-            // Check if boid should be removed
-            // BossBirds have an 'alive' property, normal birds don't
-            if (boid.alive === false || boid.alive === undefined) {
-              removeBoids.add(boidIndex);
-            }
-          } else {
-            // No callback, just mark for removal
+            // Call callback - it can prevent removal by returning false
+            const result = callbacks.onBoidHit(boid) as boolean | void;
+            // Only prevent removal if explicitly returning false
+            shouldRemove = result !== false;
+          }
+          
+          if (shouldRemove) {
             removeBoids.add(boidIndex);
           }
         }
