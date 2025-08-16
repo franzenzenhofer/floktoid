@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with the NEON FLOCK game codebase.
 
+## 🔑 CRITICAL CREDENTIALS & ACCESS
+**Cloudflare Deployment:**
+- API Token: $CLOUDFLARE_API_TOKEN
+- Account ID: ecf21e85812dfa5b2a35245257fc71f5
+- Zone ID: 11bfe82c00e8c9e116e1e542b140f172
+
+**GitHub Repository:**
+- Repo: https://github.com/franzenzenhofer/floktoid (private)
+- SSH Key: Use default system SSH key
+
+**System Access (if needed):**
+- Sudo password: changeme
+
 ## 🎮 Project Overview
 
 **NEON FLOCK** is a high-performance arcade defense game built with TypeScript, React, and Pixi.js. Players defend energy cores from an AI-powered flock using asteroid projectiles in a stunning neon cyberpunk aesthetic.
@@ -32,8 +45,12 @@ floktoid/
 ```bash
 npm run dev              # Start dev server (Vite on :3000, Wrangler on :8787)
 npm run build           # Build production bundle
-npm run deploy          # Deploy to Cloudflare Workers (auto-version bump)
+npm run deploy          # ALWAYS USE THIS - Full automated deployment with tests
 ```
+
+### ⚠️ DEPLOYMENT RULE
+**ALWAYS use `npm run deploy` for ALL deployments - NEVER use `wrangler deploy` directly!**
+This ensures all tests pass before deployment. This is MANDATORY unless explicitly told otherwise.
 
 ### Code Quality
 ```bash
@@ -146,11 +163,63 @@ pattern = "floktoid.franzai.com/*"
 zone_name = "franzai.com"
 ```
 
-### Deployment Process
+### Automated Deployment Process
+```bash
+# One-command deployment (ALWAYS USE THIS)
+npm run deploy          # Runs full test suite + build + deploy
+
+# Version-specific deployments
+npm run deploy:major    # Major version bump (breaking changes)
+npm run deploy:minor    # Minor version bump (new features)
+npm run deploy:patch    # Patch version bump (bug fixes)
+```
+
+### Manual Deployment Steps (if needed)
 1. Run tests: `npm test && npm run test:e2e`
-2. Build: `npm run build`
-3. Deploy: `npm run deploy`
-4. Verify: https://floktoid.franzai.com
+2. Lint & typecheck: `npm run lint && npm run typecheck`
+3. Build: `npm run build`
+4. Deploy: `npm run deploy`
+5. Verify: https://floktoid.franzai.com
+6. Monitor for 5 minutes
+
+## 📤 Git Workflow & Version Control
+
+### Committing Changes
+```bash
+# Check status and diff
+git status
+git diff
+
+# Stage and commit
+git add -A
+git commit -m "feat: Description of feature"
+
+# Push to GitHub
+git push origin master
+```
+
+### Commit Message Convention
+- `feat:` New features
+- `fix:` Bug fixes
+- `perf:` Performance improvements
+- `refactor:` Code refactoring
+- `test:` Test additions/changes
+- `docs:` Documentation updates
+- `chore:` Maintenance tasks
+
+### Creating Pull Requests
+```bash
+# Create feature branch
+git checkout -b feature/feature-name
+
+# Make changes and commit
+git add -A
+git commit -m "feat: Add new feature"
+
+# Push and create PR
+git push -u origin feature/feature-name
+gh pr create --title "feat: Feature description" --body "Details..."
+```
 
 ## 🐛 Common Issues & Solutions
 
@@ -168,6 +237,41 @@ zone_name = "franzai.com"
 - Test touch events on actual devices
 - Check viewport scaling
 - Verify pointer event handling
+
+### Deployment Issues
+- **522 Error:** Check wrangler.toml routes pattern
+- **SSL Error 526:** Set Cloudflare SSL to "Flexible" not "Full"
+- **Build Fails:** Ensure all dependencies in package.json
+- **Deploy Fails:** Check Cloudflare API token is set
+- **Version Mismatch:** Always bump version before deploy
+
+## 📊 Monitoring & Maintenance
+
+### Health Checks
+```bash
+# Check deployment status
+curl -I https://floktoid.franzai.com
+
+# View current version
+curl https://floktoid.franzai.com/version
+
+# Check Cloudflare logs
+wrangler tail floktoid
+```
+
+### Performance Monitoring
+- Use Chrome DevTools Performance tab
+- Monitor FPS with Stats.js
+- Check memory usage in Task Manager
+- Profile with Lighthouse for mobile
+
+### Rollback Procedure
+```bash
+# If deployment fails
+git log --oneline -5          # Find last good commit
+git checkout <commit-hash>     # Checkout stable version
+npm run deploy                 # Redeploy stable version
+```
 
 ## 💡 Development Guidelines
 

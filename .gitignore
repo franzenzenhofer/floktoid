@@ -51,6 +51,9 @@ wrangler.toml
 wrangler.toml.backup
 .dev.vars
 
+# Project-specific sensitive files
+CLAUDE.md
+
 # Production
 *.production.js
 *.production.json
