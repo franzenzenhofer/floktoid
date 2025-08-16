@@ -67,7 +67,7 @@ export const POINT_VALUES = {
     SHOOTER_HIT: 80,              // Shooter bird (DOUBLE points)
     SUPER_NAVIGATOR_HIT: 80,      // Super navigator bird (DOUBLE points)
     BOSS_HIT: 50,                 // Hitting boss bird
-    BOSS_DEFEATED: 200,           // Defeating boss
+    BOSS_DEFEATED: 400,           // Defeating boss (10x normal bird)
     ENERGY_DOT_RECLAIMED: 80,     // Getting stolen dot back
     ENERGY_DOT_CAUGHT_FALLING: 40, // Catching falling dot
     ASTEROID_SPLIT: 5,            // When asteroid splits

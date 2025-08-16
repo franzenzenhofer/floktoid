@@ -4,8 +4,10 @@ import { GameConfig } from '../GameConfig';
 
 export class BossBird extends Boid {
   public isBoss = true;
-  public health = 3; // Takes 3 hits to destroy
+  public health: number; // Dynamic health based on wave
+  public maxHealth: number; // Track max for shield color
   public size: number; // Boss bird size
+  public isBossShooter: boolean = false; // Whether this boss can shoot
   private shieldGraphics: PIXI.Graphics;
   private pulseTime = 0;
   private flashTimeoutId: NodeJS.Timeout | null = null; // CRITICAL FIX: Track timeout to prevent leaks
@@ -14,14 +16,27 @@ export class BossBird extends Boid {
     app: PIXI.Application,
     x: number,
     y: number,
-    speedMultiplier: number
+    speedMultiplier: number,
+    health: number = 5, // Default health
+    canShoot: boolean = false
   ) {
     super(app, x, y, speedMultiplier);
     
+    // Set health
+    this.health = health;
+    this.maxHealth = health;
+    this.isBossShooter = canShoot;
+    
+    // Enable shooting for shooting bosses
+    if (canShoot) {
+      this.isShooter = true;
+      this.maxShootCooldown = 45; // Shoot faster than regular shooters
+    }
+    
     // Boss birds are larger and slower
-    this.size = GameConfig.BOID_SIZE * 2;
-    this.maxSpeed *= 0.7;
-    this.maxForce *= 1.5; // But stronger
+    this.size = GameConfig.BOID_SIZE * 2.5;
+    this.maxSpeed *= 0.6;
+    this.maxForce *= 1.8; // But stronger
     
     // Create shield effect
     this.shieldGraphics = new PIXI.Graphics();
@@ -42,15 +57,19 @@ export class BossBird extends Boid {
       -this.size * 1.2, -this.size,
     ]);
     
-    // Boss colors - deep red/purple
-    const bossColor = 0xFF0066;
-    this.sprite.fill({ color: bossColor, alpha: 0.9 });
-    this.sprite.stroke({ width: 3, color: 0xFF00FF, alpha: 1 });
+    // Boss colors - different based on shooting ability
+    const bossColor = this.isBossShooter ? 0xFF0066 : 0x9900FF; // Red for shooters, purple for normal
+    this.sprite.fill({ color: bossColor, alpha: 0.95 });
+    this.sprite.stroke({ width: 4, color: 0xFF00FF, alpha: 1 });
     
-    // Add glowing eyes
-    this.sprite.circle(this.size * 0.5, -this.size * 0.3, 3);
-    this.sprite.circle(this.size * 0.5, this.size * 0.3, 3);
-    this.sprite.fill({ color: 0xFFFF00, alpha: 1 });
+    // Add inner glow effect instead of eyes
+    this.sprite.poly([
+      this.size * 0.8, 0,
+      -this.size * 0.6, this.size * 0.5,
+      -this.size * 0.4, 0,
+      -this.size * 0.6, -this.size * 0.5,
+    ]);
+    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.2 });
   }
   
   update(dt: number) {
@@ -73,21 +92,25 @@ export class BossBird extends Boid {
     this.shieldGraphics.y = this.y;
     
     // Pulsing shield effect based on health
-    const pulse = Math.sin(this.pulseTime * 5) * 0.2 + 0.8;
-    const shieldRadius = this.size * 1.5 * pulse;
+    const pulse = Math.sin(this.pulseTime * 5) * 0.15 + 0.85;
+    const shieldRadius = this.size * 1.8 * pulse;
     
-    // Shield color based on health
-    let shieldColor = 0x00FFFF; // Cyan for full health
-    if (this.health === 2) shieldColor = 0xFFFF00; // Yellow for damaged
-    if (this.health === 1) shieldColor = 0xFF0000; // Red for critical
+    // Shield color based on health percentage
+    const healthPercent = this.health / this.maxHealth;
+    let shieldColor = 0x00FFFF; // Cyan for > 66%
+    if (healthPercent <= 0.66) shieldColor = 0xFFFF00; // Yellow for 33-66%
+    if (healthPercent <= 0.33) shieldColor = 0xFF0000; // Red for < 33%
     
-    // Draw hexagonal shield
+    // Draw hexagonal shield (aligned with game's neon aesthetic)
     const sides = 6;
     const angleStep = (Math.PI * 2) / sides;
     const vertices: number[] = [];
     
+    // Rotate hexagon to point up (matches bird direction)
+    const rotationOffset = Math.PI / 6;
+    
     for (let i = 0; i < sides; i++) {
-      const angle = i * angleStep;
+      const angle = i * angleStep + rotationOffset;
       vertices.push(
         Math.cos(angle) * shieldRadius,
         Math.sin(angle) * shieldRadius
@@ -96,9 +119,28 @@ export class BossBird extends Boid {
     
     this.shieldGraphics.poly(vertices);
     this.shieldGraphics.stroke({ 
-      width: 2, 
+      width: 3, 
       color: shieldColor, 
-      alpha: 0.3 * this.health / 3 
+      alpha: 0.6 * healthPercent + 0.2 // More visible shield
+    });
+    
+    // Add inner hexagon for more depth
+    const innerVertices: number[] = [];
+    const innerRadius = shieldRadius * 0.7;
+    
+    for (let i = 0; i < sides; i++) {
+      const angle = i * angleStep + rotationOffset;
+      innerVertices.push(
+        Math.cos(angle) * innerRadius,
+        Math.sin(angle) * innerRadius
+      );
+    }
+    
+    this.shieldGraphics.poly(innerVertices);
+    this.shieldGraphics.stroke({ 
+      width: 1, 
+      color: shieldColor, 
+      alpha: 0.3 * healthPercent 
     });
   }
   

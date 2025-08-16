@@ -1,32 +1,34 @@
 # Boss Bird Mechanics
 
 ## Overview
-Boss Birds are special enemy units that appear periodically in FLOKTOID to provide challenging gameplay moments. They are larger, tougher, and more dangerous than regular birds.
+Boss Birds are special enemy units that appear every 5 waves in FLOKTOID to provide challenging gameplay moments. They are larger, tougher, and more dangerous than regular birds.
 
 ## Current Status
-⚠️ **IMPORTANT**: Boss Birds are currently **NOT SPAWNED** in the game. The code exists but is not connected to the wave spawning system.
+✅ **ACTIVE**: Boss Birds are now **FULLY IMPLEMENTED** and spawn every 5 waves with progressive difficulty!
 
 ## Boss Bird Characteristics
 
 ### Visual Design
-- **Size**: 2x larger than regular birds (doubles `BOID_SIZE`)
-- **Shape**: Menacing triangular form with enhanced proportions
-- **Color**: Deep red/purple (#FF0066) with magenta stroke
-- **Eyes**: Glowing yellow eyes for intimidation
-- **Shield**: Hexagonal energy shield that pulses and changes color based on health
+- **Size**: 2.5x larger than regular birds
+- **Shape**: Menacing triangular form with inner glow effect
+- **Color**: 
+  - Purple (#9900FF) for non-shooting bosses
+  - Red (#FF0066) for shooting bosses
+- **Shield**: Double-layered hexagonal energy shield that pulses and changes color based on health percentage
 
 ### Combat Stats
-- **Health**: 3 hit points (regular birds die in 1 hit)
-- **Speed**: 70% of regular bird speed (slower but more deliberate)
-- **Force**: 150% of regular bird force (stronger steering capabilities)
-- **Damage**: Requires 3 asteroid hits to destroy
+- **Health**: Variable (5, 10, or 15 HP based on wave pattern)
+- **Speed**: 60% of regular bird speed (slower but more deliberate)
+- **Force**: 180% of regular bird force (stronger steering capabilities)
+- **Points**: 400 points when destroyed (10x regular bird), 50 points per hit
 
 ### Shield System
-The boss bird features a dynamic shield visualization:
-- **Full Health (3 HP)**: Cyan shield (#00FFFF)
-- **Damaged (2 HP)**: Yellow shield (#FFFF00)  
-- **Critical (1 HP)**: Red shield (#FF0000)
-- **Effect**: Pulsing animation with transparency based on health
+The boss bird features a dynamic hexagonal shield visualization:
+- **>66% Health**: Cyan shield (#00FFFF)
+- **33-66% Health**: Yellow shield (#FFFF00)  
+- **<33% Health**: Red shield (#FF0000)
+- **Effect**: Double-layer hexagon with pulsing animation
+- **Alignment**: Rotated to match bird direction (pointed up)
 
 ### Behavior
 - Follows the same flocking algorithm as regular birds
@@ -34,18 +36,34 @@ The boss bird features a dynamic shield visualization:
 - More resilient to player attacks
 - Flash effect when damaged (50% transparency for 100ms)
 
-## Intended Spawn Logic
+## Boss Spawn Pattern
 
-### Configuration
-```typescript
-BOSS_WAVE_INTERVAL: 5  // Boss should spawn every 5 waves
-```
+### Wave Pattern
+Boss waves occur every 5 waves (5, 10, 15, 20, 25, 30, etc.)
 
-### Expected Behavior (Not Implemented)
-- Wave 5: First boss bird
-- Wave 10: Second boss bird  
-- Wave 15: Third boss bird
-- And so on...
+### Progressive Difficulty System
+
+#### Cycle 1 (Waves 5, 10, 15) - Introduction
+- **Wave 5**: 1 boss, 5 HP, no shooting
+- **Wave 10**: 1 boss, 10 HP, no shooting
+- **Wave 15**: 1 boss, 15 HP, no shooting
+
+#### Cycle 2 (Waves 20, 25, 30) - Shooting Introduced
+- **Wave 20**: 1 boss, 5 HP, 50% shooting
+- **Wave 25**: 1 boss, 10 HP, 50% shooting
+- **Wave 30**: 1 boss, 15 HP, 50% shooting
+
+#### Cycle 3 (Waves 35, 40, 45) - Multiple Bosses
+- **Wave 35**: 2 bosses, 5 HP each, 60% shooting
+- **Wave 40**: 2 bosses, 10 HP each, 60% shooting
+- **Wave 45**: 2 bosses, 15 HP each, 60% shooting
+
+#### Cycle 4 (Waves 50, 55, 60) - Three Bosses
+- **Wave 50**: 3 bosses, 5 HP each, 70% shooting
+- **Wave 55**: 3 bosses, 10 HP each, 70% shooting
+- **Wave 60**: 3 bosses, 15 HP each, 70% shooting
+
+And so on, with boss count capped at 5 maximum.
 
 ## Code Structure
 
@@ -65,21 +83,27 @@ class BossBird extends Boid {
 
 ## Scoring Integration
 
-### Potential Events (Not Active)
-- `BOSS_HIT` - When boss takes damage
-- `BOSS_DESTROYED` - When boss is eliminated
-- Points would likely be 3-5x regular bird value
+### Active Scoring Events
+- `BOSS_HIT` - 50 points when boss takes damage
+- `BOSS_DEFEATED` - 400 points when boss is eliminated (10x regular bird)
+- Combo multipliers apply to boss points
 
-## Implementation Gap
+## Implementation Details
 
-The boss bird system is fully coded but missing the spawn trigger in `NeonFlockEngine.ts`:
-
+### Boss Spawning Algorithm
 ```typescript
-// What's needed in startWave():
-if (this.wave % GameConfig.WAVE.BOSS_WAVE_INTERVAL === 0) {
-  // Spawn boss bird
-  const boss = new BossBird(app, x, y, speedMultiplier);
-  this.boids.push(boss);
+getBossConfig(): { count: number, health: number, shootingPercent: number } {
+  if (wave % 5 !== 0) return { count: 0, health: 0, shootingPercent: 0 };
+  
+  const bossWaveNumber = Math.floor(wave / 5);
+  const cycleNumber = Math.floor((bossWaveNumber - 1) / 3);
+  const positionInCycle = ((bossWaveNumber - 1) % 3);
+  
+  const health = (positionInCycle + 1) * 5; // 5, 10, or 15
+  const count = Math.min(cycleNumber + 1, 5); // 1, 2, 3... capped at 5
+  const shootingPercent = cycleNumber > 0 ? Math.min(50 + (cycleNumber - 1) * 10, 100) : 0;
+  
+  return { count, health, shootingPercent };
 }
 ```
 
