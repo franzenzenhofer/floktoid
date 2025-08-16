@@ -50,6 +50,7 @@ export const GameConfig = {
     206, 218, 230, 243, 256, 270, 285, 300, 316, 333  // Waves 51-60: extreme
   ],
   SPEED_GROWTH: WAVES.SPEED_GROWTH,
+  BOSS_WAVE_INTERVAL: WAVES.BOSS_WAVE_INTERVAL,
   
   // Visual - FROM CENTRAL CONFIG
   NEON_COLORS: [

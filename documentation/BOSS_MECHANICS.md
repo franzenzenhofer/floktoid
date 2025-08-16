@@ -3,9 +3,6 @@
 ## Overview
 Boss Birds are special enemy units that appear periodically in FLOKTOID to provide challenging gameplay moments. They are larger, tougher, and more dangerous than regular birds.
 
-## Current Status
-⚠️ **IMPORTANT**: Boss Birds are currently **NOT SPAWNED** in the game. The code exists but is not connected to the wave spawning system.
-
 ## Boss Bird Characteristics
 
 ### Visual Design
@@ -34,18 +31,15 @@ The boss bird features a dynamic shield visualization:
 - More resilient to player attacks
 - Flash effect when damaged (50% transparency for 100ms)
 
-## Intended Spawn Logic
+## Spawn Logic
 
 ### Configuration
 ```typescript
-BOSS_WAVE_INTERVAL: 5  // Boss should spawn every 5 waves
+BOSS_WAVE_INTERVAL: 5  // Boss spawns every 5 waves
 ```
 
-### Expected Behavior (Not Implemented)
-- Wave 5: First boss bird
-- Wave 10: Second boss bird  
-- Wave 15: Third boss bird
-- And so on...
+### Current Behavior
+Boss birds spawn as an extra enemy on waves 5, 10, 15, and so on, alongside regular birds.
 
 ## Code Structure
 
@@ -65,23 +59,11 @@ class BossBird extends Boid {
 
 ## Scoring Integration
 
-### Potential Events (Not Active)
-- `BOSS_HIT` - When boss takes damage
-- `BOSS_DESTROYED` - When boss is eliminated
-- Points would likely be 3-5x regular bird value
+### Active Events
+- `BOSS_HIT` – When the boss takes damage
+- `BOSS_DEFEATED` – When the boss is eliminated
 
-## Implementation Gap
-
-The boss bird system is fully coded but missing the spawn trigger in `NeonFlockEngine.ts`:
-
-```typescript
-// What's needed in startWave():
-if (this.wave % GameConfig.WAVE.BOSS_WAVE_INTERVAL === 0) {
-  // Spawn boss bird
-  const boss = new BossBird(app, x, y, speedMultiplier);
-  this.boids.push(boss);
-}
-```
+Points for these events are awarded through the `ScoringSystem`.
 
 ## Future Enhancements
 
@@ -113,22 +95,9 @@ if (this.wave % GameConfig.WAVE.BOSS_WAVE_INTERVAL === 0) {
 - Shield animation is GPU-accelerated
 - No significant impact on frame rate
 
-## Activation Instructions
-
-To enable boss birds, modify `/src/engine/NeonFlockEngine.ts`:
-
-1. Import BossBird class
-2. Add spawn logic in `startWave()` method
-3. Check for wave % BOSS_WAVE_INTERVAL === 0
-4. Create and add boss to boids array
-
 ## Balance Considerations
 
 - Boss health (3) provides challenge without frustration
 - Slower speed allows strategic planning
 - Shield visualization gives clear health feedback
 - Wave 5 interval prevents overwhelming difficulty curve
-
----
-
-*Note: This feature is complete but dormant. Activation would significantly enhance gameplay variety and challenge.*

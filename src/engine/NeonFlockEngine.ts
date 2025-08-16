@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Boid } from './entities/Boid';
+import { BossBird } from './entities/BossBird';
 import type { BirdProjectile } from './entities/BirdProjectile';
 import { EnergyDot } from './entities/EnergyDot';
 import { Asteroid } from './entities/Asteroid';
@@ -334,18 +335,24 @@ export class NeonFlockEngine {
       scoringSystem.addEvent(ScoringEvent.PERFECT_WAVE);
       this.updateScoreDisplay();
     }
-    
+
     // Reset wave tracking
     this.waveDotsLost = 0;
-    
+    this.speedMultiplier = Math.pow(GameConfig.SPEED_GROWTH, this.wave - 1);
+
+    if (this.wave % GameConfig.BOSS_WAVE_INTERVAL === 0) {
+      const randomX = Math.random() * this.app.screen.width;
+      const boss = new BossBird(this.app, randomX, -20, this.speedMultiplier);
+      this.boids.push(boss);
+    }
+
     // Use fixed sequence or calculate if beyond array
     const waveIndex = this.wave - 1;
-    const count = waveIndex < GameConfig.BIRDS_PER_WAVE.length 
+    const count = waveIndex < GameConfig.BIRDS_PER_WAVE.length
       ? GameConfig.BIRDS_PER_WAVE[waveIndex]
       : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
-    
+
     this.birdsToSpawn = count;
-    this.speedMultiplier = Math.pow(GameConfig.SPEED_GROWTH, this.wave - 1);
     this.nextSpawnTime = 0;
     this.onWaveUpdate?.(this.wave);
   }
@@ -833,14 +840,36 @@ export class NeonFlockEngine {
               console.warn('[COLLISION] Invalid boid in onBoidHit callback:', boid);
               return;
             }
-            
+            if (boid.isBoss) {
+            if (isBossBird(boid)) {
+              const boss = boid;
+              const boidX = boss.x;
+              const boidY = boss.y;
+              const boidHue = boss.hue;
+              const destroyed = boss.takeDamage();
+              scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+              if (destroyed) {
+                scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
+                requestAnimationFrame(() => {
+                  try {
+                    this.particleSystem.createExplosion(boidX, boidY, boidHue, 15);
+                    this.particleSystem.createBirdExplosion(boidX, boidY, boidHue, 0, 0);
+                  } catch (e) {
+                    console.error('[VISUAL EFFECT ERROR]:', e);
+                  }
+                });
+              }
+              this.updateScoreDisplay();
+              return;
+            }
+
             // CRITICAL: Capture bird state BEFORE async operations!
             const hadDot = boid.hasDot;
             const targetDot = boid.targetDot;
             const boidX = boid.x;
             const boidY = boid.y;
             const boidHue = boid.hue;
-            
+
             // If bird had a dot, make it fall IMMEDIATELY (before bird is destroyed)
             if (hadDot && targetDot) {
               // The dot WAS stolen by this bird, now it falls
@@ -848,7 +877,7 @@ export class NeonFlockEngine {
               boid.targetDot = null;
               boid.hasDot = false;
             }
-            
+
             // Check what type of bird was hit for appropriate scoring
             let event: ScoringEvent;
             if (hadDot) {
@@ -866,7 +895,7 @@ export class NeonFlockEngine {
             }
             scoringSystem.addEvent(event);
             this.updateScoreDisplay();
-            
+
             // Deferred visual effects - won't freeze!
             requestAnimationFrame(() => {
               try {
