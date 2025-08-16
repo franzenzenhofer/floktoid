@@ -16,7 +16,7 @@ export class VectorUtils {
     const magnitude = Math.hypot(vector.x, vector.y);
     
     // Safety check for invalid values
-    if (!isFinite(magnitude) || magnitude === 0 || !isFinite(vector.x) || !isFinite(vector.y)) {
+    if (!Number.isFinite(magnitude) || magnitude === 0 || !Number.isFinite(vector.x) || !Number.isFinite(vector.y)) {
       console.warn('[VectorUtils] Invalid vector detected, returning zero vector:', vector);
       return { x: 0, y: 0 };
     }
@@ -34,7 +34,7 @@ export class VectorUtils {
     const magnitude = Math.hypot(vector.x, vector.y);
     
     // Safety check
-    if (!isFinite(magnitude) || !isFinite(maxMagnitude)) {
+    if (!Number.isFinite(magnitude) || !Number.isFinite(maxMagnitude)) {
       console.warn('[VectorUtils] Invalid magnitude detected');
       return { x: 0, y: 0 };
     }
@@ -83,14 +83,14 @@ export class VectorUtils {
    */
   static distance(a: Vector2D, b: Vector2D): number {
     // Safety check positions
-    if (!isFinite(a.x) || !isFinite(a.y) || !isFinite(b.x) || !isFinite(b.y)) {
+    if (!Number.isFinite(a.x) || !Number.isFinite(a.y) || !Number.isFinite(b.x) || !Number.isFinite(b.y)) {
       console.warn('[VectorUtils] Invalid positions in distance calculation');
       return Infinity;
     }
     
     const dist = Math.hypot(b.x - a.x, b.y - a.y);
     
-    if (!isFinite(dist)) {
+    if (!Number.isFinite(dist)) {
       console.warn('[VectorUtils] Invalid distance calculated');
       return Infinity;
     }
@@ -156,7 +156,7 @@ export class VectorUtils {
    * Check if vector is valid (no NaN/Infinity)
    */
   static isValid(vector: Vector2D): boolean {
-    return isFinite(vector.x) && isFinite(vector.y);
+    return Number.isFinite(vector.x) && Number.isFinite(vector.y);
   }
   
   /**
