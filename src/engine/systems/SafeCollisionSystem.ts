@@ -149,8 +149,9 @@ export class SafeCollisionSystem {
             // Call immediately - handler should capture state before any async ops
             callbacks.onBoidHit(boid);
             
-            // Check if boid is still alive after callback (for bosses)
-            if (!boid.alive) {
+            // Check if boid should be removed
+            // BossBirds have an 'alive' property, normal birds don't
+            if (boid.alive === false || boid.alive === undefined) {
               removeBoids.add(boidIndex);
             }
           } else {
