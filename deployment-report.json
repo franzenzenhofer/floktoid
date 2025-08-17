@@ -1,14 +1,76 @@
 {
-  "timestamp": "2025-08-17T21:57:47.902Z",
-  "duration": "393.68s",
+  "timestamp": "2025-08-17T22:10:19.593Z",
+  "duration": "107.62s",
   "deployment": {
+    "id": "fe5be372-bfe8-4afb-9b10-a01f1e3f1af3",
     "url": "https://floktoid.franzai.com",
-    "timestamp": "2025-08-17T21:57:47.902Z"
+    "timestamp": "2025-08-17T22:09:51.999Z"
   },
-  "git": {
-    "branch": "master",
-    "commit": "4d91f505036694740d31c22de12b033ef19ef9b6",
-    "shortCommit": "4d91f50"
+  "url": "https://floktoid.franzai.com",
+  "checks": {
+    "preDeployment": true,
+    "build": true,
+    "deployment": true,
+    "httpHealth": true,
+    "performance": true,
+    "noConsoleErrors": false,
+    "lighthouse": true
   },
-  "version": "2.96.0"
+  "fullResults": {
+    "preChecks": {
+      "gitStatus": true,
+      "dependencies": true,
+      "environment": true,
+      "diskSpace": true
+    },
+    "build": {
+      "success": true,
+      "size": "956K"
+    },
+    "deployment": {
+      "id": "fe5be372-bfe8-4afb-9b10-a01f1e3f1af3",
+      "url": "https://floktoid.franzai.com",
+      "timestamp": "2025-08-17T22:09:51.999Z"
+    },
+    "verification": {
+      "http": {
+        "status": 200,
+        "ok": true,
+        "headers": {
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "cf-cache-status": "HIT",
+          "cf-ray": "970c7f8e0c350b0c-FRA",
+          "connection": "keep-alive",
+          "content-encoding": "br",
+          "content-type": "text/html",
+          "date": "Sun, 17 Aug 2025 22:09:52 GMT",
+          "nel": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}",
+          "report-to": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=r5HzIMagJsEUHiLD5ushyJBrEmcIKAUY4Sim3Z1CKRNNEf82NSBcACVIk0eV1B88BYIBfK%2FxVLfMTg9yhIuiFyMO7HIVRqzYE6Q2PLuaFrzOV2CcsbtCtofroluZJ2N2x4t%2F0ceukOe86HQIrmUZVAngDw%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+          "server": "cloudflare",
+          "server-timing": "cfL4;desc=\"?proto=TCP&rtt=5575&min_rtt=5536&rtt_var=2104&sent=2&recv=5&lost=0&retrans=0&sent_bytes=219&recv_bytes=865&delivery_rate=243497&cwnd=250&unsent_bytes=0&cid=cbee8f81b8c2bcc1&ts=39&x=0\"",
+          "speculation-rules": "\"/cdn-cgi/speculation\"",
+          "transfer-encoding": "chunked",
+          "vary": "Accept-Encoding"
+        }
+      },
+      "performance": {
+        "loadTime": 1454,
+        "metrics": {
+          "firstPaint": 196,
+          "firstContentfulPaint": 936,
+          "domContentLoaded": 830,
+          "loadComplete": 830
+        },
+        "consoleErrors": []
+      },
+      "lighthouse": {
+        "performance": 92,
+        "accessibility": 79
+      }
+    },
+    "aiAnalysis": {
+      "output": "🤖 AI Analyzing: desktop.png\n🤖 AI Analyzing: mobile-start.png\n🤖 AI Analyzing: mobile.png\n🤖 AI Analyzing: start-screen.png\n🤖 AI Analyzing: tablet-start.png\n🤖 AI Analyzing: tablet.png\n\n📊 AI Analysis Complete:\n✅ Passed: 6/6\n❌ Failed: 0/6\n⭐ Average Quality: 1.0/10\n\n⚠️ Issues Found:\n  - Screen appears to be mostly black - possible rendering failure\n  - Screen appears to be mostly black - possible rendering failure\n  - Screen appears to be mostly black - possible rendering failure\n  - Screen app"
+    }
+  }
 }

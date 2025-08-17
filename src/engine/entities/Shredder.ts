@@ -45,6 +45,11 @@ export class Shredder {
   private maxSpeed: number;
   private maxForce: number = 150;
   private hue: number; // Hue like birds use (0-360)
+  
+  // Smooth movement variables
+  private desiredVx: number = 0;
+  private desiredVy: number = 0;
+  private smoothingFactor: number = 0.15; // How quickly to interpolate to desired velocity
 
   constructor(app: PIXI.Application) {
     this.app = app;
@@ -60,10 +65,16 @@ export class Shredder {
     const rand = Math.random();
     if (rand < 0.33) {
       this.behavior = ShredderBehavior.HUNTER;
+      this.smoothingFactor = 0.12; // Slightly less smooth for aggressive hunting
+      this.maxSpeed = 180; // Fast for chasing
     } else if (rand < 0.66) {
       this.behavior = ShredderBehavior.DISRUPTOR;
+      this.smoothingFactor = 0.18; // Very smooth for weaving patterns
+      this.maxSpeed = 160; // Medium-fast for interception
     } else {
       this.behavior = ShredderBehavior.PROTECTOR;
+      this.smoothingFactor = 0.15; // Balanced smoothness
+      this.maxSpeed = 150; // Moderate speed for defensive orbiting
     }
     
     // Each shredder has different rotation speed (2 to 6 radians/sec)
@@ -201,17 +212,36 @@ export class Shredder {
     
     switch (this.behavior) {
       case ShredderBehavior.HUNTER:
-        // Original behavior - hunt asteroids
+        // ENHANCED HUNTER - Aggressive asteroid destroyer with predictive targeting
         if (asteroids && asteroids.length > 0) {
           let bestTarget = null;
-          let bestSize = 0;
+          let bestScore = -Infinity;
           const tau = SHREDDER.TOLERANCE || 0.05;
           
           for (const asteroid of asteroids) {
             if (!asteroid || asteroid.destroyed) continue;
+            
+            // Can we shred it?
             if (asteroid.size < this.radius * (1 - tau)) {
-              if (asteroid.size > bestSize) {
-                bestSize = asteroid.size;
+              // Calculate distance to asteroid
+              const dx = asteroid.x - this.x;
+              const dy = asteroid.y - this.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              
+              // Predict where asteroid will be (lead the target)
+              const futureX = asteroid.x + asteroid.vx * 0.5;
+              const futureY = asteroid.y + asteroid.vy * 0.5;
+              const futureDist = Math.sqrt((futureX - this.x) ** 2 + (futureY - this.y) ** 2);
+              
+              // Score based on: size (bigger = better), distance (closer = better), and trajectory
+              const sizeScore = asteroid.size / 100;
+              const distScore = 1000 / (futureDist + 100); // Closer is better
+              const threatScore = asteroid.size * 2; // Prioritize larger threats
+              
+              const totalScore = sizeScore + distScore + threatScore;
+              
+              if (totalScore > bestScore) {
+                bestScore = totalScore;
                 bestTarget = asteroid;
               }
             }
@@ -221,135 +251,266 @@ export class Shredder {
         }
         
         if (this.targetAsteroid && !this.targetAsteroid.destroyed) {
-          const dx = this.targetAsteroid.x - this.x;
-          const dy = this.targetAsteroid.y - this.y;
+          // Predictive targeting - aim where asteroid will be
+          const leadTime = 0.3; // Predict 0.3 seconds ahead
+          const predictX = this.targetAsteroid.x + this.targetAsteroid.vx * leadTime;
+          const predictY = this.targetAsteroid.y + this.targetAsteroid.vy * leadTime;
+          
+          const dx = predictX - this.x;
+          const dy = predictY - this.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           
           if (dist > 0) {
-            targetForceX = (dx / dist) * this.maxSpeed * 50;
-            targetForceY = (dy / dist) * this.maxSpeed * 50;
+            // Aggressive pursuit with acceleration
+            const urgency = Math.min(2, 300 / (dist + 50)); // More urgent when close
+            targetForceX = (dx / dist) * this.maxSpeed * 60 * urgency;
+            targetForceY = (dy / dist) * this.maxSpeed * 60 * urgency;
           }
         } else {
-          // Wander
-          const wanderAngle = this.t * 2 + this.hue * 0.01;
-          targetForceX = Math.sin(wanderAngle) * this.maxForce * 0.3;
-          targetForceY = Math.cos(wanderAngle * 0.7) * this.maxForce * 0.3 + this.maxForce * 0.2;
+          // Patrol pattern when no target - sweep the field
+          const patrolSpeed = this.maxSpeed * 0.6;
+          const sweepAngle = this.t * 1.5 + Math.sin(this.t * 0.5) * 0.5;
+          targetForceX = Math.cos(sweepAngle) * patrolSpeed;
+          targetForceY = Math.sin(sweepAngle * 0.8) * patrolSpeed * 0.7 + patrolSpeed * 0.3;
         }
         break;
         
       case ShredderBehavior.DISRUPTOR:
-        // Move to average launch position to interfere with player
+        // ENHANCED DISRUPTOR - Smart launch area denial with predictive positioning
         if (launchPositions && launchPositions.length > 0) {
-          // Calculate average of last launch positions
-          let avgX = 0;
-          let avgY = 0;
-          for (const pos of launchPositions) {
-            avgX += pos.x;
-            avgY += pos.y;
-          }
-          avgX /= launchPositions.length;
-          avgY /= launchPositions.length;
+          // Calculate weighted average (recent launches count more)
+          let weightedX = 0;
+          let weightedY = 0;
+          let totalWeight = 0;
           
-          // Move toward average launch position
-          const dx = avgX - this.x;
-          const dy = avgY - this.y;
+          for (let i = 0; i < launchPositions.length; i++) {
+            const weight = (i + 1) / launchPositions.length; // Recent positions weighted more
+            weightedX += launchPositions[i].x * weight;
+            weightedY += launchPositions[i].y * weight;
+            totalWeight += weight;
+          }
+          
+          const predictedX = weightedX / totalWeight;
+          const predictedY = weightedY / totalWeight;
+          
+          // Also consider screen edges where player often launches from
+          const edgeBias = 0.3;
+          const biasedX = predictedX * (1 - edgeBias) + this.app.screen.width / 2 * edgeBias;
+          const biasedY = predictedY * (1 - edgeBias) + this.app.screen.height * 0.8 * edgeBias;
+          
+          const dx = biasedX - this.x;
+          const dy = biasedY - this.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           
-          if (dist > 50) { // Don't get too close
-            targetForceX = (dx / dist) * this.maxSpeed * 40;
-            targetForceY = (dy / dist) * this.maxSpeed * 40;
+          if (dist > 100) {
+            // Move aggressively to intercept point
+            targetForceX = (dx / dist) * this.maxSpeed * 55;
+            targetForceY = (dy / dist) * this.maxSpeed * 55;
           } else {
-            // Orbit around launch area
-            const orbitAngle = this.t * 3;
-            targetForceX = Math.cos(orbitAngle) * this.maxForce * 0.5;
-            targetForceY = Math.sin(orbitAngle) * this.maxForce * 0.5;
+            // Disruptive weaving pattern when in position
+            const weaveSpeed = this.maxSpeed * 0.8;
+            const weavePattern = Math.sin(this.t * 4) * 2;
+            const crossPattern = Math.cos(this.t * 3.5);
+            
+            // Figure-8 pattern to cover more area
+            targetForceX = Math.sin(weavePattern) * weaveSpeed * 1.2;
+            targetForceY = Math.cos(weavePattern * 0.5) * weaveSpeed * crossPattern;
+            
+            // Also try to intercept any newly launched asteroids
+            if (asteroids && asteroids.length > 0) {
+              // Find recently launched asteroid (high speed, coming from bottom)
+              for (const asteroid of asteroids) {
+                if (!asteroid || asteroid.destroyed) continue;
+                const asteroidSpeed = Math.sqrt(asteroid.vx ** 2 + asteroid.vy ** 2);
+                if (asteroidSpeed > 200 && asteroid.y > this.app.screen.height * 0.6) {
+                  // Try to intercept!
+                  const interceptX = asteroid.x + asteroid.vx * 0.2;
+                  const interceptY = asteroid.y + asteroid.vy * 0.2;
+                  targetForceX += (interceptX - this.x) * 20;
+                  targetForceY += (interceptY - this.y) * 20;
+                  break;
+                }
+              }
+            }
           }
         } else {
-          // Move to middle-bottom area where launches usually happen
-          const targetX = this.app.screen.width / 2;
-          const targetY = this.app.screen.height * 0.75;
-          const dx = targetX - this.x;
-          const dy = targetY - this.y;
+          // Default: Patrol launch zones (bottom area, corners)
+          const patrolZones = [
+            { x: this.app.screen.width * 0.2, y: this.app.screen.height * 0.8 },
+            { x: this.app.screen.width * 0.5, y: this.app.screen.height * 0.85 },
+            { x: this.app.screen.width * 0.8, y: this.app.screen.height * 0.8 }
+          ];
+          
+          // Pick zone based on time
+          const zoneIndex = Math.floor((this.t * 0.3) % patrolZones.length);
+          const targetZone = patrolZones[zoneIndex];
+          
+          const dx = targetZone.x - this.x;
+          const dy = targetZone.y - this.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           
-          if (dist > 0) {
-            targetForceX = (dx / dist) * this.maxSpeed * 30;
-            targetForceY = (dy / dist) * this.maxSpeed * 30;
+          if (dist > 30) {
+            targetForceX = (dx / dist) * this.maxSpeed * 45;
+            targetForceY = (dy / dist) * this.maxSpeed * 45;
           }
         }
         break;
         
       case ShredderBehavior.PROTECTOR:
-        // Stay near the bird flock to protect them
-        if (flockCenter) {
-          const dx = flockCenter.x - this.x;
-          const dy = flockCenter.y - this.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+        // ENHANCED PROTECTOR - Dynamic flock guardian with threat interception
+        if (flockCenter || (boids && boids.length > 0)) {
+          // Calculate flock center if not provided
+          let centerX = flockCenter?.x || 0;
+          let centerY = flockCenter?.y || 0;
           
-          // Maintain optimal distance from flock (not too close, not too far)
-          const optimalDistance = 150;
-          if (dist > optimalDistance + 50) {
-            // Move closer to flock
-            targetForceX = (dx / dist) * this.maxSpeed * 45;
-            targetForceY = (dy / dist) * this.maxSpeed * 45;
-          } else if (dist < optimalDistance - 50) {
-            // Move away from flock
-            targetForceX = -(dx / dist) * this.maxSpeed * 20;
-            targetForceY = -(dy / dist) * this.maxSpeed * 20;
-          } else {
-            // Patrol around the flock
-            const patrolAngle = this.t * 2 + this.hue * 0.02;
-            targetForceX = Math.cos(patrolAngle) * this.maxForce * 0.4;
-            targetForceY = Math.sin(patrolAngle) * this.maxForce * 0.4;
-          }
-        } else if (boids && boids.length > 0) {
-          // Calculate flock center manually
-          let centerX = 0;
-          let centerY = 0;
-          let count = 0;
-          for (const boid of boids) {
-            if (boid && boid.alive) {
-              centerX += boid.x;
-              centerY += boid.y;
-              count++;
+          if (!flockCenter && boids && boids.length > 0) {
+            let count = 0;
+            centerX = 0;
+            centerY = 0;
+            for (const boid of boids) {
+              if (boid && boid.alive) {
+                centerX += boid.x;
+                centerY += boid.y;
+                count++;
+              }
+            }
+            if (count > 0) {
+              centerX /= count;
+              centerY /= count;
             }
           }
-          if (count > 0) {
-            centerX /= count;
-            centerY /= count;
-            
+          
+          // Check for incoming threats (asteroids heading toward flock)
+          let threatDetected = false;
+          if (asteroids && asteroids.length > 0) {
+            for (const asteroid of asteroids) {
+              if (!asteroid || asteroid.destroyed) continue;
+              
+              // Calculate if asteroid is heading toward flock
+              const astToFlockX = centerX - asteroid.x;
+              const astToFlockY = centerY - asteroid.y;
+              const astToFlockDist = Math.sqrt(astToFlockX ** 2 + astToFlockY ** 2);
+              
+              // Check if asteroid velocity is pointing toward flock
+              const dotProduct = (asteroid.vx * astToFlockX + asteroid.vy * astToFlockY) / astToFlockDist;
+              
+              if (dotProduct > 50 && astToFlockDist < 300) {
+                // THREAT DETECTED! Intercept!
+                threatDetected = true;
+                
+                // Calculate interception point
+                const timeToImpact = astToFlockDist / (dotProduct + 0.1);
+                const interceptX = asteroid.x + asteroid.vx * timeToImpact * 0.5;
+                const interceptY = asteroid.y + asteroid.vy * timeToImpact * 0.5;
+                
+                const dx = interceptX - this.x;
+                const dy = interceptY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                // URGENT interception
+                if (dist > 0) {
+                  targetForceX = (dx / dist) * this.maxSpeed * 80; // Maximum urgency
+                  targetForceY = (dy / dist) * this.maxSpeed * 80;
+                }
+                break;
+              }
+            }
+          }
+          
+          if (!threatDetected) {
+            // No immediate threat - maintain defensive perimeter
             const dx = centerX - this.x;
             const dy = centerY - this.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            if (dist > 200) {
-              targetForceX = (dx / dist) * this.maxSpeed * 40;
-              targetForceY = (dy / dist) * this.maxSpeed * 40;
+            // Dynamic optimal distance based on flock size
+            const flockSize = boids?.filter(b => b && b.alive).length || 1;
+            const optimalDistance = Math.min(200, 100 + flockSize * 5);
+            
+            if (dist > optimalDistance + 80) {
+              // Too far - rush back to protect
+              targetForceX = (dx / dist) * this.maxSpeed * 60;
+              targetForceY = (dy / dist) * this.maxSpeed * 60;
+            } else if (dist < optimalDistance - 40) {
+              // Too close - back off
+              targetForceX = -(dx / dist) * this.maxSpeed * 30;
+              targetForceY = -(dy / dist) * this.maxSpeed * 30;
             } else {
-              // Patrol
-              const patrolAngle = this.t * 2.5;
-              targetForceX = Math.cos(patrolAngle) * this.maxForce * 0.35;
-              targetForceY = Math.sin(patrolAngle) * this.maxForce * 0.35;
+              // Perfect distance - orbit defensively
+              const orbitSpeed = this.maxSpeed * 0.7;
+              const orbitAngle = this.t * 2.5 + this.hue * 0.01;
+              
+              // Elliptical orbit for better coverage
+              const ellipseX = Math.cos(orbitAngle) * 1.3;
+              const ellipseY = Math.sin(orbitAngle) * 0.8;
+              
+              // Transform to be relative to flock
+              const orbitX = centerX + ellipseX * optimalDistance;
+              const orbitY = centerY + ellipseY * optimalDistance;
+              
+              targetForceX = (orbitX - this.x) * 15;
+              targetForceY = (orbitY - this.y) * 15;
+              
+              // Add slight inward bias to stay protective
+              targetForceX += dx * 0.1;
+              targetForceY += dy * 0.1;
             }
+          }
+        } else {
+          // No flock to protect - patrol center area
+          const centerX = this.app.screen.width / 2;
+          const centerY = this.app.screen.height / 3;
+          const dx = centerX - this.x;
+          const dy = centerY - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist > 50) {
+            targetForceX = (dx / dist) * this.maxSpeed * 35;
+            targetForceY = (dy / dist) * this.maxSpeed * 35;
           }
         }
         break;
     }
     
-    // Apply combined forces
-    this.vx += (separationX + targetForceX) * dt;
-    this.vy += (separationY + targetForceY) * dt;
+    // SMOOTH MOVEMENT SYSTEM - Calculate desired velocity
+    this.desiredVx = (separationX + targetForceX) * dt;
+    this.desiredVy = (separationY + targetForceY) * dt;
     
-    // Limit speed
-    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-    if (speed > this.maxSpeed) {
-      this.vx = (this.vx / speed) * this.maxSpeed;
-      this.vy = (this.vy / speed) * this.maxSpeed;
+    // Smooth interpolation to desired velocity (prevents jerky movement)
+    this.vx += (this.desiredVx - this.vx) * this.smoothingFactor;
+    this.vy += (this.desiredVy - this.vy) * this.smoothingFactor;
+    
+    // Apply damping for more fluid motion
+    const damping = 0.98;
+    this.vx *= damping;
+    this.vy *= damping;
+    
+    // Limit speed with smooth capping
+    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    if (currentSpeed > this.maxSpeed) {
+      // Smooth speed limiting - gradually reduce to max
+      const limitFactor = this.maxSpeed / currentSpeed;
+      const smoothLimit = 0.9 + limitFactor * 0.1; // Gentle limiting
+      this.vx *= smoothLimit;
+      this.vy *= smoothLimit;
     }
     
-    // Update position
+    // Update position with velocity
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+    
+    // Smooth rotation toward movement direction
+    if (currentSpeed > 10) {
+      const targetAngle = Math.atan2(this.vy, this.vx);
+      let angleDiff = targetAngle - this.rotation;
+      
+      // Normalize angle difference
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      
+      // Smooth rotation interpolation
+      this.rotation += angleDiff * 0.1;
+    }
     
     // Update sprite
     this.sprite.x = this.x;
