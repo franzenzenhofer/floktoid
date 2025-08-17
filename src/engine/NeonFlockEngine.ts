@@ -459,41 +459,10 @@ export class NeonFlockEngine {
     const P = calculateShredderSpawnProbability(A);
     if (this.shredders.length >= SHREDDER.MAX_CONCURRENT) return;
     if (Math.random() < P) {
-      const side = Math.random() < 0.5 ? 'left' : 'right';
-      
-      // Visual warning flash before spawn
-      this.showShredderWarning(side);
-      
-      // Spawn shredder after brief delay
-      setTimeout(() => {
-        const shredder = new Shredder(this.app, side);
-        this.shredders.push(shredder);
-      }, 200); // 200ms warning
+      // Just spawn it like any other ship - no special effects!
+      const shredder = new Shredder(this.app);
+      this.shredders.push(shredder);
     }
-  }
-  
-  private showShredderWarning(side: 'left' | 'right') {
-    const graphics = new PIXI.Graphics();
-    const x = side === 'left' ? 0 : this.app.screen.width - 50;
-    const height = this.app.screen.height;
-    
-    // Draw warning stripe on spawn side
-    graphics.rect(x, 0, 50, height);
-    graphics.fill({ color: 0xFF00FF, alpha: 0.3 });
-    
-    this.app.stage.addChild(graphics);
-    
-    // Fade out and remove
-    let alpha = 0.3;
-    const fadeInterval = setInterval(() => {
-      alpha -= 0.05;
-      graphics.alpha = alpha;
-      if (alpha <= 0) {
-        clearInterval(fadeInterval);
-        this.app.stage.removeChild(graphics);
-        graphics.destroy();
-      }
-    }, 50);
   }
   
   public launchAsteroid(
@@ -935,15 +904,25 @@ export class NeonFlockEngine {
           if (rA < rS * (1 - tau)) {
             asteroid.destroy();
             this.asteroids.splice(i, 1);
-            this.particleSystem.createExplosion(asteroid.x, asteroid.y, 0xFFFFFF, 10);
+            this.particleSystem.createExplosion(asteroid.x, asteroid.y, 0xFF0000, 15); // Red explosion for bad!
+            
+            // LOSE points for getting shredded!
             scoringSystem.addEvent(ScoringEvent.SHREDDER_SHRED);
             this.updateScoreDisplay();
             
-            // Show shred feedback text
-            this.showShredText(asteroid.x, asteroid.y);
+            // Show negative feedback text
+            this.showShredText(asteroid.x, asteroid.y, true); // true = negative
           } else if (rA > rS * (1 + tau)) {
+            // Big asteroid destroys shredder - GOOD!
             shredder.destroy();
-            this.particleSystem.createExplosion(shredder.x, shredder.y, 0xFFFFFF, 20);
+            this.particleSystem.createExplosion(shredder.x, shredder.y, 0x00FF00, 30); // Green explosion for good!
+            
+            // Big points for destroying shredder!
+            scoringSystem.addEvent(ScoringEvent.SHREDDER_DESTROYED);
+            this.updateScoreDisplay();
+            
+            // Show positive feedback
+            this.showShredText(shredder.x, shredder.y, false); // false = positive
             return false;
           } else {
             asteroid.destroy();
@@ -1463,16 +1442,16 @@ export class NeonFlockEngine {
     this.onScoreUpdate?.(scoreInfo.score, scoreInfo.combo, scoreInfo.multiplier);
   }
   
-  private showShredText(x: number, y: number) {
+  private showShredText(x: number, y: number, isNegative: boolean) {
     const text = new PIXI.Text({
-      text: '+10 SHREDDED!',
+      text: isNegative ? '-10 SHREDDED!' : '+50 SHREDDER DESTROYED!',
       style: {
         fontFamily: 'monospace',
-        fontSize: 20,
-        fill: 0xFF00FF,
+        fontSize: isNegative ? 20 : 24,
+        fill: isNegative ? 0xFF0000 : 0x00FF00,
         align: 'center',
         dropShadow: {
-          color: 0xFF00FF,
+          color: isNegative ? 0xFF0000 : 0x00FF00,
           blur: 10,
           distance: 0
         }

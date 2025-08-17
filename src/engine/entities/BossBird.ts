@@ -62,7 +62,7 @@ export class BossBird extends Boid {
     
     // Boss colors - different based on shooting ability
     const bossColor = this.isBossShooter ? 0xFF0066 : 0x9900FF; // Red for shooters, purple for normal
-    this.sprite.fill({ color: bossColor, alpha: 0.95 });
+    this.sprite.fill({ color: bossColor, alpha: 1 }); // FULL OPACITY - NO TRANSPARENCY!
     this.sprite.stroke({ width: 4, color: 0xFF00FF, alpha: 1 });
     
     // Add inner glow effect instead of eyes
@@ -72,7 +72,7 @@ export class BossBird extends Boid {
       -this.size * 0.4, 0,
       -this.size * 0.6, -this.size * 0.5,
     ]);
-    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.2 });
+    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.3 }); // Slight glow is ok
   }
   
   update(dt: number) {

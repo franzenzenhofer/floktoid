@@ -3,7 +3,7 @@ import CentralConfig from '../CentralConfig';
 import { GameConfig } from '../GameConfig';
 import { EntityDestroyer } from '../utils/EntityDestroyer';
 
-const { SHREDDER, SIZES, VISUALS } = CentralConfig;
+const { SHREDDER, SIZES } = CentralConfig;
 
 export type ShredderPath = 'SINE' | 'COSINE' | 'LISSAJOUS';
 
@@ -15,18 +15,6 @@ export function calculateShredderSpawnProbability(A: number): number {
   return P;
 }
 
-const OUTER = [
-  [-0.3545, 0.6136], [0.0, 1.0], [0.3545, 0.6136],
-  [0.3545, -0.6136], [0.0, -1.0], [-0.3545, -0.6136],
-  [-0.8864, 0.0], [-0.8218, 0.1418], [-0.7127, 0.2509],
-  [-0.6136, 0.3545], [-0.3545, 0.6136]
-];
-
-const HUB = [
-  [0.0, 0.1636], [0.1418, -0.0818],
-  [-0.1418, -0.0818], [0.0, 0.1636]
-];
-
 export class Shredder {
   public x: number;
   public y: number;
@@ -36,7 +24,9 @@ export class Shredder {
   private sprite: PIXI.Graphics;
   private rotation = 0;
   private rotationSpeed: number;
-  private direction: number;
+  private rotationDirection: number = 1; // 1 for left, -1 for right
+  private directionChangeTime: number;
+  private nextDirectionChange: number;
   private t = 0;
   private app: PIXI.Application;
   private motionType: ShredderPath;
@@ -47,24 +37,27 @@ export class Shredder {
   private startY: number;
   private forwardSpeed: number;
 
-  constructor(app: PIXI.Application, spawnSide: 'left' | 'right') {
+  constructor(app: PIXI.Application) {
     this.app = app;
     const scale = SHREDDER.SCALE.MIN + Math.random() * (SHREDDER.SCALE.MAX - SHREDDER.SCALE.MIN);
     const baseTip = SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER;
-    this.radius = baseTip * scale;
+    this.radius = baseTip * scale * 1.5; // Bigger for ninja nunchuck
 
-    this.rotationSpeed = (SHREDDER.SPIN.MIN + Math.random() * (SHREDDER.SPIN.MAX - SHREDDER.SPIN.MIN)) * (Math.random() < 0.5 ? -1 : 1);
+    // Fast rotation that changes direction
+    this.rotationSpeed = (SHREDDER.SPIN.MIN + Math.random() * (SHREDDER.SPIN.MAX - SHREDDER.SPIN.MIN)) * 2; // Faster spinning
+    this.directionChangeTime = 1 + Math.random() * 2; // Change direction every 1-3 seconds
+    this.nextDirectionChange = this.directionChangeTime;
 
     const motionTypes: ShredderPath[] = ['SINE', 'COSINE', 'LISSAJOUS'];
     this.motionType = motionTypes[Math.floor(Math.random() * motionTypes.length)];
-    this.amplitude = (SHREDDER.AMPLITUDE.MIN + Math.random() * (SHREDDER.AMPLITUDE.MAX - SHREDDER.AMPLITUDE.MIN)) * app.screen.height;
-    this.omega = 0.6 + Math.random() * 0.6; // 0.6 to 1.2
+    this.amplitude = (SHREDDER.AMPLITUDE.MIN + Math.random() * (SHREDDER.AMPLITUDE.MAX - SHREDDER.AMPLITUDE.MIN)) * app.screen.width * 0.3;
+    this.omega = 0.8 + Math.random() * 0.8; // Faster oscillation
     this.phase = Math.random() * Math.PI * 2;
-    this.forwardSpeed = GameConfig.BASE_SPEED * (1 - SHREDDER.SPEED_JITTER + Math.random() * SHREDDER.SPEED_JITTER * 2);
+    this.forwardSpeed = GameConfig.BASE_SPEED * 1.2; // Comes down like other ships
 
-    this.direction = spawnSide === 'left' ? 1 : -1;
-    this.startX = spawnSide === 'left' ? -this.radius : app.screen.width + this.radius;
-    this.startY = Math.random() * app.screen.height;
+    // Spawn from top like other ships
+    this.startX = Math.random() * app.screen.width;
+    this.startY = -this.radius;
     this.x = this.startX;
     this.y = this.startY;
 
@@ -77,29 +70,62 @@ export class Shredder {
 
   private draw() {
     this.sprite.clear();
-    const strokeWidth = Math.max(1.5, this.radius * 0.03);
-    const outer = OUTER.flatMap(p => [p[0] * this.radius, p[1] * this.radius]);
-    this.sprite.poly(outer);
-    this.sprite.stroke({ width: strokeWidth, color: VISUALS.COLORS.WHITE, alpha: VISUALS.ALPHA.FULL });
-    const hub = HUB.flatMap(p => [p[0] * this.radius, p[1] * this.radius]);
-    this.sprite.poly(hub);
-    this.sprite.stroke({ width: strokeWidth, color: VISUALS.COLORS.WHITE, alpha: VISUALS.ALPHA.FULL });
+    
+    // Draw like our triangular spaceships but with 3 triangles in a spinning formation
+    // Each triangle is like a normal ship
+    const triangleSize = this.radius * 0.8;
+    
+    for (let i = 0; i < 3; i++) {
+      const angle = (i * Math.PI * 2) / 3; // 120 degrees apart
+      const centerX = Math.cos(angle) * this.radius * 0.6;
+      const centerY = Math.sin(angle) * this.radius * 0.6;
+      
+      // Draw triangular ship pointing outward from center
+      const tipX = centerX + Math.cos(angle) * triangleSize;
+      const tipY = centerY + Math.sin(angle) * triangleSize;
+      const leftX = centerX + Math.cos(angle + 2.4) * triangleSize * 0.7;
+      const leftY = centerY + Math.sin(angle + 2.4) * triangleSize * 0.7;
+      const rightX = centerX + Math.cos(angle - 2.4) * triangleSize * 0.7;
+      const rightY = centerY + Math.sin(angle - 2.4) * triangleSize * 0.7;
+      
+      // Draw filled triangle (like normal ships)
+      this.sprite.poly([tipX, tipY, leftX, leftY, centerX, centerY, rightX, rightY]);
+      this.sprite.fill({ color: 0xFF00FF, alpha: 1 }); // Full opacity, no transparency!
+      this.sprite.stroke({ width: 2, color: 0xFFFFFF, alpha: 1 });
+    }
+    
+    // Central connecting hub
+    this.sprite.circle(0, 0, this.radius * 0.15);
+    this.sprite.fill({ color: 0xFFFFFF, alpha: 1 }); // Bright white center
+    this.sprite.stroke({ width: 2, color: 0xFF00FF, alpha: 1 });
   }
 
   update(dt: number): boolean {
     this.t += dt;
     const t = this.t;
-    if (this.motionType === 'SINE') {
-      this.x = this.startX + this.direction * this.forwardSpeed * t;
-      this.y = this.startY + this.amplitude * Math.sin(this.omega * t + this.phase);
-    } else if (this.motionType === 'COSINE') {
-      this.x = this.startX + this.direction * this.forwardSpeed * t;
-      this.y = this.startY + this.amplitude * Math.cos(this.omega * t + this.phase);
-    } else {
-      this.x = this.startX + this.direction * this.forwardSpeed * t + 0.3 * this.app.screen.width * Math.sin(this.omega * t + this.phase);
-      this.y = this.startY + this.amplitude * Math.sin(2 * this.omega * t + 0.5 * this.phase);
+    
+    // Change rotation direction periodically
+    if (t > this.nextDirectionChange) {
+      this.rotationDirection *= -1; // Reverse direction
+      this.nextDirectionChange += this.directionChangeTime;
     }
-    this.rotation += this.rotationSpeed * dt;
+    
+    // Move down from top with horizontal oscillation
+    this.y = this.startY + this.forwardSpeed * t;
+    
+    if (this.motionType === 'SINE') {
+      this.x = this.startX + this.amplitude * Math.sin(this.omega * t + this.phase);
+    } else if (this.motionType === 'COSINE') {
+      this.x = this.startX + this.amplitude * Math.cos(this.omega * t + this.phase);
+    } else {
+      // Lissajous for complex movement
+      this.x = this.startX + this.amplitude * Math.sin(this.omega * t + this.phase);
+      // Add secondary oscillation
+      this.x += this.amplitude * 0.3 * Math.sin(2 * this.omega * t);
+    }
+    
+    // Fast rotation with direction changes
+    this.rotation += this.rotationSpeed * this.rotationDirection * dt;
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     this.sprite.rotation = this.rotation;
