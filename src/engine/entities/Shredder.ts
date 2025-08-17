@@ -10,6 +10,12 @@ const { SHREDDER, SIZES, VISUALS } = CentralConfig;
 
 export type ShredderPath = 'SINE' | 'COSINE' | 'LISSAJOUS';
 
+export enum ShredderBehavior {
+  HUNTER = 'HUNTER',       // Hunt asteroids (current behavior)
+  DISRUPTOR = 'DISRUPTOR', // Move to average launch position to interfere
+  PROTECTOR = 'PROTECTOR'  // Stay near flock to protect them
+}
+
 export function calculateShredderSpawnProbability(A: number): number {
   let P = A <= 10 ? SHREDDER.SPAWN.BASE_PROBABILITY : SHREDDER.SPAWN.BASE_PROBABILITY + A * SHREDDER.SPAWN.EXTRA_PER_ASTEROID;
   if (SHREDDER.SPAWN.MAX_PROBABILITY !== undefined) {
