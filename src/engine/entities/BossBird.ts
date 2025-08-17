@@ -9,7 +9,7 @@ export class BossBird extends Boid {
   public size: number; // Boss bird size
   public isBossShooter: boolean = false; // Whether this boss can shoot
   private shieldGraphics: PIXI.Graphics;
-  private pulseTime = 0;
+  // Removed pulseTime - no longer pulsing
   private flashTimeoutId: NodeJS.Timeout | null = null; // CRITICAL FIX: Track timeout to prevent leaks
   
   constructor(
@@ -73,10 +73,10 @@ export class BossBird extends Boid {
   }
   
   update(dt: number) {
+    // Call parent update which handles all flocking behavior
     super.update(dt);
     
-    // Update shield effect
-    this.pulseTime += dt;
+    // Update shield effect (no pulsing)
     this.updateShield();
   }
   
@@ -91,15 +91,26 @@ export class BossBird extends Boid {
     this.shieldGraphics.x = this.x;
     this.shieldGraphics.y = this.y;
     
-    // Pulsing shield effect based on health
-    const pulse = Math.sin(this.pulseTime * 5) * 0.15 + 0.85;
-    const shieldRadius = this.size * 1.8 * pulse;
+    // Fixed shield size - no pulsing
+    const shieldRadius = this.size * 1.8;
     
-    // Shield color based on health percentage
+    // Shield color gradient from green to red based on health
     const healthPercent = this.health / this.maxHealth;
-    let shieldColor = 0x00FFFF; // Cyan for > 66%
-    if (healthPercent <= 0.66) shieldColor = 0xFFFF00; // Yellow for 33-66%
-    if (healthPercent <= 0.33) shieldColor = 0xFF0000; // Red for < 33%
+    let shieldColor: number;
+    
+    if (healthPercent > 0.5) {
+      // Green to yellow (health 100% to 50%)
+      const t = (healthPercent - 0.5) * 2; // 0 to 1
+      const r = Math.floor(255 * (1 - t));
+      const g = 255;
+      shieldColor = (r << 16) | (g << 8) | 0;
+    } else {
+      // Yellow to red (health 50% to 0%)
+      const t = healthPercent * 2; // 0 to 1
+      const r = 255;
+      const g = Math.floor(255 * t);
+      shieldColor = (r << 16) | (g << 8) | 0;
+    }
     
     // Draw hexagonal shield (aligned with game's neon aesthetic)
     const sides = 6;

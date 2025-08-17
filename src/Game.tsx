@@ -59,6 +59,13 @@ export function Game() {
           (window as any).enableAutopilot = () => engine.enableAutopilot();
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (window as any).disableAutopilot = () => engine.disableAutopilot();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (window as any).testBossAnnouncement = () => {
+            // Access through public method or make comboEffects public
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const anyEngine = engine as any;
+            anyEngine.comboEffects.createBossAnnouncement();
+          };
         } catch (error) {
           console.error('[GAME] Failed to initialize engine:', error);
         }

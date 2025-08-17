@@ -437,7 +437,9 @@ export class NeonFlockEngine {
         
         // Boss announcement for all players (not just dev mode)
         if (boid instanceof BossBird) {
+          console.log('[BOSS] Creating boss announcement!');
           this.comboEffects.createBossAnnouncement();
+          console.log('[BOSS] Boss announcement created');
         }
       } else {
         console.error('[SPAWN ERROR] Invalid Boid instance in spawnBird!');

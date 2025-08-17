@@ -261,15 +261,15 @@ export class ComboEffects {
    * Create boss level announcement
    */
   createBossAnnouncement(): void {
-    const fontSize = UI.FONTS.SIZES.LARGE + 20;
-    const bossText = new PIXI.Text(
-      'BOSS LEVEL!',
-      {
-        fontFamily: UI.FONTS.PRIMARY,
+    console.log('[BOSS ANNOUNCEMENT] Starting boss announcement creation');
+    const fontSize = 48; // Fixed size instead of using UI.FONTS
+    const bossText = new PIXI.Text({
+      text: 'BOSS LEVEL!',
+      style: {
+        fontFamily: 'Arial',
         fontSize: fontSize,
         fontWeight: 'bold',
-        fontStyle: 'italic',
-        fill: [0xFF00FF, 0x00FFFF], // Gradient from magenta to cyan
+        fill: 0xFF00FF, // Simple magenta color
         dropShadow: {
           alpha: 0.8,
           angle: Math.PI / 2,
@@ -279,19 +279,20 @@ export class ComboEffects {
         },
         stroke: { color: 0xFFFFFF, width: 3 },
       }
-    );
+    });
     
     // Center on screen
     bossText.anchor.set(0.5);
     bossText.x = this.app.screen.width / 2;
     bossText.y = this.app.screen.height / 3;
     
-    // Add glow filter if available
-    const glowFilter = new PIXI.ColorMatrixFilter();
-    glowFilter.brightness(1.5, false);
-    bossText.filters = [glowFilter];
+    // Ensure visibility
+    bossText.zIndex = 9999;
+    bossText.alpha = 1;
     
+    console.log('[BOSS ANNOUNCEMENT] Adding text to stage at:', bossText.x, bossText.y);
     this.comboParticles.addChild(bossText);
+    console.log('[BOSS ANNOUNCEMENT] Text added, parent:', bossText.parent ? 'YES' : 'NO');
     
     // Animation with scale pulse and fade
     let frame = 0;
