@@ -1,14 +1,14 @@
 // Auto-generated at build time - DO NOT EDIT
 export const VERSION_INFO = {
-  "version": "2.58.0",
-  "buildDate": "2025-08-16T14:03:52.476Z",
-  "buildTimestamp": 1755353032477,
-  "gitCommit": "7ce97bd274239b9a0609946fe1728869a6c781c9",
-  "gitBranch": "master",
+  "version": "2.59.0",
+  "buildDate": "2025-08-17T20:37:30.703Z",
+  "buildTimestamp": 1755463050703,
+  "gitCommit": "920f4930295f9937de2eb055f4db62b0b18b726a",
+  "gitBranch": "codex/implement-shredder-enemy-with-full-functionality",
   "environment": "development",
-  "displayVersion": "v2.58.0",
-  "displayDate": "8/16/2025 2:03:52 PM",
-  "displayCommit": "7ce97bd"
+  "displayVersion": "v2.59.0",
+  "displayDate": "8/17/2025 8:37:30 PM",
+  "displayCommit": "920f493"
 } as const;
 
 export const {
