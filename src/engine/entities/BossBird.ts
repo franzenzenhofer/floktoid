@@ -18,25 +18,26 @@ export class BossBird extends Boid {
     y: number,
     speedMultiplier: number,
     health: number = 5, // Default health
-    canShoot: boolean = false
+    _canShoot: boolean = true // Bosses are ALWAYS shooters
   ) {
     super(app, x, y, speedMultiplier);
     
     // Set health
     this.health = health;
     this.maxHealth = health;
-    this.isBossShooter = canShoot;
+    this.isBossShooter = true; // All bosses are shooters
     
-    // Enable shooting for shooting bosses
-    if (canShoot) {
-      this.isShooter = true;
-      this.maxShootCooldown = 45; // Shoot faster than regular shooters
-    }
+    // Enable shooting for ALL bosses - they're very goal oriented!
+    this.isShooter = true;
+    this.maxShootCooldown = 30; // Shoot very fast - goal oriented!
     
-    // Boss birds are larger and slower
+    // Make boss extra goal-oriented (prioritize energy dots)
+    this.isSuperNavigator = true; // Use super navigator behavior for goal orientation
+    
+    // Boss birds are larger and more aggressive
     this.size = GameConfig.BOID_SIZE * 2.5;
-    this.maxSpeed *= 0.6;
-    this.maxForce *= 1.8; // But stronger
+    this.maxSpeed *= 0.8; // Faster than before for goal orientation
+    this.maxForce *= 2.5; // Much stronger for aggressive movement
     
     // Create shield effect
     this.shieldGraphics = new PIXI.Graphics();
@@ -156,7 +157,23 @@ export class BossBird extends Boid {
   }
   
   /**
+   * Check if the boss has an active shield
+   */
+  hasActiveShield(): boolean {
+    return this.health > 0 && this.alive;
+  }
+  
+  /**
+   * Get the shield collision radius (larger than the bird itself)
+   */
+  getShieldRadius(): number {
+    if (!this.hasActiveShield()) return 0;
+    return this.size * 1.8; // Shield is 1.8x the boss size
+  }
+  
+  /**
    * Boss takes damage but doesn't die immediately
+   * Returns true if boss is destroyed, false otherwise
    */
   takeDamage(): boolean {
     this.health--;

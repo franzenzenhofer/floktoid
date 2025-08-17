@@ -911,7 +911,10 @@ export class NeonFlockEngine {
             
             // Check if it's a boss bird (special case like shooters)
             if (boid instanceof BossBird) {
-              const destroyed = (boid as BossBird).takeDamage();
+              const bossBird = boid as BossBird;
+              const destroyed = bossBird.takeDamage();
+              
+              // Note: Boss shield splitting asteroids is handled in onAsteroidHit callback
               
               if (destroyed) {
                 // Boss destroyed - big explosion

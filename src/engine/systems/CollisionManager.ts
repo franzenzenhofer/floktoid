@@ -80,7 +80,19 @@ export class CollisionManager {
         const dx = ast.x - boid.x;
         const dy = ast.y - boid.y;
         const distSq = dx * dx + dy * dy;
-        const threshold = (ast.size + 15) * (ast.size + 15); // Squared for performance
+        
+        // Check if it's a boss with shield - use shield radius for collision
+        let collisionRadius = 15; // Default boid radius
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ('getShieldRadius' in boid && typeof (boid as any).getShieldRadius === 'function') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const shieldRadius = (boid as any).getShieldRadius();
+          if (shieldRadius > 0) {
+            collisionRadius = shieldRadius; // Use shield radius for boss
+          }
+        }
+        
+        const threshold = (ast.size + collisionRadius) * (ast.size + collisionRadius); // Squared for performance
         
         if (distSq < threshold) {
           this.processedPairs.add(pairKey);
@@ -202,14 +214,25 @@ export class CollisionManager {
             continue;
           }
           
-          // Mark boid for removal
+          // Check if it's a boss with shield - shield splits asteroids!
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ('hasActiveShield' in boid && (boid as any).hasActiveShield()) {
+            // Boss shield acts like a laser - split the asteroid
+            if (this.asteroidSplitter) {
+              const fragments = this.asteroidSplitter.split(asteroid, asteroids.length);
+              newAsteroids.push(...fragments);
+            }
+            asteroidsToRemove.add(asteroid); // Remove the original asteroid
+          }
+          
+          // Mark boid for removal (unless it's a boss with health remaining)
           boidsToRemove.add(boid);
           
           // Queue visual effect
           visualEffects.push(() => callbacks.onBoidHit(boid));
           
-          // Handle asteroid (shrink or destroy)
-          if (callbacks.onAsteroidHit(asteroid)) {
+          // Handle asteroid (shrink or destroy) if not already split by boss shield
+          if (!asteroidsToRemove.has(asteroid) && callbacks.onAsteroidHit(asteroid)) {
             asteroidsToRemove.add(asteroid);
           }
           
