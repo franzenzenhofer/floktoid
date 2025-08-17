@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Boid } from './entities/Boid';
-// import { BossBird } from './entities/BossBird'; // Removed - keeping game simple
+import { BossBird } from './entities/BossBird';
 import type { BirdProjectile } from './entities/BirdProjectile';
 import { EnergyDot } from './entities/EnergyDot';
 import { Asteroid } from './entities/Asteroid';
@@ -63,6 +63,10 @@ export class NeonFlockEngine {
   private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
   private DOT_RESPAWN_DELAY = TIMING.DOT_RESPAWN_DELAY_MS;
   private waveStartTime = 0; // Time when wave started
+  
+  // Boss queue - like shooters/navigators, spawn through normal timer
+  private bossesToSpawn = 0;
+  private bossHealthForWave = 0;
   
   // Autopilot mode for testing
   private autopilotEnabled = false;
@@ -335,9 +339,21 @@ export class NeonFlockEngine {
   }
   
   /**
-   * Show BOSS LEVEL message
+   * Calculate boss configuration for wave
+   * Uses same pattern as described: 5hp, 10hp, 15hp cycling
    */
-  // Removed boss methods - keeping game simple (KISS)
+  private getBossConfig(wave: number): { count: number; health: number } {
+    if (wave % 5 !== 0) return { count: 0, health: 0 };
+    
+    const bossWaveNumber = Math.floor(wave / 5);
+    const cycleNumber = Math.floor((bossWaveNumber - 1) / 3);
+    const positionInCycle = (bossWaveNumber - 1) % 3;
+    
+    const count = Math.min(cycleNumber + 1, 5); // 1, 2, 3, 4, 5 bosses max
+    const health = (positionInCycle + 1) * 5; // 5, 10, or 15 HP
+    
+    return { count, health };
+  }
   private startWave() {
     console.log(`[WAVE] Starting wave ${this.wave}`);
     
@@ -351,15 +367,26 @@ export class NeonFlockEngine {
     this.waveDotsLost = 0;
     this.waveStartTime = Date.now(); // Track when wave starts
     
-    // KISS: ALL WAVES ARE NORMAL - NO EXCEPTIONS!
-    // Just spawn the correct number of birds for this wave
+    // Check if this is a boss wave
+    const bossConfig = this.getBossConfig(this.wave);
+    if (bossConfig.count > 0) {
+      // Queue bosses to spawn (like shooters/navigators)
+      this.bossesToSpawn = bossConfig.count;
+      this.bossHealthForWave = bossConfig.health;
+      console.log(`[WAVE] Boss wave ${this.wave}: ${bossConfig.count} bosses with ${bossConfig.health} HP each`);
+    } else {
+      this.bossesToSpawn = 0;
+      this.bossHealthForWave = 0;
+    }
+    
+    // Spawn the normal number of birds for this wave
     const waveIndex = this.wave - 1;
     const count = waveIndex < GameConfig.BIRDS_PER_WAVE.length 
       ? GameConfig.BIRDS_PER_WAVE[waveIndex]
       : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
     this.birdsToSpawn = count;
     
-    console.log(`[WAVE] Wave ${this.wave}: birdsToSpawn=${this.birdsToSpawn}, boids.length=${this.boids.length}`);
+    console.log(`[WAVE] Wave ${this.wave}: birdsToSpawn=${this.birdsToSpawn}, bossesQueued=${this.bossesToSpawn}`);
     
     this.speedMultiplier = Math.pow(GameConfig.SPEED_GROWTH, this.wave - 1);
     this.nextSpawnTime = 0;
@@ -368,13 +395,30 @@ export class NeonFlockEngine {
   
   public spawnBird(x?: number, y?: number) {
     try {
-      const boid = new Boid(
-        this.app,
-        x ?? Math.random() * this.app.screen.width,
-        y ?? -20,
-        this.speedMultiplier
-        // No initial velocity - let personality determine it
-      );
+      let boid: Boid;
+      
+      // Check if we should spawn a boss (like we check for shooters/navigators)
+      if (this.bossesToSpawn > 0) {
+        // Spawn boss bird with configured health
+        boid = new BossBird(
+          this.app,
+          x ?? Math.random() * this.app.screen.width,
+          y ?? -20,
+          this.speedMultiplier,
+          this.bossHealthForWave,
+          false // No shooting for first bosses
+        );
+        this.bossesToSpawn--;
+        console.log(`[SPAWN] Boss bird spawned with ${this.bossHealthForWave} HP, ${this.bossesToSpawn} bosses left`);
+      } else {
+        // Spawn normal bird (might be shooter/navigator)
+        boid = new Boid(
+          this.app,
+          x ?? Math.random() * this.app.screen.width,
+          y ?? -20,
+          this.speedMultiplier
+        );
+      }
       
       // Validate the boid is properly initialized
       if (boid && typeof boid.applyForces === 'function' && typeof boid.destroy === 'function') {
@@ -382,10 +426,11 @@ export class NeonFlockEngine {
         
         // Dev mode spawn notifications
         if (this.devModeDisplay && this.devModeDisplay.isEnabled()) {
-          if (boid.isSuperNavigator) {
+          if (boid instanceof BossBird) {
+            this.devModeDisplay.addSpawnMessage('BOSS');
+          } else if (boid.isSuperNavigator) {
             this.devModeDisplay.addSpawnMessage('super');
-          }
-          if (boid.isShooter) {
+          } else if (boid.isShooter) {
             this.devModeDisplay.addSpawnMessage('shooter');
           }
         }
@@ -857,8 +902,29 @@ export class NeonFlockEngine {
             const boidY = boid.y;
             const boidHue = boid.hue;
             
-            // Boss logic removed - keeping game simple (KISS)
-            // All birds are destroyed in one hit
+            // Check if it's a boss bird (special case like shooters)
+            if (boid instanceof BossBird) {
+              const destroyed = (boid as BossBird).takeDamage();
+              
+              if (destroyed) {
+                // Boss destroyed - big explosion
+                this.particleSystem.createExplosion(boidX, boidY, 0xFF00FF, 30);
+                this.particleSystem.createBirdExplosion(boidX, boidY, 0xFF00FF, 0, 0);
+                scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
+                
+                // If boss had a dot, make it fall
+                if (hadDot && targetDot) {
+                  this.createFallingDot(boidX, boidY, targetDot);
+                }
+                return true; // Destroy the boss
+              } else {
+                // Boss damaged but not destroyed
+                this.particleSystem.createExplosion(boidX, boidY, 0xFFFF00, 10);
+                scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+                this.updateScoreDisplay();
+                return false; // Don't destroy yet
+              }
+            }
             
             // If bird had a dot, make it fall IMMEDIATELY (before bird is destroyed)
             if (hadDot && targetDot) {
