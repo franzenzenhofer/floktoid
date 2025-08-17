@@ -1,14 +1,77 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NeonFlockEngine } from '../src/engine/NeonFlockEngine';
 import { GameConfig } from '../src/engine/GameConfig';
-import { Application } from 'pixi.js';
+import * as PIXI from 'pixi.js';
 
-// Mock PIXI Application
+// Mock PIXI modules
 vi.mock('pixi.js', async () => {
   const actual = await vi.importActual('pixi.js');
   return {
     ...actual,
-    Application: vi.fn().mockImplementation(() => ({
+    Graphics: vi.fn().mockImplementation(() => ({
+      clear: vi.fn(),
+      poly: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      circle: vi.fn(),
+      rect: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      destroy: vi.fn(),
+      x: 0,
+      y: 0,
+      rotation: 0,
+      alpha: 1,
+      scale: { x: 1, y: 1 },
+      visible: true
+    })),
+    Container: vi.fn().mockImplementation(() => ({
+      addChild: vi.fn(),
+      removeChild: vi.fn(),
+      children: [],
+      destroy: vi.fn()
+    })),
+    Text: vi.fn().mockImplementation(() => ({
+      x: 0,
+      y: 0,
+      text: '',
+      style: {},
+      anchor: { set: vi.fn() },
+      destroy: vi.fn()
+    }))
+  };
+});
+
+describe('Asteroid Launch Mechanics', () => {
+  let engine: NeonFlockEngine;
+  let mockContainer: HTMLDivElement;
+  let mockApp: any;
+
+  afterEach(() => {
+    // Clean up
+    if (mockContainer && mockContainer.parentNode) {
+      mockContainer.parentNode.removeChild(mockContainer);
+    }
+    vi.restoreAllMocks();
+  });
+
+  beforeEach(async () => {
+    // Create mock HTML container
+    mockContainer = document.createElement('div');
+    document.body.appendChild(mockContainer);
+    
+    // Create engine with container
+    engine = new NeonFlockEngine(mockContainer);
+    
+    // Create a proper mock canvas with event listeners
+    const mockCanvas = document.createElement('canvas');
+    mockCanvas.addEventListener = vi.fn();
+    mockCanvas.removeEventListener = vi.fn();
+    mockCanvas.getBoundingClientRect = vi.fn(() => ({ left: 0, top: 0, width: 800, height: 600 }));
+    mockCanvas.style = {} as any;
+    
+    // Mock the app that will be created in initialize
+    mockApp = {
       init: vi.fn().mockResolvedValue(undefined),
       screen: { width: 800, height: 600 },
       stage: {
@@ -21,26 +84,18 @@ vi.mock('pixi.js', async () => {
         remove: vi.fn(),
         deltaTime: 1
       },
-      view: {
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        getBoundingClientRect: vi.fn(() => ({ left: 0, top: 0 }))
-      },
+      canvas: mockCanvas,
+      view: mockCanvas, // InputManager uses app.view, not app.canvas
       renderer: {
         render: vi.fn()
       }
-    }))
-  };
-});
-
-describe('Asteroid Launch Mechanics', () => {
-  let engine: NeonFlockEngine;
-  let mockApp: any;
-
-  beforeEach(async () => {
-    mockApp = new Application();
-    await mockApp.init();
-    engine = new NeonFlockEngine(mockApp);
+    };
+    
+    // Mock PIXI.Application constructor to return our mock
+    vi.spyOn(PIXI, 'Application').mockImplementation(() => mockApp as any);
+    
+    // Initialize the engine
+    await engine.initialize();
   });
 
   describe('Size-Speed Relationship', () => {

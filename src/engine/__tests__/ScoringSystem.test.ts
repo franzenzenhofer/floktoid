@@ -109,7 +109,8 @@ describe('ScoringSystem - CRITICAL BUSINESS LOGIC TESTS', () => {
       scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
       scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
       
-      const cost = scoringSystem.calculateAsteroidCost(1);
+      // Use valid asteroid size (min is 10)
+      const cost = scoringSystem.calculateAsteroidCost(10);
       expect(cost).toBeGreaterThan(0);
       expect(Number.isInteger(cost)).toBe(true);
       
@@ -124,14 +125,15 @@ describe('ScoringSystem - CRITICAL BUSINESS LOGIC TESTS', () => {
         scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
       }
       
-      const wave1Cost = scoringSystem.calculateAsteroidCost(1);
-      const wave5Cost = scoringSystem.calculateAsteroidCost(5);
-      const wave10Cost = scoringSystem.calculateAsteroidCost(10);
+      // Use valid asteroid sizes (min is 10)
+      const smallCost = scoringSystem.calculateAsteroidCost(10);
+      const mediumCost = scoringSystem.calculateAsteroidCost(35);
+      const largeCost = scoringSystem.calculateAsteroidCost(60);
       
-      expect(wave5Cost).toBeGreaterThan(wave1Cost);
-      expect(wave10Cost).toBeGreaterThan(wave5Cost);
+      expect(mediumCost).toBeGreaterThan(smallCost);
+      expect(largeCost).toBeGreaterThan(mediumCost);
       
-      console.log(`✅ CRITICAL: Cost scaling working (W1:${wave1Cost}, W5:${wave5Cost}, W10:${wave10Cost})`);
+      console.log(`✅ CRITICAL: Cost scaling working (Small:${smallCost}, Medium:${mediumCost}, Large:${largeCost})`);
     });
 
     it('should prevent spending more points than available', () => {

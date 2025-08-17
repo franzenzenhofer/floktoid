@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import CentralConfig from '../CentralConfig';
 import { GameConfig } from '../GameConfig';
 import { EntityDestroyer } from '../utils/EntityDestroyer';
+import { hueToRGB } from '../utils/ColorUtils';
 import type { Asteroid } from './Asteroid';
 import type { Boid } from './Boid';
 
@@ -36,7 +37,7 @@ export class Shredder {
   private vy: number = 0;
   private maxSpeed: number;
   private maxForce: number = 150;
-  private hue: number; // HSL hue like birds use
+  private hue: number; // Hue like birds use (0-360)
 
   constructor(app: PIXI.Application) {
     this.app = app;
@@ -45,7 +46,7 @@ export class Shredder {
     const baseTip = SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER;
     this.radius = baseTip * scale; // No extra multiplication - keep them smaller
     
-    // Random hue like birds - full spectrum neon colors
+    // Random hue like birds - exactly the same as birds do it
     this.hue = Math.random() * 360;
     
     // Each shredder has different rotation speed (2 to 6 radians/sec)
@@ -77,8 +78,9 @@ export class Shredder {
   private draw() {
     this.sprite.clear();
     
-    // Convert HSL to RGB like birds do
-    const color = this.hslToHex(this.hue, 100, 50);
+    // Use EXACT same color logic as birds - hueToRGB function!
+    const fillColor = hueToRGB(this.hue);
+    const strokeColor = fillColor; // Same as birds - stroke matches fill by default
     
     // Draw like our triangular spaceships but with 3 triangles in a spinning formation
     // Each triangle is like a normal ship
@@ -97,50 +99,16 @@ export class Shredder {
       const rightX = centerX + Math.cos(angle - 2.4) * triangleSize * 0.7;
       const rightY = centerY + Math.sin(angle - 2.4) * triangleSize * 0.7;
       
-      // Draw filled triangle (like normal ships)
+      // Draw filled triangle (EXACTLY like normal ships)
       this.sprite.poly([tipX, tipY, leftX, leftY, centerX, centerY, rightX, rightY]);
-      this.sprite.fill({ color, alpha: 1 }); // Full opacity with HSL-based neon color!
-      
-      // Variable stroke - lighter version of the main color, not white
-      const lighterColor = this.hslToHex(this.hue, 70, 70); // Less saturated, lighter
-      this.sprite.stroke({ width: 1.5, color: lighterColor, alpha: 0.8 });
+      this.sprite.fill({ color: fillColor, alpha: 0.9 }); // Same alpha as birds (0.9 for normal state)
+      this.sprite.stroke({ width: 1.5, color: strokeColor, alpha: 1.0 }); // Same as birds - full alpha stroke
     }
     
     // Central connecting hub
     this.sprite.circle(0, 0, this.radius * 0.15);
-    const darkColor = this.hslToHex(this.hue, 100, 30); // Darker version for center
-    this.sprite.fill({ color: darkColor, alpha: 1 }); // Dark center in same hue
-    this.sprite.stroke({ width: 1, color, alpha: 0.6 }); // Subtle outline
-  }
-  
-  private hslToHex(h: number, s: number, l: number): number {
-    // Same logic as birds use
-    h = h / 360;
-    s = s / 100;
-    l = l / 100;
-    
-    let r, g, b;
-    
-    if (s === 0) {
-      r = g = b = l;
-    } else {
-      const hue2rgb = (p: number, q: number, t: number) => {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1/6) return p + (q - p) * 6 * t;
-        if (t < 1/2) return q;
-        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-        return p;
-      };
-      
-      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-      r = hue2rgb(p, q, h + 1/3);
-      g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1/3);
-    }
-    
-    return ((Math.round(r * 255) << 16) | (Math.round(g * 255) << 8) | Math.round(b * 255));
+    this.sprite.fill({ color: fillColor, alpha: 0.7 }); // Slightly transparent center
+    this.sprite.stroke({ width: 1, color: strokeColor, alpha: 0.8 }); // Subtle outline
   }
 
   update(dt: number, asteroids?: Asteroid[], otherShredders?: Shredder[], boids?: Boid[]): boolean {
