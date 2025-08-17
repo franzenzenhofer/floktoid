@@ -892,7 +892,7 @@ export class NeonFlockEngine {
     });
 
     // Calculate flock center for PROTECTOR Shredders
-    let flockCenter = null;
+    let flockCenter: { x: number; y: number } | undefined = undefined;
     if (this.boids.length > 0) {
       let centerX = 0;
       let centerY = 0;
