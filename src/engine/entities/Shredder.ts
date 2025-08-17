@@ -28,6 +28,7 @@ export class Shredder {
   private rotationSpeed: number = 4; // Much faster base rotation
   private rotationDirection: number = 1; // 1 for right, -1 for left
   private rotationCount: number = 0; // Count full rotations
+  private rotationsUntilSwitch: number; // Random 3-10 rotations before switching
   private t = 0;
   private app: PIXI.Application;
   private vx: number = 0; // Velocity for hunting
@@ -45,6 +46,10 @@ export class Shredder {
     
     // Random hue like birds - full spectrum neon colors
     this.hue = Math.random() * 360;
+    
+    // Random rotation pattern - switch after 3-10 full rotations
+    this.rotationsUntilSwitch = 3 + Math.floor(Math.random() * 8); // 3 to 10
+    this.rotationDirection = Math.random() < 0.5 ? 1 : -1; // Random initial direction
 
     // Movement speed like birds
     this.maxSpeed = GameConfig.BASE_SPEED * (0.8 + Math.random() * 0.4);
@@ -131,22 +136,21 @@ export class Shredder {
   update(dt: number, asteroids?: Asteroid[]): boolean {
     this.t += dt;
     
-    // Rotation pattern: 3 full rotations right, then switch to left
+    // Rotation with random switching pattern
     const prevRotation = this.rotation;
     this.rotation += this.rotationSpeed * this.rotationDirection * dt;
     
     // Check if we completed a full rotation
-    if (this.rotationDirection > 0 && this.rotation - prevRotation > Math.PI * 2) {
+    const rotationDiff = Math.abs(this.rotation - prevRotation);
+    if (rotationDiff > Math.PI * 2) {
       this.rotationCount++;
-      if (this.rotationCount >= 3) {
-        this.rotationDirection = -1; // Switch to left
+      
+      // Switch direction after reaching target rotations
+      if (this.rotationCount >= this.rotationsUntilSwitch) {
+        this.rotationDirection *= -1; // Reverse direction
         this.rotationCount = 0;
-      }
-    } else if (this.rotationDirection < 0 && prevRotation - this.rotation > Math.PI * 2) {
-      this.rotationCount++;
-      if (this.rotationCount >= 3) {
-        this.rotationDirection = 1; // Switch to right
-        this.rotationCount = 0;
+        // New random target for next switch (3-10 rotations)
+        this.rotationsUntilSwitch = 3 + Math.floor(Math.random() * 8);
       }
     }
     
