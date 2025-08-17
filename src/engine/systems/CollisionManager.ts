@@ -214,26 +214,33 @@ export class CollisionManager {
             continue;
           }
           
-          // Check if it's a boss with shield - shield splits asteroids!
+          // Check if it's a boss with shield - shield splits asteroids AND damages boss!
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if ('hasActiveShield' in boid && (boid as any).hasActiveShield()) {
-            // Boss shield acts like a laser - split the asteroid
+            
+            // Boss shield acts like a laser - split the asteroid (DRY - reuse splitter logic)
             if (this.asteroidSplitter) {
               const fragments = this.asteroidSplitter.split(asteroid, asteroids.length);
               newAsteroids.push(...fragments);
             }
             asteroidsToRemove.add(asteroid); // Remove the original asteroid
-          }
-          
-          // Mark boid for removal (unless it's a boss with health remaining)
-          boidsToRemove.add(boid);
-          
-          // Queue visual effect
-          visualEffects.push(() => callbacks.onBoidHit(boid));
-          
-          // Handle asteroid (shrink or destroy) if not already split by boss shield
-          if (!asteroidsToRemove.has(asteroid) && callbacks.onAsteroidHit(asteroid)) {
-            asteroidsToRemove.add(asteroid);
+            
+            // Boss takes damage from shield hit
+            // Queue visual effect which will handle damage
+            visualEffects.push(() => callbacks.onBoidHit(boid));
+            
+            // Don't remove boss yet - let onBoidHit decide based on health
+          } else {
+            // Normal bird collision - mark for removal
+            boidsToRemove.add(boid);
+            
+            // Queue visual effect
+            visualEffects.push(() => callbacks.onBoidHit(boid));
+            
+            // Handle asteroid (shrink or destroy)
+            if (callbacks.onAsteroidHit(asteroid)) {
+              asteroidsToRemove.add(asteroid);
+            }
           }
           
           event.processed = true;
