@@ -3,6 +3,7 @@ import CentralConfig from '../CentralConfig';
 import { GameConfig } from '../GameConfig';
 import { EntityDestroyer } from '../utils/EntityDestroyer';
 import type { Asteroid } from './Asteroid';
+import type { Boid } from './Boid';
 
 const { SHREDDER, SIZES } = CentralConfig;
 
@@ -142,7 +143,7 @@ export class Shredder {
     return ((Math.round(r * 255) << 16) | (Math.round(g * 255) << 8) | Math.round(b * 255));
   }
 
-  update(dt: number, asteroids?: Asteroid[]): boolean {
+  update(dt: number, asteroids?: Asteroid[], otherShredders?: Shredder[], boids?: Boid[]): boolean {
     this.t += dt;
     
     // Rotation with random switching pattern
@@ -160,6 +161,45 @@ export class Shredder {
         this.rotationCount = 0;
         // New random target for next switch (3-10 rotations)
         this.rotationsUntilSwitch = 3 + Math.floor(Math.random() * 8);
+      }
+    }
+    
+    // Separation from other Shredders and birds
+    let separationX = 0;
+    let separationY = 0;
+    const separationRadius = this.radius * 3; // Keep distance from others
+    
+    // Avoid other Shredders
+    if (otherShredders) {
+      for (const other of otherShredders) {
+        if (other === this || other.destroyed) continue;
+        const dx = this.x - other.x;
+        const dy = this.y - other.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > 0 && dist < separationRadius) {
+          // Push away from other shredder
+          const force = (separationRadius - dist) / separationRadius;
+          separationX += (dx / dist) * force * 100;
+          separationY += (dy / dist) * force * 100;
+        }
+      }
+    }
+    
+    // Avoid birds/spaceships
+    if (boids) {
+      for (const boid of boids) {
+        if (!boid || !boid.alive) continue;
+        const dx = this.x - boid.x;
+        const dy = this.y - boid.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > 0 && dist < separationRadius) {
+          // Push away from bird
+          const force = (separationRadius - dist) / separationRadius;
+          separationX += (dx / dist) * force * 80;
+          separationY += (dy / dist) * force * 80;
+        }
       }
     }
     
@@ -185,6 +225,10 @@ export class Shredder {
       this.targetAsteroid = bestTarget;
     }
     
+    // Combine forces: separation + target seeking
+    let targetForceX = 0;
+    let targetForceY = 0;
+    
     // Seek behavior toward target asteroid
     if (this.targetAsteroid && !this.targetAsteroid.destroyed) {
       const dx = this.targetAsteroid.x - this.x;
@@ -193,35 +237,26 @@ export class Shredder {
       
       if (dist > 0) {
         // Desired velocity toward target
-        const desiredVx = (dx / dist) * this.maxSpeed;
-        const desiredVy = (dy / dist) * this.maxSpeed;
-        
-        // Steering force
-        const steerX = desiredVx - this.vx;
-        const steerY = desiredVy - this.vy;
-        
-        // Apply force
-        this.vx += steerX * dt;
-        this.vy += steerY * dt;
-        
-        // Limit speed
-        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-        if (speed > this.maxSpeed) {
-          this.vx = (this.vx / speed) * this.maxSpeed;
-          this.vy = (this.vy / speed) * this.maxSpeed;
-        }
+        targetForceX = (dx / dist) * this.maxSpeed * 50;
+        targetForceY = (dy / dist) * this.maxSpeed * 50;
       }
     } else {
-      // No target - just move with some randomness
-      this.vx += (Math.random() - 0.5) * this.maxForce * dt;
-      this.vy += Math.random() * this.maxForce * 0.5 * dt; // Slight downward bias
-      
-      // Limit speed
-      const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-      if (speed > this.maxSpeed) {
-        this.vx = (this.vx / speed) * this.maxSpeed;
-        this.vy = (this.vy / speed) * this.maxSpeed;
-      }
+      // No target - wander with variation
+      // Add sinusoidal wandering to create path variation
+      const wanderAngle = this.t * 2 + this.hue * 0.01; // Use hue for variation
+      targetForceX = Math.sin(wanderAngle) * this.maxForce * 0.3;
+      targetForceY = Math.cos(wanderAngle * 0.7) * this.maxForce * 0.3 + this.maxForce * 0.2; // Slight downward
+    }
+    
+    // Apply combined forces
+    this.vx += (separationX + targetForceX) * dt;
+    this.vy += (separationY + targetForceY) * dt;
+    
+    // Limit speed
+    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    if (speed > this.maxSpeed) {
+      this.vx = (this.vx / speed) * this.maxSpeed;
+      this.vy = (this.vy / speed) * this.maxSpeed;
     }
     
     // Update position

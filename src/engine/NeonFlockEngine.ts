@@ -886,8 +886,8 @@ export class NeonFlockEngine {
 
     // Update shredders and handle collisions with asteroids
     this.shredders = this.shredders.filter(shredder => {
-      // Pass asteroids so shredder can hunt them
-      const keep = shredder.update(dt, this.asteroids);
+      // Pass asteroids, other shredders, and boids for separation behavior
+      const keep = shredder.update(dt, this.asteroids, this.shredders, this.boids);
       if (!keep) {
         // Off-screen - just remove it
         shredder.destroy();
