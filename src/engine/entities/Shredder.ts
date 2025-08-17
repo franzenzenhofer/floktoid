@@ -25,8 +25,8 @@ export class Shredder {
 
   private sprite: PIXI.Graphics;
   private rotation = 0;
-  private rotationSpeed: number = 4; // Much faster base rotation
-  private rotationDirection: number = 1; // 1 for right, -1 for left
+  private rotationSpeed: number; // Each shredder has different speed
+  private rotationDirection: number; // 1 for right, -1 for left (50/50 chance)
   private rotationCount: number = 0; // Count full rotations
   private rotationsUntilSwitch: number; // Random 3-10 rotations before switching
   private t = 0;
@@ -47,9 +47,14 @@ export class Shredder {
     // Random hue like birds - full spectrum neon colors
     this.hue = Math.random() * 360;
     
+    // Each shredder has different rotation speed (2 to 6 radians/sec)
+    this.rotationSpeed = 2 + Math.random() * 4;
+    
+    // 50/50 chance to start rotating left or right
+    this.rotationDirection = Math.random() < 0.5 ? 1 : -1;
+    
     // Random rotation pattern - switch after 3-10 full rotations
     this.rotationsUntilSwitch = 3 + Math.floor(Math.random() * 8); // 3 to 10
-    this.rotationDirection = Math.random() < 0.5 ? 1 : -1; // Random initial direction
 
     // Movement speed like birds
     this.maxSpeed = GameConfig.BASE_SPEED * (0.8 + Math.random() * 0.4);
@@ -94,13 +99,17 @@ export class Shredder {
       // Draw filled triangle (like normal ships)
       this.sprite.poly([tipX, tipY, leftX, leftY, centerX, centerY, rightX, rightY]);
       this.sprite.fill({ color, alpha: 1 }); // Full opacity with HSL-based neon color!
-      this.sprite.stroke({ width: 2, color: 0xFFFFFF, alpha: 1 });
+      
+      // Variable stroke - lighter version of the main color, not white
+      const lighterColor = this.hslToHex(this.hue, 70, 70); // Less saturated, lighter
+      this.sprite.stroke({ width: 1.5, color: lighterColor, alpha: 0.8 });
     }
     
     // Central connecting hub
     this.sprite.circle(0, 0, this.radius * 0.15);
-    this.sprite.fill({ color: 0xFFFFFF, alpha: 1 }); // Bright white center
-    this.sprite.stroke({ width: 2, color, alpha: 1 }); // Hub outline in same color
+    const darkColor = this.hslToHex(this.hue, 100, 30); // Darker version for center
+    this.sprite.fill({ color: darkColor, alpha: 1 }); // Dark center in same hue
+    this.sprite.stroke({ width: 1, color, alpha: 0.6 }); // Subtle outline
   }
   
   private hslToHex(h: number, s: number, l: number): number {
