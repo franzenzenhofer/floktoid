@@ -6,7 +6,7 @@ import { hueToRGB } from '../utils/ColorUtils';
 import type { Asteroid } from './Asteroid';
 import type { Boid } from './Boid';
 
-const { SHREDDER, SIZES } = CentralConfig;
+const { SHREDDER, SIZES, VISUALS } = CentralConfig;
 
 export type ShredderPath = 'SINE' | 'COSINE' | 'LISSAJOUS';
 
@@ -101,14 +101,20 @@ export class Shredder {
       
       // Draw filled triangle (EXACTLY like normal ships)
       this.sprite.poly([tipX, tipY, leftX, leftY, centerX, centerY, rightX, rightY]);
-      this.sprite.fill({ color: fillColor, alpha: 0.9 }); // Same alpha as birds (0.9 for normal state)
-      this.sprite.stroke({ width: 1.5, color: strokeColor, alpha: 1.0 }); // Same as birds - full alpha stroke
+      
+      // EXACT BIRD COLORING: Apply stroke and fill AFTER poly, not inside loop!
+      // Using VISUALS constants just like birds
+      const finalStrokeColor = strokeColor; // Could add special effects here like birds do
+      
+      // EXACT same as birds: stroke first, then fill
+      this.sprite.stroke({ width: VISUALS.STROKE.NORMAL, color: finalStrokeColor, alpha: VISUALS.ALPHA.FULL });
+      this.sprite.fill({ color: fillColor, alpha: VISUALS.ALPHA.MEDIUM }); // Same as birds normal state
     }
     
     // Central connecting hub
     this.sprite.circle(0, 0, this.radius * 0.15);
-    this.sprite.fill({ color: fillColor, alpha: 0.7 }); // Slightly transparent center
-    this.sprite.stroke({ width: 1, color: strokeColor, alpha: 0.8 }); // Subtle outline
+    this.sprite.stroke({ width: VISUALS.STROKE.NORMAL, color: strokeColor, alpha: VISUALS.ALPHA.FULL }); // Match bird stroke style
+    this.sprite.fill({ color: fillColor, alpha: VISUALS.ALPHA.HIGH }); // Center slightly more visible
   }
 
   update(dt: number, asteroids?: Asteroid[], otherShredders?: Shredder[], boids?: Boid[]): boolean {

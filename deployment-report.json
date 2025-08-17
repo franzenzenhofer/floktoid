@@ -1,14 +1,14 @@
 {
-  "timestamp": "2025-08-16T14:55:59.418Z",
-  "duration": "252.10s",
+  "timestamp": "2025-08-17T21:57:47.902Z",
+  "duration": "393.68s",
   "deployment": {
     "url": "https://floktoid.franzai.com",
-    "timestamp": "2025-08-16T14:55:59.428Z"
+    "timestamp": "2025-08-17T21:57:47.902Z"
   },
   "git": {
     "branch": "master",
-    "commit": "bb0d4e3502ebf9dce01d28e77ce70e6cda78116e",
-    "shortCommit": "bb0d4e3"
+    "commit": "4d91f505036694740d31c22de12b033ef19ef9b6",
+    "shortCommit": "4d91f50"
   },
-  "version": "2.64.0"
+  "version": "2.96.0"
 }
