@@ -43,7 +43,6 @@ export class Shredder {
   private vx: number = 0; // Velocity for hunting
   private vy: number = 0;
   private maxSpeed: number;
-  private maxForce: number = 150;
   private hue: number; // Hue like birds use (0-360)
   
   // Smooth movement variables
