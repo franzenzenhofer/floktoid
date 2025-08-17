@@ -331,8 +331,8 @@ export const SHREDDER = {
   },
   MAX_CONCURRENT: 2,
   SCALE: {
-    MIN: 1.25,
-    MAX: 3.0,
+    MIN: 1.0,
+    MAX: 1.8,  // Much smaller max size
   },
   SPIN: {
     MIN: 0.6,

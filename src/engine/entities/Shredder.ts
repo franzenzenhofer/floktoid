@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import CentralConfig from '../CentralConfig';
 import { GameConfig } from '../GameConfig';
 import { EntityDestroyer } from '../utils/EntityDestroyer';
+import type { Asteroid } from './Asteroid';
 
 const { SHREDDER, SIZES } = CentralConfig;
 
@@ -20,46 +21,36 @@ export class Shredder {
   public y: number;
   public radius: number;
   public destroyed = false;
+  public targetAsteroid: Asteroid | null = null; // Asteroid to hunt
 
   private sprite: PIXI.Graphics;
   private rotation = 0;
-  private rotationSpeed: number;
-  private rotationDirection: number = 1; // 1 for left, -1 for right
-  private directionChangeTime: number;
-  private nextDirectionChange: number;
+  private rotationSpeed: number = 4; // Much faster base rotation
+  private rotationDirection: number = 1; // 1 for right, -1 for left
+  private rotationCount: number = 0; // Count full rotations
   private t = 0;
   private app: PIXI.Application;
-  private motionType: ShredderPath;
-  private amplitude: number;
-  private omega: number;
-  private phase: number;
-  private startX: number;
-  private startY: number;
-  private forwardSpeed: number;
+  private vx: number = 0; // Velocity for hunting
+  private vy: number = 0;
+  private maxSpeed: number;
+  private maxForce: number = 150;
 
   constructor(app: PIXI.Application) {
     this.app = app;
-    const scale = SHREDDER.SCALE.MIN + Math.random() * (SHREDDER.SCALE.MAX - SHREDDER.SCALE.MIN);
+    // Smaller shredders - limit max size
+    const scale = Math.min(SHREDDER.SCALE.MIN + Math.random() * (SHREDDER.SCALE.MAX - SHREDDER.SCALE.MIN), 2.0);
     const baseTip = SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER;
-    this.radius = baseTip * scale * 1.5; // Bigger for ninja nunchuck
+    this.radius = baseTip * scale; // No extra multiplication - keep them smaller
 
-    // Fast rotation that changes direction
-    this.rotationSpeed = (SHREDDER.SPIN.MIN + Math.random() * (SHREDDER.SPIN.MAX - SHREDDER.SPIN.MIN)) * 2; // Faster spinning
-    this.directionChangeTime = 1 + Math.random() * 2; // Change direction every 1-3 seconds
-    this.nextDirectionChange = this.directionChangeTime;
-
-    const motionTypes: ShredderPath[] = ['SINE', 'COSINE', 'LISSAJOUS'];
-    this.motionType = motionTypes[Math.floor(Math.random() * motionTypes.length)];
-    this.amplitude = (SHREDDER.AMPLITUDE.MIN + Math.random() * (SHREDDER.AMPLITUDE.MAX - SHREDDER.AMPLITUDE.MIN)) * app.screen.width * 0.3;
-    this.omega = 0.8 + Math.random() * 0.8; // Faster oscillation
-    this.phase = Math.random() * Math.PI * 2;
-    this.forwardSpeed = GameConfig.BASE_SPEED * 1.2; // Comes down like other ships
-
+    // Movement speed like birds
+    this.maxSpeed = GameConfig.BASE_SPEED * (0.8 + Math.random() * 0.4);
+    
     // Spawn from top like other ships
-    this.startX = Math.random() * app.screen.width;
-    this.startY = -this.radius;
-    this.x = this.startX;
-    this.y = this.startY;
+    this.x = Math.random() * app.screen.width;
+    this.y = -this.radius;
+    
+    // Initial downward velocity
+    this.vy = this.maxSpeed;
 
     this.sprite = new PIXI.Graphics();
     this.draw();
@@ -100,32 +91,94 @@ export class Shredder {
     this.sprite.stroke({ width: 2, color: 0xFF00FF, alpha: 1 });
   }
 
-  update(dt: number): boolean {
+  update(dt: number, asteroids?: Asteroid[]): boolean {
     this.t += dt;
-    const t = this.t;
     
-    // Change rotation direction periodically
-    if (t > this.nextDirectionChange) {
-      this.rotationDirection *= -1; // Reverse direction
-      this.nextDirectionChange += this.directionChangeTime;
-    }
-    
-    // Move down from top with horizontal oscillation
-    this.y = this.startY + this.forwardSpeed * t;
-    
-    if (this.motionType === 'SINE') {
-      this.x = this.startX + this.amplitude * Math.sin(this.omega * t + this.phase);
-    } else if (this.motionType === 'COSINE') {
-      this.x = this.startX + this.amplitude * Math.cos(this.omega * t + this.phase);
-    } else {
-      // Lissajous for complex movement
-      this.x = this.startX + this.amplitude * Math.sin(this.omega * t + this.phase);
-      // Add secondary oscillation
-      this.x += this.amplitude * 0.3 * Math.sin(2 * this.omega * t);
-    }
-    
-    // Fast rotation with direction changes
+    // Rotation pattern: 3 full rotations right, then switch to left
+    const prevRotation = this.rotation;
     this.rotation += this.rotationSpeed * this.rotationDirection * dt;
+    
+    // Check if we completed a full rotation
+    if (this.rotationDirection > 0 && this.rotation - prevRotation > Math.PI * 2) {
+      this.rotationCount++;
+      if (this.rotationCount >= 3) {
+        this.rotationDirection = -1; // Switch to left
+        this.rotationCount = 0;
+      }
+    } else if (this.rotationDirection < 0 && prevRotation - this.rotation > Math.PI * 2) {
+      this.rotationCount++;
+      if (this.rotationCount >= 3) {
+        this.rotationDirection = 1; // Switch to right
+        this.rotationCount = 0;
+      }
+    }
+    
+    // Hunt for asteroids if provided
+    if (asteroids && asteroids.length > 0) {
+      // Find the biggest asteroid we can still shred
+      let bestTarget = null;
+      let bestSize = 0;
+      const tau = SHREDDER.TOLERANCE || 0.05;
+      
+      for (const asteroid of asteroids) {
+        if (!asteroid || asteroid.destroyed) continue;
+        // Can we shred it?
+        if (asteroid.size < this.radius * (1 - tau)) {
+          // Is it bigger than our current target?
+          if (asteroid.size > bestSize) {
+            bestSize = asteroid.size;
+            bestTarget = asteroid;
+          }
+        }
+      }
+      
+      this.targetAsteroid = bestTarget;
+    }
+    
+    // Seek behavior toward target asteroid
+    if (this.targetAsteroid && !this.targetAsteroid.destroyed) {
+      const dx = this.targetAsteroid.x - this.x;
+      const dy = this.targetAsteroid.y - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      if (dist > 0) {
+        // Desired velocity toward target
+        const desiredVx = (dx / dist) * this.maxSpeed;
+        const desiredVy = (dy / dist) * this.maxSpeed;
+        
+        // Steering force
+        const steerX = desiredVx - this.vx;
+        const steerY = desiredVy - this.vy;
+        
+        // Apply force
+        this.vx += steerX * dt;
+        this.vy += steerY * dt;
+        
+        // Limit speed
+        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        if (speed > this.maxSpeed) {
+          this.vx = (this.vx / speed) * this.maxSpeed;
+          this.vy = (this.vy / speed) * this.maxSpeed;
+        }
+      }
+    } else {
+      // No target - just move with some randomness
+      this.vx += (Math.random() - 0.5) * this.maxForce * dt;
+      this.vy += Math.random() * this.maxForce * 0.5 * dt; // Slight downward bias
+      
+      // Limit speed
+      const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+      if (speed > this.maxSpeed) {
+        this.vx = (this.vx / speed) * this.maxSpeed;
+        this.vy = (this.vy / speed) * this.maxSpeed;
+      }
+    }
+    
+    // Update position
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    
+    // Update sprite
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     this.sprite.rotation = this.rotation;

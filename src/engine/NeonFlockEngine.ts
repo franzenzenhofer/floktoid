@@ -886,8 +886,10 @@ export class NeonFlockEngine {
 
     // Update shredders and handle collisions with asteroids
     this.shredders = this.shredders.filter(shredder => {
-      const keep = shredder.update(dt);
+      // Pass asteroids so shredder can hunt them
+      const keep = shredder.update(dt, this.asteroids);
       if (!keep) {
+        // Off-screen - just remove it
         shredder.destroy();
         return false;
       }
@@ -909,9 +911,6 @@ export class NeonFlockEngine {
             // LOSE points for getting shredded!
             scoringSystem.addEvent(ScoringEvent.SHREDDER_SHRED);
             this.updateScoreDisplay();
-            
-            // Show negative feedback text
-            this.showShredText(asteroid.x, asteroid.y, true); // true = negative
           } else if (rA > rS * (1 + tau)) {
             // Big asteroid destroys shredder - GOOD!
             shredder.destroy();
@@ -920,9 +919,6 @@ export class NeonFlockEngine {
             // Big points for destroying shredder!
             scoringSystem.addEvent(ScoringEvent.SHREDDER_DESTROYED);
             this.updateScoreDisplay();
-            
-            // Show positive feedback
-            this.showShredText(shredder.x, shredder.y, false); // false = positive
             return false;
           } else {
             asteroid.destroy();
@@ -1440,44 +1436,6 @@ export class NeonFlockEngine {
     
     // Update score display with combo info
     this.onScoreUpdate?.(scoreInfo.score, scoreInfo.combo, scoreInfo.multiplier);
-  }
-  
-  private showShredText(x: number, y: number, isNegative: boolean) {
-    const text = new PIXI.Text({
-      text: isNegative ? '-10 SHREDDED!' : '+50 SHREDDER DESTROYED!',
-      style: {
-        fontFamily: 'monospace',
-        fontSize: isNegative ? 20 : 24,
-        fill: isNegative ? 0xFF0000 : 0x00FF00,
-        align: 'center',
-        dropShadow: {
-          color: isNegative ? 0xFF0000 : 0x00FF00,
-          blur: 10,
-          distance: 0
-        }
-      }
-    });
-    
-    text.anchor.set(0.5);
-    text.x = x;
-    text.y = y;
-    this.app.stage.addChild(text);
-    
-    // Animate upward and fade
-    let alpha = 1;
-    let offsetY = 0;
-    const animateInterval = setInterval(() => {
-      offsetY -= 2;
-      alpha -= 0.03;
-      text.y = y + offsetY;
-      text.alpha = alpha;
-      
-      if (alpha <= 0) {
-        clearInterval(animateInterval);
-        this.app.stage.removeChild(text);
-        text.destroy();
-      }
-    }, 30);
   }
   
   private showNoPointsWarning() {
