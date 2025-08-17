@@ -130,14 +130,16 @@ export class DevModeDisplay {
   /**
    * Add spawn message for special birds
    */
-  public addSpawnMessage(type: 'super' | 'shooter'): void {
+  public addSpawnMessage(type: 'super' | 'shooter' | 'BOSS'): void {
     if (!this.enabled) return;
     
     const message: SpawnMessage = {
-      text: type === 'super' 
+      text: type === 'BOSS'
+        ? '☠️ BOSS LEVEL!'
+        : type === 'super' 
         ? '⚡ SUPER NAVIGATOR SPAWNED!' 
         : '🔫 SHOOTER BIRD SPAWNED!',
-      color: type === 'super' ? 0x00AAFF : 0xFF0000,
+      color: type === 'BOSS' ? 0xFF00FF : type === 'super' ? 0x00AAFF : 0xFF0000,
       y: 100 + this.messages.length * 30,
       alpha: 1,
       lifetime: 3 // 3 seconds

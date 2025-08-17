@@ -434,6 +434,11 @@ export class NeonFlockEngine {
             this.devModeDisplay.addSpawnMessage('shooter');
           }
         }
+        
+        // Boss announcement for all players (not just dev mode)
+        if (boid instanceof BossBird) {
+          this.comboEffects.createBossAnnouncement();
+        }
       } else {
         console.error('[SPAWN ERROR] Invalid Boid instance in spawnBird!');
       }

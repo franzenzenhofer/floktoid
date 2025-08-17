@@ -258,6 +258,90 @@ export class ComboEffects {
   }
   
   /**
+   * Create boss level announcement
+   */
+  createBossAnnouncement(): void {
+    const fontSize = UI.FONTS.SIZES.LARGE + 20;
+    const bossText = new PIXI.Text(
+      'BOSS LEVEL!',
+      {
+        fontFamily: UI.FONTS.PRIMARY,
+        fontSize: fontSize,
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        fill: [0xFF00FF, 0x00FFFF], // Gradient from magenta to cyan
+        dropShadow: {
+          alpha: 0.8,
+          angle: Math.PI / 2,
+          blur: 4,
+          color: 0xFF00FF,
+          distance: 0
+        },
+        stroke: { color: 0xFFFFFF, width: 3 },
+      }
+    );
+    
+    // Center on screen
+    bossText.anchor.set(0.5);
+    bossText.x = this.app.screen.width / 2;
+    bossText.y = this.app.screen.height / 3;
+    
+    // Add glow filter if available
+    const glowFilter = new PIXI.ColorMatrixFilter();
+    glowFilter.brightness(1.5, false);
+    bossText.filters = [glowFilter];
+    
+    this.comboParticles.addChild(bossText);
+    
+    // Animation with scale pulse and fade
+    let frame = 0;
+    const animationDuration = 180; // 3 seconds at 60fps
+    
+    const animate = () => {
+      frame++;
+      
+      // Pulse effect
+      const pulse = 1 + Math.sin(frame * 0.1) * 0.1;
+      bossText.scale.set(pulse);
+      
+      // Rotation wobble
+      bossText.rotation = Math.sin(frame * 0.05) * 0.02;
+      
+      // Fade out after 2 seconds
+      if (frame > 120) {
+        bossText.alpha = Math.max(0, 1 - (frame - 120) / 60);
+      }
+      
+      if (frame >= animationDuration) {
+        this.app.ticker.remove(animate);
+        this.comboParticles.removeChild(bossText);
+        bossText.destroy();
+      }
+    };
+    
+    this.app.ticker.add(animate);
+    
+    // Also trigger screen flash in magenta
+    this.triggerScreenEffect({
+      threshold: 0,
+      color: 0xFF00FF,
+      secondaryColor: 0x00FFFF,
+      name: "BOSS",
+      scale: 2.0,
+      particles: 50,
+      screenEffect: true
+    });
+    
+    // Create particle burst (method not implemented yet)
+    // this.createParticleBurst(
+    //   this.app.screen.width / 2,
+    //   this.app.screen.height / 3,
+    //   0xFF00FF,
+    //   50
+    // );
+  }
+  
+  /**
    * Draw a star shape
    */
   private drawStar(
