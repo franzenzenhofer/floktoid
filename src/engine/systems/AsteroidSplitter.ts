@@ -42,8 +42,9 @@ export class AsteroidSplitter {
   /**
    * Split an asteroid exactly like original Asteroids (1979)
    * Large → 2 Medium, Medium → 2 Small, Small → Destroyed
+   * Optional: Provide pushAwayFrom position to make fragments fly away from that point
    */
-  public split(asteroid: Asteroid, currentAsteroidCount: number = 0): Asteroid[] {
+  public split(asteroid: Asteroid, currentAsteroidCount: number = 0, pushAwayFrom?: { x: number; y: number }): Asteroid[] {
     const category = this.getAsteroidCategory(asteroid.size);
     
     // Small asteroids are destroyed completely (no split)
@@ -73,17 +74,44 @@ export class AsteroidSplitter {
     
     // Create fragments with conservation of momentum + randomness
     for (let i = 0; i < fragmentCount; i++) {
-      // Original Asteroids: "fragments flying in seemingly random directions"
-      const randomAngle = Math.random() * Math.PI * 2;
+      let vx: number, vy: number;
       const baseSpeed = Math.hypot(asteroid.vx, asteroid.vy);
       
-      // Conservation of momentum with realistic variation
-      const momentumFactor = 0.7; // Some momentum is "lost" in the break
-      const randomFactor = 0.5 + Math.random(); // 0.5 to 1.5x speed variation
-      
-      const speed = (baseSpeed * momentumFactor + Math.random() * 30) * randomFactor;
-      const vx = Math.cos(randomAngle) * speed;
-      const vy = Math.sin(randomAngle) * speed;
+      if (pushAwayFrom) {
+        // Push fragments away from the source (boss shield)
+        const dx = asteroid.x - pushAwayFrom.x;
+        const dy = asteroid.y - pushAwayFrom.y;
+        const distance = Math.hypot(dx, dy);
+        
+        if (distance > 0) {
+          // Normalize direction and add some spread
+          const pushAngle = Math.atan2(dy, dx);
+          const spread = (Math.PI / 4) * (Math.random() - 0.5); // ±22.5 degrees spread
+          const finalAngle = pushAngle + spread;
+          
+          // Strong push away from shield
+          const pushSpeed = Math.max(baseSpeed * 1.5, 80); // At least 80 speed to push away
+          vx = Math.cos(finalAngle) * pushSpeed;
+          vy = Math.sin(finalAngle) * pushSpeed;
+        } else {
+          // Fallback to random if somehow at exact same position
+          const randomAngle = Math.random() * Math.PI * 2;
+          const speed = Math.max(baseSpeed, 60);
+          vx = Math.cos(randomAngle) * speed;
+          vy = Math.sin(randomAngle) * speed;
+        }
+      } else {
+        // Original random direction logic
+        const randomAngle = Math.random() * Math.PI * 2;
+        
+        // Conservation of momentum with realistic variation
+        const momentumFactor = 0.7; // Some momentum is "lost" in the break
+        const randomFactor = 0.5 + Math.random(); // 0.5 to 1.5x speed variation
+        
+        const speed = (baseSpeed * momentumFactor + Math.random() * 30) * randomFactor;
+        vx = Math.cos(randomAngle) * speed;
+        vy = Math.sin(randomAngle) * speed;
+      }
       
       // Fragment position (slightly offset to prevent overlap)
       const offsetDistance = fragmentSize * 0.7;
@@ -107,7 +135,8 @@ export class AsteroidSplitter {
       );
       
       fragments.push(fragment);
-      console.log(`[ASTEROIDS] Created ${category}→fragment: size ${fragmentSize}, speed ${speed.toFixed(1)}`);
+      const actualSpeed = Math.hypot(vx, vy);
+      console.log(`[ASTEROIDS] Created ${category}→fragment: size ${fragmentSize}, speed ${actualSpeed.toFixed(1)}`);
     }
     
     return fragments;

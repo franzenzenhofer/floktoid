@@ -219,8 +219,9 @@ export class CollisionManager {
           if ('hasActiveShield' in boid && (boid as any).hasActiveShield()) {
             
             // Boss shield acts like a laser - split the asteroid (DRY - reuse splitter logic)
+            // Push fragments AWAY from the boss to prevent immediate collision
             if (this.asteroidSplitter) {
-              const fragments = this.asteroidSplitter.split(asteroid, asteroids.length);
+              const fragments = this.asteroidSplitter.split(asteroid, asteroids.length, { x: boid.x, y: boid.y });
               newAsteroids.push(...fragments);
             }
             asteroidsToRemove.add(asteroid); // Remove the original asteroid
