@@ -34,6 +34,7 @@ export class Shredder {
   private vy: number = 0;
   private maxSpeed: number;
   private maxForce: number = 150;
+  private hue: number; // HSL hue like birds use
 
   constructor(app: PIXI.Application) {
     this.app = app;
@@ -41,6 +42,9 @@ export class Shredder {
     const scale = Math.min(SHREDDER.SCALE.MIN + Math.random() * (SHREDDER.SCALE.MAX - SHREDDER.SCALE.MIN), 2.0);
     const baseTip = SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER;
     this.radius = baseTip * scale; // No extra multiplication - keep them smaller
+    
+    // Random hue like birds - full spectrum neon colors
+    this.hue = Math.random() * 360;
 
     // Movement speed like birds
     this.maxSpeed = GameConfig.BASE_SPEED * (0.8 + Math.random() * 0.4);
@@ -62,6 +66,9 @@ export class Shredder {
   private draw() {
     this.sprite.clear();
     
+    // Convert HSL to RGB like birds do
+    const color = this.hslToHex(this.hue, 100, 50);
+    
     // Draw like our triangular spaceships but with 3 triangles in a spinning formation
     // Each triangle is like a normal ship
     const triangleSize = this.radius * 0.8;
@@ -81,14 +88,44 @@ export class Shredder {
       
       // Draw filled triangle (like normal ships)
       this.sprite.poly([tipX, tipY, leftX, leftY, centerX, centerY, rightX, rightY]);
-      this.sprite.fill({ color: 0xFF00FF, alpha: 1 }); // Full opacity, no transparency!
+      this.sprite.fill({ color, alpha: 1 }); // Full opacity with HSL-based neon color!
       this.sprite.stroke({ width: 2, color: 0xFFFFFF, alpha: 1 });
     }
     
     // Central connecting hub
     this.sprite.circle(0, 0, this.radius * 0.15);
     this.sprite.fill({ color: 0xFFFFFF, alpha: 1 }); // Bright white center
-    this.sprite.stroke({ width: 2, color: 0xFF00FF, alpha: 1 });
+    this.sprite.stroke({ width: 2, color, alpha: 1 }); // Hub outline in same color
+  }
+  
+  private hslToHex(h: number, s: number, l: number): number {
+    // Same logic as birds use
+    h = h / 360;
+    s = s / 100;
+    l = l / 100;
+    
+    let r, g, b;
+    
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const hue2rgb = (p: number, q: number, t: number) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    
+    return ((Math.round(r * 255) << 16) | (Math.round(g * 255) << 8) | Math.round(b * 255));
   }
 
   update(dt: number, asteroids?: Asteroid[]): boolean {
