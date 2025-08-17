@@ -89,6 +89,9 @@ export class CollisionManager {
           const shieldRadius = (boid as any).getShieldRadius();
           if (shieldRadius > 0) {
             collisionRadius = shieldRadius; // Use shield radius for boss
+            if (this.debug) {
+              console.log(`[COLLISION] Boss shield detected, radius: ${shieldRadius}`);
+            }
           }
         }
         
@@ -214,9 +217,11 @@ export class CollisionManager {
             continue;
           }
           
-          // Check if it's a boss with shield - shield splits asteroids AND damages boss!
+          // Check if it's a boss with shield - SHIELD collision, not bird collision!
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if ('hasActiveShield' in boid && (boid as any).hasActiveShield()) {
+            // This is a SHIELD HIT, not a bird hit!
+            console.log('[COLLISION] Shield hit! Boss takes damage, asteroid splits');
             
             // Boss shield acts like a laser - split the asteroid (DRY - reuse splitter logic)
             // Push fragments AWAY from the boss to prevent immediate collision
@@ -226,13 +231,21 @@ export class CollisionManager {
             }
             asteroidsToRemove.add(asteroid); // Remove the original asteroid
             
-            // Boss takes damage from shield hit
-            // Queue visual effect which will handle damage
-            visualEffects.push(() => callbacks.onBoidHit(boid));
+            // Boss takes damage from shield hit - call the callback to handle damage
+            // The callback will return false if boss survives, true if destroyed
+            visualEffects.push(() => {
+              const result = callbacks.onBoidHit(boid);
+              // If boss is destroyed (returns true), add to removal list
+              if (result === true) {
+                boidsToRemove.add(boid);
+              }
+              // If returns false, boss survives - DON'T add to removal list
+            });
             
-            // Don't remove boss yet - let onBoidHit decide based on health
+            // IMPORTANT: Do NOT add boss to boidsToRemove here - let callback decide!
+            
           } else {
-            // Normal bird collision - mark for removal
+            // Normal bird collision - bird dies immediately
             boidsToRemove.add(boid);
             
             // Queue visual effect
