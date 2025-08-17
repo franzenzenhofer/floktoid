@@ -29,6 +29,7 @@ export enum ScoringEvent {
   ASTEROID_SPLIT = 'ASTEROID_SPLIT',
   WAVE_COMPLETE = 'WAVE_COMPLETE',
   PERFECT_WAVE = 'PERFECT_WAVE',
+  SHREDDER_SHRED = 'SHREDDER_SHRED',
   
   // COMBO EVENTS
   COMBO_2X = 'COMBO_2X',
@@ -71,6 +72,7 @@ export const POINT_VALUES = {
     ENERGY_DOT_RECLAIMED: 80,     // Getting stolen dot back
     ENERGY_DOT_CAUGHT_FALLING: 40, // Catching falling dot
     ASTEROID_SPLIT: 5,            // When asteroid splits
+    SHREDDER_SHRED: 10,           // Small asteroid destroyed by Shredder
     WAVE_COMPLETE: 100,           // Completing a wave
     PERFECT_WAVE: 200,            // No dots lost in wave
   },
@@ -280,6 +282,11 @@ export class ScoringSystem {
         
       case ScoringEvent.ENERGY_DOT_CAUGHT_FALLING:
         points = POINT_VALUES.REWARDS.ENERGY_DOT_CAUGHT_FALLING;
+        this.incrementCombo();
+        break;
+
+      case ScoringEvent.SHREDDER_SHRED:
+        points = POINT_VALUES.REWARDS.SHREDDER_SHRED;
         this.incrementCombo();
         break;
         
