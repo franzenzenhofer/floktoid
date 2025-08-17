@@ -881,6 +881,25 @@ export class NeonFlockEngine {
         this.energyDots,
         this.projectiles,
         {
+          onBossShieldHit: (asteroid, boss) => {
+            // BOSS SHIELD HIT - Split asteroid and push fragments away!
+            console.log('[BOSS SHIELD] Splitting asteroid and pushing fragments away from boss!');
+            
+            // Split the asteroid with push-away from boss position
+            const fragments = this.asteroidSplitter.split(asteroid, this.asteroids.length, { 
+              x: boss.x, 
+              y: boss.y 
+            });
+            
+            // Visual effect for shield hit
+            this.particleSystem.createExplosion(asteroid.x, asteroid.y, 0x00FFFF, 20);
+            
+            // Score for shield hit
+            scoringSystem.addEvent(ScoringEvent.ASTEROID_SPLIT);
+            this.updateScoreDisplay();
+            
+            return fragments;
+          },
           onProjectileHit: (_projectile, asteroid) => {
             // Split asteroid when hit by projectile
             // AUTHENTIC ASTEROIDS: Pass current count for 26 asteroid limit
@@ -914,7 +933,8 @@ export class NeonFlockEngine {
               const bossBird = boid as BossBird;
               const destroyed = bossBird.takeDamage();
               
-              // Note: Boss shield splitting asteroids is handled in onAsteroidHit callback
+              // CRITICAL: Boss shield should split asteroids like a laser!
+              // This is handled in the collision processing phase now
               
               if (destroyed) {
                 // Boss destroyed - big explosion

@@ -65,7 +65,23 @@ export class SafeCollisionSystem {
         const dx = ast.x - boid.x;
         const dy = ast.y - boid.y;
         const distSq = dx * dx + dy * dy;
-        const thresholdSq = (ast.size + GameConfig.BOID_SIZE) ** 2;
+        
+        // CRITICAL FIX: Check if boss with shield and use shield radius!
+        let collisionRadius = GameConfig.BOID_SIZE; // Default bird radius (15)
+        
+        // Check if this is a boss bird with a shield
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const anyBoid = boid as any;
+        if (anyBoid.isBoss === true && anyBoid.hasActiveShield && anyBoid.hasActiveShield()) {
+          // Boss with shield - use shield radius instead!
+          const shieldRadius = anyBoid.getShieldRadius ? anyBoid.getShieldRadius() : 0;
+          if (shieldRadius > 0) {
+            collisionRadius = shieldRadius; // Use shield radius (54px for boss)
+            console.log(`[BOSS SHIELD] Using shield radius ${shieldRadius}px for collision detection`);
+          }
+        }
+        
+        const thresholdSq = (ast.size + collisionRadius) ** 2;
         
         if (distSq < thresholdSq) {
           this.collisionPairs.push({
@@ -74,6 +90,11 @@ export class SafeCollisionSystem {
             index2: j,
             distance: Math.sqrt(distSq)
           });
+          
+          // Log boss collisions for debugging
+          if (anyBoid.isBoss) {
+            console.log(`[BOSS COLLISION] Asteroid hit boss shield! Distance: ${Math.sqrt(distSq).toFixed(1)}px < ${Math.sqrt(thresholdSq).toFixed(1)}px`);
+          }
         }
       }
     }

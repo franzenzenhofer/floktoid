@@ -83,14 +83,21 @@ export class CollisionManager {
         
         // Check if it's a boss with shield - use shield radius for collision
         let collisionRadius = 15; // Default boid radius
+        
+        // CRITICAL: Check if this is a boss bird
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ('getShieldRadius' in boid && typeof (boid as any).getShieldRadius === 'function') {
+        const isBoss = (boid as any).isBoss === true;
+        
+        if (isBoss) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const shieldRadius = (boid as any).getShieldRadius();
-          if (shieldRadius > 0) {
-            collisionRadius = shieldRadius; // Use shield radius for boss
-            if (this.debug) {
-              console.log(`[COLLISION] Boss shield detected, radius: ${shieldRadius}`);
+          const boss = boid as any;
+          if (boss.hasActiveShield && boss.hasActiveShield()) {
+            const shieldRadius = boss.getShieldRadius ? boss.getShieldRadius() : 0;
+            if (shieldRadius > 0) {
+              collisionRadius = shieldRadius; // Use shield radius for boss
+              console.log(`[SHIELD] Boss shield active! Radius: ${shieldRadius}px (vs normal ${15}px)`);
+            } else {
+              console.log(`[SHIELD] Boss has no active shield`);
             }
           }
         }
@@ -106,7 +113,13 @@ export class CollisionManager {
             processed: false
           });
           
-          if (this.debug) {
+          // ALWAYS log boss collisions for debugging
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((boid as any).isBoss) {
+            const dist = Math.sqrt(distSq);
+            const thresholdDist = Math.sqrt(threshold);
+            console.log(`[BOSS COLLISION DETECTED] Asteroid->Boss dist: ${dist.toFixed(1)}px < ${thresholdDist.toFixed(1)}px (radius: ${collisionRadius})`);
+          } else if (this.debug) {
             console.log(`  Collision: Asteroid ${i} -> Boid ${j} (dist: ${Math.sqrt(distSq)})`);
           }
         }
@@ -219,9 +232,13 @@ export class CollisionManager {
           
           // Check if it's a boss with shield - SHIELD collision, not bird collision!
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if ('hasActiveShield' in boid && (boid as any).hasActiveShield()) {
+          const isBoss = (boid as any).isBoss === true;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const hasShield = isBoss && (boid as any).hasActiveShield && (boid as any).hasActiveShield();
+          
+          if (hasShield) {
             // This is a SHIELD HIT, not a bird hit!
-            console.log('[COLLISION] Shield hit! Boss takes damage, asteroid splits');
+            console.log('[SHIELD HIT] Asteroid hit boss shield! Splitting asteroid and damaging boss');
             
             // Boss shield acts like a laser - split the asteroid (DRY - reuse splitter logic)
             // Push fragments AWAY from the boss to prevent immediate collision

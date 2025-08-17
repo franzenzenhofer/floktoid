@@ -27,6 +27,8 @@ export class BossBird extends Boid {
     this.maxHealth = health;
     this.isBossShooter = true; // All bosses are shooters
     
+    console.log(`[BOSS CREATED] Health: ${health}, Shield radius will be: ${GameConfig.BOID_SIZE * 2.5 * 1.8}px`);
+    
     // Enable shooting for ALL bosses - they're very goal oriented!
     this.isShooter = true;
     this.maxShootCooldown = 30; // Shoot very fast - goal oriented!
