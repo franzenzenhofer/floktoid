@@ -350,7 +350,10 @@ export class NeonFlockEngine {
     const positionInCycle = (bossWaveNumber - 1) % 3;
     
     const count = Math.min(cycleNumber + 1, 5); // 1, 2, 3, 4, 5 bosses max
-    const health = (positionInCycle + 1) * 5; // 5, 10, or 15 HP
+    
+    // +1 extra HP so boss survives after shield breaks (needs final hit without shield)
+    const baseHealth = (positionInCycle + 1) * 5; // 5, 10, or 15 HP for shield
+    const health = baseHealth + 1; // 6, 11, or 16 HP total (last HP is without shield)
     
     return { count, health };
   }
@@ -373,7 +376,7 @@ export class NeonFlockEngine {
       // Queue bosses to spawn (like shooters/navigators)
       this.bossesToSpawn = bossConfig.count;
       this.bossHealthForWave = bossConfig.health;
-      console.log(`[WAVE] Boss wave ${this.wave}: ${bossConfig.count} bosses with ${bossConfig.health} HP each`);
+      console.log(`[WAVE] Boss wave ${this.wave}: ${bossConfig.count} bosses with ${bossConfig.health} HP each (${bossConfig.health - 1} shield + 1 unshielded)`);
     } else {
       this.bossesToSpawn = 0;
       this.bossHealthForWave = 0;

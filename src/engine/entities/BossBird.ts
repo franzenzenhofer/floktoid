@@ -86,7 +86,8 @@ export class BossBird extends Boid {
   private updateShield() {
     this.shieldGraphics.clear();
     
-    if (this.health <= 0 || !this.alive) {
+    // Shield only visible when health > 1 (last HP is without shield)
+    if (this.health <= 1 || !this.alive) {
       return;
     }
     
@@ -97,19 +98,20 @@ export class BossBird extends Boid {
     // Fixed shield size - no pulsing
     const shieldRadius = this.size * 1.8;
     
-    // Shield color gradient from green to red based on health
-    const healthPercent = this.health / this.maxHealth;
+    // Shield color gradient from green to red based on shield health
+    // Health > 1 means shield is active, so calculate percent based on shield HP only
+    const shieldHealthPercent = (this.health - 1) / (this.maxHealth - 1);
     let shieldColor: number;
     
-    if (healthPercent > 0.5) {
-      // Green to yellow (health 100% to 50%)
-      const t = (healthPercent - 0.5) * 2; // 0 to 1
+    if (shieldHealthPercent > 0.5) {
+      // Green to yellow (shield health 100% to 50%)
+      const t = (shieldHealthPercent - 0.5) * 2; // 0 to 1
       const r = Math.floor(255 * (1 - t));
       const g = 255;
       shieldColor = (r << 16) | (g << 8) | 0;
     } else {
-      // Yellow to red (health 50% to 0%)
-      const t = healthPercent * 2; // 0 to 1
+      // Yellow to red (shield health 50% to near 0%)
+      const t = shieldHealthPercent * 2; // 0 to 1
       const r = 255;
       const g = Math.floor(255 * t);
       shieldColor = (r << 16) | (g << 8) | 0;
@@ -135,7 +137,7 @@ export class BossBird extends Boid {
     this.shieldGraphics.stroke({ 
       width: 3, 
       color: shieldColor, 
-      alpha: 0.6 * healthPercent + 0.2 // More visible shield
+      alpha: 0.6 * shieldHealthPercent + 0.2 // More visible shield
     });
     
     // Add inner hexagon for more depth
@@ -154,15 +156,16 @@ export class BossBird extends Boid {
     this.shieldGraphics.stroke({ 
       width: 1, 
       color: shieldColor, 
-      alpha: 0.3 * healthPercent 
+      alpha: 0.3 * shieldHealthPercent 
     });
   }
   
   /**
    * Check if the boss has an active shield
+   * Shield is only active when health > 1 (last HP is without shield)
    */
   hasActiveShield(): boolean {
-    return this.health > 0 && this.alive;
+    return this.health > 1 && this.alive;
   }
   
   /**
