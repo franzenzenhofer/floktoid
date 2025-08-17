@@ -49,6 +49,12 @@ export const ENTITY_LIMITS = {
     MIN_COUNT: 0,
     WARNING_THRESHOLD: 80,
   },
+  SHREDDERS: {
+    MAX_TOTAL: 2,
+    MAX_PER_FRAME: 2,
+    MIN_COUNT: 0,
+    WARNING_THRESHOLD: 2,
+  },
   PARTICLES: {
     MAX_TOTAL: 1000,
     MAX_PER_EXPLOSION: 50,
@@ -314,6 +320,33 @@ export const ASTEROID_GEN = {
 } as const;
 
 // ============================================
+// SHREDDER ENEMY CONFIGURATION
+// ============================================
+
+export const SHREDDER = {
+  SPAWN: {
+    BASE_PROBABILITY: 0.05,
+    EXTRA_PER_ASTEROID: 0.001,
+    MAX_PROBABILITY: 0.25,
+  },
+  MAX_CONCURRENT: 2,
+  SCALE: {
+    MIN: 1.25,
+    MAX: 3.0,
+  },
+  SPIN: {
+    MIN: 0.6,
+    MAX: 1.6,
+  },
+  AMPLITUDE: {
+    MIN: 0.15,
+    MAX: 0.30,
+  },
+  SPEED_JITTER: 0.2,
+  TOLERANCE: 0.05,
+} as const;
+
+// ============================================
 // UI CONSTANTS
 // ============================================
 
@@ -495,6 +528,7 @@ export default {
   WAVES,
   COLLISION,
   ASTEROID_GEN,
+  SHREDDER,
   UI,
   ERRORS,
   GameState,

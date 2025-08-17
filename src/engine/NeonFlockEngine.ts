@@ -4,6 +4,7 @@ import { BossBird } from './entities/BossBird';
 import type { BirdProjectile } from './entities/BirdProjectile';
 import { EnergyDot } from './entities/EnergyDot';
 import { Asteroid } from './entities/Asteroid';
+import { Shredder, calculateShredderSpawnProbability } from './entities/Shredder';
 import { AsteroidSplitter } from './systems/AsteroidSplitter';
 import { ParticleSystem } from './systems/ParticleSystem';
 import { FlockingSystem } from './systems/FlockingSystem';
@@ -18,7 +19,7 @@ import CentralConfig from './CentralConfig';
 import { scoringSystem, ScoringEvent } from './ScoringSystem';
 import { hueToRGB } from './utils/ColorUtils';
 
-const { VISUALS, SIZES, TIMING, ENTITY_LIMITS, PHYSICS, FLOCKING, ERRORS, UI, GAME_CONSTANTS } = CentralConfig;
+const { VISUALS, SIZES, TIMING, ENTITY_LIMITS, PHYSICS, FLOCKING, ERRORS, UI, GAME_CONSTANTS, SHREDDER } = CentralConfig;
 
 export class NeonFlockEngine {
   private app!: PIXI.Application;
@@ -29,6 +30,7 @@ export class NeonFlockEngine {
   private projectiles: BirdProjectile[] = [];
   private energyDots: EnergyDot[] = [];
   private asteroids: Asteroid[] = [];
+  private shredders: Shredder[] = [];
   private fallingDots: Array<{
     x: number;
     y: number;
@@ -451,6 +453,17 @@ export class NeonFlockEngine {
       console.error('[SPAWN ERROR] Failed to spawn bird:', error);
     }
   }
+
+  private maybeSpawnShredder() {
+    const A = this.asteroids.length;
+    const P = calculateShredderSpawnProbability(A);
+    if (this.shredders.length >= SHREDDER.MAX_CONCURRENT) return;
+    if (Math.random() < P) {
+      const side = Math.random() < 0.5 ? 'left' : 'right';
+      const shredder = new Shredder(this.app, side);
+      this.shredders.push(shredder);
+    }
+  }
   
   public launchAsteroid(
     startX: number, 
@@ -519,7 +532,7 @@ export class NeonFlockEngine {
     
     // EMERGENCY ENTITY COUNT PROTECTION - Prevent performance freeze with too many entities
     const MAX_TOTAL_ENTITIES = ENTITY_LIMITS.TOTAL_ENTITIES.MAX;
-    const totalEntityCount = this.boids.length + this.asteroids.length + this.fallingDots.length;
+    const totalEntityCount = this.boids.length + this.asteroids.length + this.fallingDots.length + this.shredders.length;
     
     if (totalEntityCount > MAX_TOTAL_ENTITIES) {
       console.warn(`[PERFORMANCE WARNING] Too many entities (${totalEntityCount}/${MAX_TOTAL_ENTITIES}), performing emergency cleanup`);
@@ -580,10 +593,13 @@ export class NeonFlockEngine {
     const dt = delta / 60; // Convert to seconds at 60fps
     const time = performance.now() / 1000;
     
-    // Spawn birds
-    if (this.birdsToSpawn > 0 && time > this.nextSpawnTime) {
-      this.spawnBird();
-      this.birdsToSpawn--;
+    // Spawn birds and maybe Shredder on spawn tick
+    if (time > this.nextSpawnTime) {
+      if (this.birdsToSpawn > 0) {
+        this.spawnBird();
+        this.birdsToSpawn--;
+      }
+      this.maybeSpawnShredder();
       this.nextSpawnTime = time + 0.5;
     }
     
@@ -864,6 +880,45 @@ export class NeonFlockEngine {
       if (!keepAsteroid || asteroid.isOffScreen(this.app.screen)) {
         asteroid.destroy();
         return false;
+      }
+      return true;
+    });
+
+    // Update shredders and handle collisions with asteroids
+    this.shredders = this.shredders.filter(shredder => {
+      const keep = shredder.update(dt);
+      if (!keep) {
+        shredder.destroy();
+        return false;
+      }
+      for (let i = this.asteroids.length - 1; i >= 0; i--) {
+        const asteroid = this.asteroids[i];
+        const dx = asteroid.x - shredder.x;
+        const dy = asteroid.y - shredder.y;
+        const distSq = dx * dx + dy * dy;
+        const threshold = (asteroid.size + shredder.radius) * (asteroid.size + shredder.radius);
+        if (distSq < threshold) {
+          const rS = shredder.radius;
+          const rA = asteroid.size;
+          const tau = SHREDDER.TOLERANCE;
+          if (rA < rS * (1 - tau)) {
+            asteroid.destroy();
+            this.asteroids.splice(i, 1);
+            this.particleSystem.createExplosion(asteroid.x, asteroid.y, 0xFFFFFF, 10);
+            scoringSystem.addEvent(ScoringEvent.SHREDDER_SHRED);
+            this.updateScoreDisplay();
+          } else if (rA > rS * (1 + tau)) {
+            shredder.destroy();
+            this.particleSystem.createExplosion(shredder.x, shredder.y, 0xFFFFFF, 20);
+            return false;
+          } else {
+            asteroid.destroy();
+            this.asteroids.splice(i, 1);
+            shredder.destroy();
+            this.particleSystem.createExplosion(shredder.x, shredder.y, 0xFFFFFF, 20);
+            return false;
+          }
+        }
       }
       return true;
     });
