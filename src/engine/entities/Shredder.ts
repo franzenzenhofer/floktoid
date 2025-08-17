@@ -30,6 +30,7 @@ export class Shredder {
   public radius: number;
   public destroyed = false;
   public targetAsteroid: Asteroid | null = null; // Asteroid to hunt
+  public behavior: ShredderBehavior;
 
   private sprite: PIXI.Graphics;
   private rotation = 0;
@@ -54,6 +55,16 @@ export class Shredder {
     
     // Random hue like birds - exactly the same as birds do it
     this.hue = Math.random() * 360;
+    
+    // Randomly assign behavior (33% chance each)
+    const rand = Math.random();
+    if (rand < 0.33) {
+      this.behavior = ShredderBehavior.HUNTER;
+    } else if (rand < 0.66) {
+      this.behavior = ShredderBehavior.DISRUPTOR;
+    } else {
+      this.behavior = ShredderBehavior.PROTECTOR;
+    }
     
     // Each shredder has different rotation speed (2 to 6 radians/sec)
     this.rotationSpeed = 2 + Math.random() * 4;
@@ -123,7 +134,8 @@ export class Shredder {
     this.sprite.fill({ color: fillColor, alpha: VISUALS.ALPHA.HIGH }); // Center slightly more visible
   }
 
-  update(dt: number, asteroids?: Asteroid[], otherShredders?: Shredder[], boids?: Boid[]): boolean {
+  update(dt: number, asteroids?: Asteroid[], otherShredders?: Shredder[], boids?: Boid[], 
+         launchPositions?: { x: number; y: number }[], flockCenter?: { x: number; y: number }): boolean {
     this.t += dt;
     
     // Rotation with random switching pattern
@@ -183,49 +195,145 @@ export class Shredder {
       }
     }
     
-    // Hunt for asteroids if provided
-    if (asteroids && asteroids.length > 0) {
-      // Find the biggest asteroid we can still shred
-      let bestTarget = null;
-      let bestSize = 0;
-      const tau = SHREDDER.TOLERANCE || 0.05;
-      
-      for (const asteroid of asteroids) {
-        if (!asteroid || asteroid.destroyed) continue;
-        // Can we shred it?
-        if (asteroid.size < this.radius * (1 - tau)) {
-          // Is it bigger than our current target?
-          if (asteroid.size > bestSize) {
-            bestSize = asteroid.size;
-            bestTarget = asteroid;
-          }
-        }
-      }
-      
-      this.targetAsteroid = bestTarget;
-    }
-    
-    // Combine forces: separation + target seeking
+    // Behavior-specific target logic
     let targetForceX = 0;
     let targetForceY = 0;
     
-    // Seek behavior toward target asteroid
-    if (this.targetAsteroid && !this.targetAsteroid.destroyed) {
-      const dx = this.targetAsteroid.x - this.x;
-      const dy = this.targetAsteroid.y - this.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      
-      if (dist > 0) {
-        // Desired velocity toward target
-        targetForceX = (dx / dist) * this.maxSpeed * 50;
-        targetForceY = (dy / dist) * this.maxSpeed * 50;
-      }
-    } else {
-      // No target - wander with variation
-      // Add sinusoidal wandering to create path variation
-      const wanderAngle = this.t * 2 + this.hue * 0.01; // Use hue for variation
-      targetForceX = Math.sin(wanderAngle) * this.maxForce * 0.3;
-      targetForceY = Math.cos(wanderAngle * 0.7) * this.maxForce * 0.3 + this.maxForce * 0.2; // Slight downward
+    switch (this.behavior) {
+      case ShredderBehavior.HUNTER:
+        // Original behavior - hunt asteroids
+        if (asteroids && asteroids.length > 0) {
+          let bestTarget = null;
+          let bestSize = 0;
+          const tau = SHREDDER.TOLERANCE || 0.05;
+          
+          for (const asteroid of asteroids) {
+            if (!asteroid || asteroid.destroyed) continue;
+            if (asteroid.size < this.radius * (1 - tau)) {
+              if (asteroid.size > bestSize) {
+                bestSize = asteroid.size;
+                bestTarget = asteroid;
+              }
+            }
+          }
+          
+          this.targetAsteroid = bestTarget;
+        }
+        
+        if (this.targetAsteroid && !this.targetAsteroid.destroyed) {
+          const dx = this.targetAsteroid.x - this.x;
+          const dy = this.targetAsteroid.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist > 0) {
+            targetForceX = (dx / dist) * this.maxSpeed * 50;
+            targetForceY = (dy / dist) * this.maxSpeed * 50;
+          }
+        } else {
+          // Wander
+          const wanderAngle = this.t * 2 + this.hue * 0.01;
+          targetForceX = Math.sin(wanderAngle) * this.maxForce * 0.3;
+          targetForceY = Math.cos(wanderAngle * 0.7) * this.maxForce * 0.3 + this.maxForce * 0.2;
+        }
+        break;
+        
+      case ShredderBehavior.DISRUPTOR:
+        // Move to average launch position to interfere with player
+        if (launchPositions && launchPositions.length > 0) {
+          // Calculate average of last launch positions
+          let avgX = 0;
+          let avgY = 0;
+          for (const pos of launchPositions) {
+            avgX += pos.x;
+            avgY += pos.y;
+          }
+          avgX /= launchPositions.length;
+          avgY /= launchPositions.length;
+          
+          // Move toward average launch position
+          const dx = avgX - this.x;
+          const dy = avgY - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist > 50) { // Don't get too close
+            targetForceX = (dx / dist) * this.maxSpeed * 40;
+            targetForceY = (dy / dist) * this.maxSpeed * 40;
+          } else {
+            // Orbit around launch area
+            const orbitAngle = this.t * 3;
+            targetForceX = Math.cos(orbitAngle) * this.maxForce * 0.5;
+            targetForceY = Math.sin(orbitAngle) * this.maxForce * 0.5;
+          }
+        } else {
+          // Move to middle-bottom area where launches usually happen
+          const targetX = this.app.screen.width / 2;
+          const targetY = this.app.screen.height * 0.75;
+          const dx = targetX - this.x;
+          const dy = targetY - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist > 0) {
+            targetForceX = (dx / dist) * this.maxSpeed * 30;
+            targetForceY = (dy / dist) * this.maxSpeed * 30;
+          }
+        }
+        break;
+        
+      case ShredderBehavior.PROTECTOR:
+        // Stay near the bird flock to protect them
+        if (flockCenter) {
+          const dx = flockCenter.x - this.x;
+          const dy = flockCenter.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          // Maintain optimal distance from flock (not too close, not too far)
+          const optimalDistance = 150;
+          if (dist > optimalDistance + 50) {
+            // Move closer to flock
+            targetForceX = (dx / dist) * this.maxSpeed * 45;
+            targetForceY = (dy / dist) * this.maxSpeed * 45;
+          } else if (dist < optimalDistance - 50) {
+            // Move away from flock
+            targetForceX = -(dx / dist) * this.maxSpeed * 20;
+            targetForceY = -(dy / dist) * this.maxSpeed * 20;
+          } else {
+            // Patrol around the flock
+            const patrolAngle = this.t * 2 + this.hue * 0.02;
+            targetForceX = Math.cos(patrolAngle) * this.maxForce * 0.4;
+            targetForceY = Math.sin(patrolAngle) * this.maxForce * 0.4;
+          }
+        } else if (boids && boids.length > 0) {
+          // Calculate flock center manually
+          let centerX = 0;
+          let centerY = 0;
+          let count = 0;
+          for (const boid of boids) {
+            if (boid && boid.alive) {
+              centerX += boid.x;
+              centerY += boid.y;
+              count++;
+            }
+          }
+          if (count > 0) {
+            centerX /= count;
+            centerY /= count;
+            
+            const dx = centerX - this.x;
+            const dy = centerY - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist > 200) {
+              targetForceX = (dx / dist) * this.maxSpeed * 40;
+              targetForceY = (dy / dist) * this.maxSpeed * 40;
+            } else {
+              // Patrol
+              const patrolAngle = this.t * 2.5;
+              targetForceX = Math.cos(patrolAngle) * this.maxForce * 0.35;
+              targetForceY = Math.sin(patrolAngle) * this.maxForce * 0.35;
+            }
+          }
+        }
+        break;
     }
     
     // Apply combined forces

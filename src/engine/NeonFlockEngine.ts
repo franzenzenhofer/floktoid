@@ -31,6 +31,7 @@ export class NeonFlockEngine {
   private energyDots: EnergyDot[] = [];
   private asteroids: Asteroid[] = [];
   private shredders: Shredder[] = [];
+  private recentLaunchPositions: { x: number; y: number }[] = []; // Track last 10 launch positions
   private fallingDots: Array<{
     x: number;
     y: number;
@@ -518,6 +519,12 @@ export class NeonFlockEngine {
       );
       this.asteroids.push(asteroid);
       
+      // Track launch position for Shredder DISRUPTOR behavior
+      this.recentLaunchPositions.push({ x: startX, y: startY });
+      if (this.recentLaunchPositions.length > 10) {
+        this.recentLaunchPositions.shift(); // Keep only last 10
+      }
+      
       // No launch effect - clean launch
     }
   }
@@ -884,10 +891,29 @@ export class NeonFlockEngine {
       return true;
     });
 
+    // Calculate flock center for PROTECTOR Shredders
+    let flockCenter = null;
+    if (this.boids.length > 0) {
+      let centerX = 0;
+      let centerY = 0;
+      let count = 0;
+      for (const boid of this.boids) {
+        if (boid.alive) {
+          centerX += boid.x;
+          centerY += boid.y;
+          count++;
+        }
+      }
+      if (count > 0) {
+        flockCenter = { x: centerX / count, y: centerY / count };
+      }
+    }
+    
     // Update shredders and handle collisions with asteroids
     this.shredders = this.shredders.filter(shredder => {
-      // Pass asteroids, other shredders, and boids for separation behavior
-      const keep = shredder.update(dt, this.asteroids, this.shredders, this.boids);
+      // Pass asteroids, other shredders, boids, launch positions, and flock center
+      const keep = shredder.update(dt, this.asteroids, this.shredders, this.boids, 
+                                  this.recentLaunchPositions, flockCenter);
       if (!keep) {
         // Off-screen - just remove it
         shredder.destroy();
