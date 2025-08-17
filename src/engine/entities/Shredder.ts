@@ -223,10 +223,10 @@ export class Shredder {
             
             // Can we shred it?
             if (asteroid.size < this.radius * (1 - tau)) {
-              // Calculate distance to asteroid
-              const dx = asteroid.x - this.x;
-              const dy = asteroid.y - this.y;
-              const dist = Math.sqrt(dx * dx + dy * dy);
+              // Calculate distance to asteroid  
+              // const dx = asteroid.x - this.x;
+              // const dy = asteroid.y - this.y;
+              // const dist = Math.sqrt(dx * dx + dy * dy);
               
               // Predict where asteroid will be (lead the target)
               const futureX = asteroid.x + asteroid.vx * 0.5;
@@ -437,7 +437,7 @@ export class Shredder {
               targetForceY = -(dy / dist) * this.maxSpeed * 30;
             } else {
               // Perfect distance - orbit defensively
-              const orbitSpeed = this.maxSpeed * 0.7;
+              // const orbitSpeed = this.maxSpeed * 0.7;
               const orbitAngle = this.t * 2.5 + this.hue * 0.01;
               
               // Elliptical orbit for better coverage
