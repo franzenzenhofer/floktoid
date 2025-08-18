@@ -19,12 +19,14 @@ import CentralConfig from './CentralConfig';
 import { scoringSystem, ScoringEvent } from './ScoringSystem';
 import { hueToRGB } from './utils/ColorUtils';
 import { BackgroundRenderer } from './modules/BackgroundRenderer';
+import { WaveManager } from './modules/WaveManager';
 
-const { VISUALS, SIZES, TIMING, ENTITY_LIMITS, PHYSICS, FLOCKING, ERRORS, UI, GAME_CONSTANTS, SHREDDER } = CentralConfig;
+const { VISUALS, SIZES, ENTITY_LIMITS, PHYSICS, FLOCKING, ERRORS, UI, GAME_CONSTANTS, SHREDDER } = CentralConfig;
 
 export class NeonFlockEngine {
   private app!: PIXI.Application;
   private backgroundRenderer!: BackgroundRenderer;
+  private waveManager!: WaveManager;
   private debug = false;
   private frameCount = 0;
   
@@ -60,22 +62,7 @@ export class NeonFlockEngine {
   private collisionDebugger!: CollisionDebugger;
   private asteroidSplitter!: AsteroidSplitter;
   
-  private wave = 1;
-  private birdsToSpawn = 0;
-  private nextSpawnTime = 0;
-  private speedMultiplier = 1;
-  private waveDotsLost = 0; // Track dots lost in current wave
   private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
-  
-  // Dynamic respawn delay: 35 seconds + 1 second per wave
-  private getDotRespawnDelay(): number {
-    return TIMING.DOT_RESPAWN_DELAY_MS + (this.wave * 1000); // 35s + 1s per wave
-  }
-  private waveStartTime = 0; // Time when wave started
-  
-  // Boss queue - like shooters/navigators, spawn through normal timer
-  private bossesToSpawn = 0;
-  private bossHealthForWave = 0;
   
   // Autopilot mode for testing
   private autopilotEnabled = false;
@@ -91,7 +78,7 @@ export class NeonFlockEngine {
   }
   
   public getWave(): number {
-    return this.wave;
+    return this.waveManager.getWave();
   }
   
   private container: HTMLDivElement;
@@ -144,6 +131,10 @@ export class NeonFlockEngine {
       this.asteroidSplitter = new AsteroidSplitter(this.app);
       this.inputManager = new InputManager(this.app, this);
       this.backgroundRenderer = new BackgroundRenderer(this.app);
+      this.waveManager = new WaveManager();
+      
+      // Setup wave callbacks
+      this.waveManager.onWaveUpdate = this.onWaveUpdate;
       
       // Setup game
       this.backgroundRenderer.setupBackground();
@@ -202,8 +193,9 @@ export class NeonFlockEngine {
   private initializeGame() {
     try {
       scoringSystem.reset(); // Reset scoring system
+      this.waveManager.reset(); // Reset wave manager
       this.spawnEnergyDots();
-      this.startWave();
+      this.waveManager.startWave();
       
       // SAFE: Wrap game loop with error recovery
       let consecutiveErrors = 0;
@@ -259,7 +251,7 @@ export class NeonFlockEngine {
     this.app.stage.addChild(sprite);
     
     // 75% of bird speed as requested!
-    const birdSpeed = GameConfig.BASE_SPEED * this.speedMultiplier;
+    const birdSpeed = GameConfig.BASE_SPEED * this.waveManager.getSpeedMultiplier();
     const fallSpeed = birdSpeed * 0.75; // 75% of bird speed
     
     // Create trail graphics for falling dot
@@ -302,88 +294,31 @@ export class NeonFlockEngine {
     }
   }
   
-  /**
-   * Calculate boss configuration for wave
-   * Uses same pattern as described: 5hp, 10hp, 15hp cycling
-   */
-  private getBossConfig(wave: number): { count: number; health: number } {
-    if (wave % 5 !== 0) return { count: 0, health: 0 };
-    
-    const bossWaveNumber = Math.floor(wave / 5);
-    const cycleNumber = Math.floor((bossWaveNumber - 1) / 3);
-    const positionInCycle = (bossWaveNumber - 1) % 3;
-    
-    const count = Math.min(cycleNumber + 1, 5); // 1, 2, 3, 4, 5 bosses max
-    
-    // +1 extra HP so boss survives after shield breaks (needs final hit without shield)
-    const baseHealth = (positionInCycle + 1) * 5; // 5, 10, or 15 HP for shield
-    const health = baseHealth + 1; // 6, 11, or 16 HP total (last HP is without shield)
-    
-    return { count, health };
-  }
-  private startWave() {
-    console.log(`[WAVE] Starting wave ${this.wave}`);
-    
-    // Check for perfect wave from previous wave
-    if (this.wave > 1 && this.waveDotsLost === 0) {
-      scoringSystem.addEvent(ScoringEvent.PERFECT_WAVE);
-      this.updateScoreDisplay();
-    }
-    
-    // Reset wave tracking
-    this.waveDotsLost = 0;
-    this.waveStartTime = Date.now(); // Track when wave starts
-    
-    // Check if this is a boss wave
-    const bossConfig = this.getBossConfig(this.wave);
-    if (bossConfig.count > 0) {
-      // Queue bosses to spawn (like shooters/navigators)
-      this.bossesToSpawn = bossConfig.count;
-      this.bossHealthForWave = bossConfig.health;
-      console.log(`[WAVE] Boss wave ${this.wave}: ${bossConfig.count} bosses with ${bossConfig.health} HP each (${bossConfig.health - 1} shield + 1 unshielded)`);
-    } else {
-      this.bossesToSpawn = 0;
-      this.bossHealthForWave = 0;
-    }
-    
-    // Spawn the normal number of birds for this wave
-    const waveIndex = this.wave - 1;
-    const count = waveIndex < GameConfig.BIRDS_PER_WAVE.length 
-      ? GameConfig.BIRDS_PER_WAVE[waveIndex]
-      : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
-    this.birdsToSpawn = count;
-    
-    console.log(`[WAVE] Wave ${this.wave}: birdsToSpawn=${this.birdsToSpawn}, bossesQueued=${this.bossesToSpawn}`);
-    
-    this.speedMultiplier = Math.pow(GameConfig.SPEED_GROWTH, this.wave - 1);
-    this.nextSpawnTime = 0;
-    this.onWaveUpdate?.(this.wave);
-  }
   
   public spawnBird(x?: number, y?: number) {
     try {
       let boid: Boid;
       
       // Check if we should spawn a boss (like we check for shooters/navigators)
-      if (this.bossesToSpawn > 0) {
+      if (this.waveManager.getBossesToSpawn() > 0) {
         // Spawn boss bird with configured health
         boid = new BossBird(
           this.app,
           x ?? Math.random() * this.app.screen.width,
           y ?? -20,
-          this.speedMultiplier,
-          this.bossHealthForWave,
+          this.waveManager.getSpeedMultiplier(),
+          this.waveManager.getBossHealthForWave(),
           false // No shooting for first bosses
         );
-        this.bossesToSpawn--;
-        console.log(`[SPAWN] Boss bird spawned with ${this.bossHealthForWave} HP, ${this.bossesToSpawn} bosses left`);
+        this.waveManager.decrementBossesToSpawn();
+        console.log(`[SPAWN] Boss bird spawned with ${this.waveManager.getBossHealthForWave()} HP, ${this.waveManager.getBossesToSpawn()} bosses left`);
       } else {
         // Spawn normal bird (might be shooter/navigator)
         boid = new Boid(
           this.app,
           x ?? Math.random() * this.app.screen.width,
           y ?? -20,
-          this.speedMultiplier
+          this.waveManager.getSpeedMultiplier()
         );
       }
       
@@ -562,13 +497,13 @@ export class NeonFlockEngine {
     const time = performance.now() / 1000;
     
     // Spawn birds and maybe Shredder on spawn tick
-    if (time > this.nextSpawnTime) {
-      if (this.birdsToSpawn > 0) {
+    if (time > this.waveManager.getNextSpawnTime()) {
+      if (this.waveManager.getBirdsToSpawn() > 0) {
         this.spawnBird();
-        this.birdsToSpawn--;
+        this.waveManager.decrementBirdsToSpawn();
       }
       this.maybeSpawnShredder();
-      this.nextSpawnTime = time + 0.5;
+      this.waveManager.setNextSpawnTime(time + 0.5);
     }
     
     // Update boids - SAFE: Use traditional for loop to avoid array mutation issues
@@ -587,15 +522,15 @@ export class NeonFlockEngine {
         
         if (boid.y < SIZES.BIRD.BASE * 2) {
           // Reached top - spawn burst
-          const burstCount = this.wave; // Dynamic: wave 1 = 1 bird, wave 10 = 10 birds, etc.
-          console.log(`[GAME] Bird reached top on wave ${this.wave}! Spawning ${burstCount} birds...`);
+          const burstCount = this.waveManager.getWave(); // Dynamic: wave 1 = 1 bird, wave 10 = 10 birds, etc.
+          console.log(`[GAME] Bird reached top on wave ${this.waveManager.getWave()}! Spawning ${burstCount} birds...`);
           
           // Start respawn timer for this dot
           if (boid.targetDot) {
             const dotIndex = this.energyDots.indexOf(boid.targetDot);
             if (dotIndex >= 0) {
               this.dotRespawnTimers.set(dotIndex, 0);
-              console.log(`[GAME] Starting ${this.getDotRespawnDelay() / 1000}s respawn timer for dot ${dotIndex} (wave ${this.wave})`);
+              console.log(`[GAME] Starting ${this.waveManager.getDotRespawnDelay() / 1000}s respawn timer for dot ${dotIndex} (wave ${this.waveManager.getWave()})`);
             }
             boid.targetDot = null;
           }
@@ -623,7 +558,7 @@ export class NeonFlockEngine {
           
           // Penalty for letting bird reach top
           scoringSystem.addEvent(ScoringEvent.ENERGY_DOT_LOST);
-          this.waveDotsLost++; // Track dots lost in this wave
+          this.waveManager.trackDotLost(); // Track dots lost in this wave
           this.updateScoreDisplay();
           
           // Mark for removal instead of immediate splice
@@ -807,7 +742,7 @@ export class NeonFlockEngine {
             this.app,
             spawn.x,
             spawn.y,
-            this.speedMultiplier,
+            this.waveManager.getSpeedMultiplier(),
             { vx: spawn.vx, vy: spawn.vy }  // Pass velocity properly to constructor
           );
           
@@ -1299,7 +1234,7 @@ export class NeonFlockEngine {
         continue;
       }
       // Apply physics - 75% of bird speed
-      const birdSpeed = GameConfig.BASE_SPEED * this.speedMultiplier;
+      const birdSpeed = GameConfig.BASE_SPEED * this.waveManager.getSpeedMultiplier();
       const maxFallSpeed = birdSpeed * 0.75; // Cap at 75% of bird speed
       
       dot.vy += PHYSICS.GRAVITY.BASE * dt; // Very gentle gravity
@@ -1510,17 +1445,9 @@ export class NeonFlockEngine {
     
     // KISS: Wave ends when ALL birds are gone and none left to spawn
     // Simple rule: No birds = next wave
-    if (this.birdsToSpawn === 0 && this.boids.length === 0) {
-      // Small delay to prevent double-triggering
-      const timeSinceWaveStart = Date.now() - this.waveStartTime;
-      if (timeSinceWaveStart > 100) { // 100ms minimum to prevent double-trigger
-        console.log(`[WAVE] Completing wave ${this.wave} -> ${this.wave + 1}`);
-        scoringSystem.addEvent(ScoringEvent.WAVE_COMPLETE);
-        this.updateScoreDisplay();
-        this.wave++;
-        this.waveStartTime = Date.now(); // Record when new wave starts
-        this.startWave();
-      }
+    if (this.waveManager.shouldCompleteWave(this.boids.length)) {
+      this.waveManager.completeWave();
+      this.updateScoreDisplay();
     }
     
     // Check if all dots are stolen - if so, pause respawn
@@ -1537,7 +1464,7 @@ export class NeonFlockEngine {
       // Process individual dot respawn timers
       this.dotRespawnTimers.forEach((timer, dotIndex) => {
         const newTimer = timer + dt * 1000;
-        if (newTimer >= this.getDotRespawnDelay()) {
+        if (newTimer >= this.waveManager.getDotRespawnDelay()) {
           // Respawn this specific dot after 15 seconds
           const dot = this.energyDots[dotIndex];
           if (dot && dot.stolen) {
@@ -1746,7 +1673,7 @@ export class NeonFlockEngine {
         this.asteroids.push(asteroid);
         
         this.lastAutopilotShot = now;
-        console.log(`[AUTOPILOT] Shot at bird - Wave ${this.wave}, Birds: ${this.boids.length}`);
+        console.log(`[AUTOPILOT] Shot at bird - Wave ${this.waveManager.getWave()}, Birds: ${this.boids.length}`);
       }
     }
   }
