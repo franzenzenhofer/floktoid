@@ -1274,19 +1274,35 @@ export class NeonFlockEngine {
         }
       }
       
-      // Show ONE combo display per asteroid that got multi-kills
-      // This prevents spam but ensures we see the combo
-      for (const comboInfo of asteroidComboInfo.values()) {
-        // Get current combo count from scoring system
+      // Show ONLY ONE combo display per frame for ALL multi-kills combined
+      // This prevents overlapping text spam
+      if (asteroidComboInfo.size > 0) {
+        // Calculate average position of all multi-kills
+        let totalX = 0;
+        let totalY = 0;
+        let totalKills = 0;
+        
+        for (const comboInfo of asteroidComboInfo.values()) {
+          totalX += comboInfo.x * comboInfo.count; // Weight by kill count
+          totalY += comboInfo.y * comboInfo.count;
+          totalKills += comboInfo.count;
+        }
+        
+        const avgX = totalX / totalKills;
+        const avgY = totalY / totalKills;
+        
+        // Get the final combo count after all kills processed
         const currentCombo = scoringSystem.getComboInfo().count;
         
-        // Show combo display with the current combo count (not just the kill count)
+        // Show ONE combo display at the weighted center of all kills
         this.comboEffects.createComboDisplay(
           currentCombo,
-          comboInfo.x,
-          comboInfo.y,
+          avgX,
+          avgY,
           1.0
         );
+        
+        console.log(`[COMBO] Showing ${currentCombo}x combo at (${avgX.toFixed(0)}, ${avgY.toFixed(0)})`);
       }
       this.updateScoreDisplay();
       
