@@ -1031,8 +1031,13 @@ export class NeonFlockEngine {
               boid.hasDot = false;
             }
             
-            // Track which asteroid destroyed this bird for combo counting
+            // LIFETIME COMBO TRACKING - count this kill for the asteroid!
             if (asteroid) {
+              // Increment the asteroid's lifetime kill count
+              asteroid.killCount++;
+              asteroid.lastKillTime = Date.now();
+              
+              // Track for scoring in this frame
               if (!asteroidKills.has(asteroid)) {
                 asteroidKills.set(asteroid, { birds: [], score: 0 });
               }
@@ -1051,6 +1056,11 @@ export class NeonFlockEngine {
                 scoreValue = 40; // Regular bird hit
               }
               kills.score += scoreValue;
+              
+              // SIMPLE COMBO: If asteroid has 2+ kills in its lifetime, show combo!
+              if (asteroid.killCount >= 2) {
+                console.log(`[LIFETIME COMBO] Asteroid has ${asteroid.killCount} total kills!`);
+              }
             } else {
               // No asteroid (shouldn't happen), just add score normally
               let event: ScoringEvent;
@@ -1123,12 +1133,11 @@ export class NeonFlockEngine {
         this.asteroids.push(...newFragments);
       }
       
-      // SUPER SIMPLE COMBO LOGIC!
-      // For each asteroid that hit enemies, show combo if it hit 2+
-      for (const [, kills] of asteroidKills) {
-        const killCount = kills.birds.length;
+      // LIFETIME COMBO LOGIC - show combo based on asteroid's total kills!
+      for (const [asteroid, kills] of asteroidKills) {
+        const frameKillCount = kills.birds.length;
         
-        if (killCount > 0) {
+        if (frameKillCount > 0) {
           // Add score for each kill
           for (const bird of kills.birds) {
             let event: ScoringEvent;
@@ -1147,22 +1156,24 @@ export class NeonFlockEngine {
             scoringSystem.addEvent(event);
           }
           
-          // SIMPLE: If this ONE asteroid hit 2+ enemies, show combo!
-          if (killCount >= 2) {
-            // Calculate average position of kills
-            const avgX = kills.birds.reduce((sum, b) => sum + b.x, 0) / killCount;
-            const avgY = kills.birds.reduce((sum, b) => sum + b.y, 0) / killCount;
+          // Check LIFETIME kills for combo display!
+          const lifetimeKills = asteroid.killCount;
+          
+          // Show combo when asteroid reaches 2, 3, 4+ lifetime kills
+          if (lifetimeKills >= 2) {
+            // Position at the latest kill location
+            const avgX = kills.birds.reduce((sum, b) => sum + b.x, 0) / frameKillCount;
+            const avgY = kills.birds.reduce((sum, b) => sum + b.y, 0) / frameKillCount;
             
-            // SIMPLE: Display combo message immediately!
-            // 2 = DOUBLE, 3 = TRIPLE, 4 = QUAD, etc.
+            // Display combo based on LIFETIME kills!
             this.comboEffects.createComboDisplay(
-              killCount,  // Just use the kill count as combo!
+              lifetimeKills,  // Use lifetime kill count!
               avgX,
               avgY,
               1.0
             );
             
-            console.log(`[COMBO] ${killCount}x combo! Asteroid destroyed ${killCount} enemies at once!`);
+            console.log(`[LIFETIME COMBO] ${lifetimeKills}x combo! Asteroid has destroyed ${lifetimeKills} enemies total!`);
           }
         }
       }

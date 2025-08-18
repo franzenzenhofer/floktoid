@@ -22,6 +22,10 @@ export class Asteroid {
   private shapeVertices: number[] = [];
   private shapeRoughness: number[] = [];
   public destroyed = false;
+  
+  // COMBO TRACKING - count kills across asteroid's lifetime!
+  public killCount = 0;
+  public lastKillTime = 0;
 
   constructor(
     app: PIXI.Application,
