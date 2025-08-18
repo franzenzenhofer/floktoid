@@ -220,7 +220,7 @@ export const SIZES = {
 
 export const TIMING = {
   COMBO_WINDOW_MS: 2000,
-  DOT_RESPAWN_DELAY_MS: 15000,
+  DOT_RESPAWN_DELAY_MS: 35000, // 35 seconds - much slower respawn
   WAVE_SPAWN_INTERVAL_MS: 500,
   ANIMATION: {
     FADE_DURATION_MS: 1000,
