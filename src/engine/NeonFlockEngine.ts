@@ -65,6 +65,11 @@ export class NeonFlockEngine {
   private waveDotsLost = 0; // Track dots lost in current wave
   private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
   private DOT_RESPAWN_DELAY = TIMING.DOT_RESPAWN_DELAY_MS;
+  
+  // Dynamic respawn delay: 35 seconds + 1 second per wave
+  private getDotRespawnDelay(): number {
+    return TIMING.DOT_RESPAWN_DELAY_MS + (this.wave * 1000); // 35s + 1s per wave
+  }
   private waveStartTime = 0; // Time when wave started
   
   // Boss queue - like shooters/navigators, spawn through normal timer
@@ -634,7 +639,7 @@ export class NeonFlockEngine {
             const dotIndex = this.energyDots.indexOf(boid.targetDot);
             if (dotIndex >= 0) {
               this.dotRespawnTimers.set(dotIndex, 0);
-              console.log(`[GAME] Starting ${TIMING.DOT_RESPAWN_DELAY_MS / 1000}s respawn timer for dot ${dotIndex}`);
+              console.log(`[GAME] Starting ${this.getDotRespawnDelay() / 1000}s respawn timer for dot ${dotIndex} (wave ${this.wave})`);
             }
             boid.targetDot = null;
           }
@@ -1446,7 +1451,7 @@ export class NeonFlockEngine {
       // Process individual dot respawn timers
       this.dotRespawnTimers.forEach((timer, dotIndex) => {
         const newTimer = timer + dt * 1000;
-        if (newTimer >= this.DOT_RESPAWN_DELAY) {
+        if (newTimer >= this.getDotRespawnDelay()) {
           // Respawn this specific dot after 15 seconds
           const dot = this.energyDots[dotIndex];
           if (dot && dot.stolen) {
