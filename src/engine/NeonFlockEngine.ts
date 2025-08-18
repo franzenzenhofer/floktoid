@@ -1620,20 +1620,9 @@ export class NeonFlockEngine {
     // Get current score info from scoring system
     const scoreInfo = scoringSystem.getScoreBreakdown();
     
-    // Use new advanced combo effects system with game designer improvements
-    if (scoreInfo.combo > 1) {
-      const comboX = this.app.screen.width / 2;
-      const comboY = this.app.screen.height * 0.25; // Higher up for better visibility
-      
-      // Update wave for combo threshold and create display
-      this.comboEffects.setWave(this.wave);
-      this.comboEffects.createComboDisplay(
-        scoreInfo.combo,
-        comboX,
-        comboY,
-        scoreInfo.multiplier
-      );
-    }
+    // DON'T CREATE COMBO DISPLAY HERE! 
+    // Combo display is already handled properly in the collision processing
+    // Creating it here causes multiple overlapping texts since this is called for EVERY score event
     
     // Update score display with combo info
     this.onScoreUpdate?.(scoreInfo.score, scoreInfo.combo, scoreInfo.multiplier);

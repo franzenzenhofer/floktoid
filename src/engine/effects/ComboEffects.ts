@@ -40,6 +40,8 @@ export class ComboEffects {
   private comboTimer: number = 0;
   private shakeIntensity: number = 0;
   private originalStagePosition: { x: number; y: number } = { x: 0, y: 0 };
+  private activeComboText: PIXI.Text | null = null;
+  private comboTextAnimationActive: boolean = false;
   
   constructor(app: PIXI.Application) {
     this.app = app;
@@ -102,6 +104,13 @@ export class ComboEffects {
     y: number,
     _multiplier: number
   ): void {
+    // CRITICAL FIX: Prevent multiple overlapping combo texts!
+    // If a combo animation is already active, skip creating a new one
+    if (this.comboTextAnimationActive) {
+      console.log(`[COMBO] Skipping combo display - animation already active`);
+      return;
+    }
+    
     // Check if combo meets wave threshold
     const minThreshold = this.getMinComboThreshold(this.currentWave);
     // CRITICAL FIX: Show combo if it's EQUAL TO or greater than threshold!
@@ -128,6 +137,13 @@ export class ComboEffects {
     const baseFontSize = UI.FONTS.SIZES.LARGE + (tier.scale - 1) * 20;
     const fontSize = Math.min(baseFontSize, maxFontSize);
     
+    // CRITICAL FIX: Destroy any existing combo text before creating new one
+    if (this.activeComboText && !this.activeComboText.destroyed) {
+      this.app.stage.removeChild(this.activeComboText);
+      this.activeComboText.destroy();
+      this.activeComboText = null;
+    }
+    
     const comboText = new PIXI.Text(
       combo >= 20 ? `${tier.name}!\n${combo}x COMBO!` : `${combo}x ${tier.name}!`,
       {
@@ -151,6 +167,10 @@ export class ComboEffects {
         letterSpacing: combo >= 10 ? 3 : 1
       }
     );
+    
+    // Store reference to active combo text
+    this.activeComboText = comboText;
+    this.comboTextAnimationActive = true;
     
     comboText.anchor.set(0.5);
     // Ensure text stays within screen bounds
@@ -201,6 +221,11 @@ export class ComboEffects {
         if (text && !text.destroyed) {
           text.destroy();
         }
+        // Clear the active text reference and animation flag
+        if (this.activeComboText === text) {
+          this.activeComboText = null;
+        }
+        this.comboTextAnimationActive = false;
         return;
       }
       
@@ -492,6 +517,13 @@ export class ComboEffects {
    * Cleanup
    */
   destroy(): void {
+    // Clean up active combo text
+    if (this.activeComboText && !this.activeComboText.destroyed) {
+      this.activeComboText.destroy();
+      this.activeComboText = null;
+    }
+    this.comboTextAnimationActive = false;
+    
     // Removed combo meter and text destruction
     if (this.screenFlash) {
       this.screenFlash.destroy();
