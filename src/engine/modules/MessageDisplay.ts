@@ -77,7 +77,7 @@ export class MessageDisplay {
     } else if (combo >= 4) {
       return {
         threshold: 4,
-        name: "SUPER",
+        name: "QUAD",
         color: 0x00FF00, // Green
         secondaryColor: 0xFFFF00,
         scale: 1.6,
@@ -257,12 +257,102 @@ export class MessageDisplay {
   }
   
   /**
-   * Display boss level announcement
+   * Display boss level announcement - CENTER SCREEN WITH UNIQUE ANIMATION!
    */
   displayBossAnnouncement(): void {
     console.log('[BOSS ANNOUNCEMENT] Starting boss announcement');
-    // EXACT SAME CALL AS COMBO - only text different!
-    this.displayMessage('BOSS LEVEL!');
+    
+    // Boss message: Center of screen, magenta color, special animation
+    const text = 'BOSS LEVEL!';
+    const color = 0xFF00FF; // Magenta
+    const x = this.app.screen.width / 2;
+    const y = this.app.screen.height / 2; // CENTER of screen!
+    
+    // Special boss animation - pulsing zoom effect
+    this.displayBossMessage(text, color, x, y);
+  }
+  
+  /**
+   * Special boss message with unique pulsing animation
+   */
+  private displayBossMessage(text: string, color: number, x: number, y: number): void {
+    const screenWidth = this.app.screen.width;
+    const isMobile = screenWidth < 768;
+    
+    // Larger font for boss announcement
+    const fontSize = isMobile ? 
+      Math.min(screenWidth * 0.2, 80) : 
+      Math.min(screenWidth * 0.15, 120);
+    
+    const messageText = new PIXI.Text({
+      text: text,
+      style: {
+        fontFamily: 'Space Mono, monospace',
+        fontSize: fontSize,
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        fill: color,
+        stroke: { 
+          color: 0xFFFFFF, // White outline
+          width: 8 
+        },
+        align: 'center',
+        dropShadow: {
+          color: color,
+          blur: 20,
+          angle: Math.PI / 4,
+          distance: 0,
+          alpha: 1
+        },
+        letterSpacing: 5
+      }
+    });
+    
+    // Center positioning
+    messageText.anchor.set(0.5);
+    messageText.x = x;
+    messageText.y = y;
+    messageText.scale.set(0); // Start at 0 for zoom in
+    messageText.zIndex = 9999; // On top of everything
+    messageText.alpha = 1;
+    
+    this.app.stage.addChild(messageText);
+    
+    // BOSS ANIMATION - Zoom in, pulse, then fade
+    let frame = 0;
+    const maxFrames = 180; // 3 seconds
+    
+    const animate = () => {
+      frame++;
+      
+      if (frame > maxFrames) {
+        this.app.ticker.remove(animate);
+        this.app.stage.removeChild(messageText);
+        messageText.destroy();
+        return;
+      }
+      
+      // Phase 1: Zoom in (frames 1-20)
+      if (frame <= 20) {
+        const t = frame / 20;
+        const easeOut = 1 - Math.pow(1 - t, 3);
+        messageText.scale.set(easeOut * 1.2);
+      }
+      // Phase 2: Pulse effect (frames 21-120)
+      else if (frame <= 120) {
+        const pulse = 1.2 + Math.sin((frame - 20) * 0.15) * 0.15;
+        messageText.scale.set(pulse);
+        messageText.rotation = Math.sin((frame - 20) * 0.05) * 0.02;
+      }
+      // Phase 3: Zoom out and fade (frames 121-180)
+      else {
+        const t = (frame - 120) / 60;
+        messageText.scale.set(1.2 * (1 + t * 0.5));
+        messageText.alpha = 1 - t;
+      }
+    };
+    
+    this.app.ticker.add(animate);
   }
   
   /**

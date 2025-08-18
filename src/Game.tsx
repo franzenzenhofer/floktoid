@@ -5,11 +5,14 @@ import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
 import { DevConsole } from './components/DevConsole';
 import { LeaderboardScreen } from './components/LeaderboardScreen';
+import { HomeButton } from './components/HomeButton';
 import { leaderboardService } from './services/LeaderboardService';
+import { GameSession } from './utils/GameSession';
 
 export function Game() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<NeonFlockEngine | null>(null);
+  const gameSessionRef = useRef<GameSession | null>(null);
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameover' | 'leaderboard'>('menu');
   const [score, setScore] = useState(0);
   const [wave, setWave] = useState(1);
@@ -27,6 +30,10 @@ export function Game() {
           const engine = new NeonFlockEngine(canvasRef.current!, devMode);
           await engine.initialize();
           
+          // Create new game session
+          gameSessionRef.current = new GameSession();
+          const session = gameSessionRef.current;
+          
           // CRITICAL FIX: Use stable highScore reference to prevent re-initialization loops
           const currentHighScore = highScore;
           engine.onScoreUpdate = (newScore) => {
@@ -35,17 +42,46 @@ export function Game() {
               setHighScore(newScore);
               localStorage.setItem('floktoid-highscore', newScore.toString());
             }
+            
+            // Update game session and submit to leaderboard if significant progress
+            const currentWave = engine.getWave();
+            session.updateProgress(newScore, currentWave);
+            
+            // Auto-submit to leaderboard every 1000 points
+            if (session.shouldSubmitToLeaderboard()) {
+              leaderboardService.submitScore(
+                session.getHighestScore(),
+                session.getHighestWave(),
+                session.getGameId()
+              ).then(() => {
+                session.markSubmitted();
+              }).catch(error => {
+                console.error('Failed to submit progress:', error);
+              });
+            }
           };
           
           engine.onWaveUpdate = setWave;
           engine.onEnergyStatus = (critical: boolean) => setEnergyCritical(critical);
           engine.onGameOver = () => {
-            // Submit score to leaderboard with wave number
+            // Submit final score to leaderboard with game ID
             const finalScore = engine.getScore();
             const finalWave = engine.getWave();
-            leaderboardService.submitScore(finalScore, finalWave).catch(error => {
-              console.error('Failed to submit score:', error);
-            });
+            
+            if (session) {
+              session.updateProgress(finalScore, finalWave);
+              session.endGame();
+              
+              // Final submission with game ID
+              leaderboardService.submitScore(
+                session.getHighestScore(),
+                session.getHighestWave(),
+                session.getGameId()
+              ).catch(error => {
+                console.error('Failed to submit final score:', error);
+              });
+            }
+            
             setGameState('gameover');
           };
           
@@ -74,8 +110,13 @@ export function Game() {
       initEngine();
       
       return () => {
+        // End game session if still active
+        if (gameSessionRef.current?.isActive()) {
+          gameSessionRef.current.endGame();
+        }
         engineRef.current?.destroy();
         engineRef.current = null;
+        gameSessionRef.current = null;
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -119,6 +160,7 @@ export function Game() {
         <>
           <div ref={canvasRef} className="fixed inset-0 w-full h-full" />
           <HUD score={score} wave={wave} energyCritical={energyCritical} />
+          <HomeButton onClick={handleMenu} />
           {devMode && <DevConsole />}
         </>
       )}

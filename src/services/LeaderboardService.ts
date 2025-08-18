@@ -28,9 +28,9 @@ class LeaderboardService {
   }
   
   /**
-   * Submit a score to the leaderboard
+   * Submit a score to the leaderboard with unique game ID
    */
-  async submitScore(score: number, wave?: number): Promise<boolean> {
+  async submitScore(score: number, wave?: number, gameId?: string): Promise<boolean> {
     try {
       const username = UsernameGenerator.getSessionUsername();
       
@@ -39,7 +39,7 @@ class LeaderboardService {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ username, score, wave })
+        body: JSON.stringify({ username, score, wave, gameId })
       });
       
       if (!response.ok) {
