@@ -135,6 +135,8 @@ export class NeonFlockEngine {
       
       // Setup wave callbacks - bind to preserve context
       this.waveManager.onWaveUpdate = (wave: number) => {
+        // CRITICAL FIX: Update ComboEffects with current wave for filter logic!
+        this.comboEffects.setWave(wave);
         this.onWaveUpdate?.(wave);
       };
       
@@ -198,6 +200,8 @@ export class NeonFlockEngine {
       this.waveManager.reset(); // Reset wave manager
       this.spawnEnergyDots();
       this.waveManager.startWave();
+      // CRITICAL FIX: Set initial wave on ComboEffects!
+      this.comboEffects.setWave(1);
       
       // SAFE: Wrap game loop with error recovery
       let consecutiveErrors = 0;
