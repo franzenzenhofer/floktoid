@@ -143,7 +143,7 @@ export class SafeCollisionSystem {
     boids: Boid[],
     asteroids: Asteroid[],
     callbacks: {
-      onBoidHit?: (boid: Boid) => void;
+      onBoidHit?: (boid: Boid, ast?: Asteroid) => void;
       onAsteroidHit?: (ast: Asteroid) => boolean;
     }
   ): { removeBoids: number[], removeAsteroids: number[] } {
@@ -166,13 +166,14 @@ export class SafeCollisionSystem {
         if (!processedBoids.has(boidIndex)) {
           processedBoids.add(boidIndex);
           const boid = boids[boidIndex];
+          const ast = asteroids[astIndex];
           
           // Default behavior: mark for removal
           let shouldRemove = true;
           
           if (boid && callbacks.onBoidHit) {
             // Call callback - it can prevent removal by returning false
-            const result = callbacks.onBoidHit(boid) as boolean | void;
+            const result = callbacks.onBoidHit(boid, ast) as boolean | void;
             // Only prevent removal if explicitly returning false
             shouldRemove = result !== false;
           }
@@ -257,7 +258,7 @@ export class SafeCollisionSystem {
     asteroids: Asteroid[],
     dots: EnergyDot[],
     callbacks: {
-      onBoidHit?: (boid: Boid) => void;
+      onBoidHit?: (boid: Boid, ast?: Asteroid) => void;
       onAsteroidHit?: (ast: Asteroid) => boolean;
     }
   ): void {

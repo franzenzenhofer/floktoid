@@ -1003,6 +1003,9 @@ export class NeonFlockEngine {
       return true;
     });
     
+    // Track kills per asteroid for proper combo counting
+    const asteroidKills = new Map<Asteroid, { birds: Boid[], score: number }>();
+    
     // WRAP ENTIRE COLLISION SYSTEM IN TRY-CATCH
     try {
       // Start collision performance tracking
@@ -1052,7 +1055,7 @@ export class NeonFlockEngine {
             
             return fragments;
           },
-          onBoidHit: (boid) => {
+          onBoidHit: (boid, asteroid) => {
             // SAFE: Validate boid before processing
             if (!boid || typeof boid.x !== 'number' || typeof boid.y !== 'number' || !isFinite(boid.x) || !isFinite(boid.y)) {
               console.warn('[COLLISION] Invalid boid in onBoidHit callback:', boid);
@@ -1102,23 +1105,41 @@ export class NeonFlockEngine {
               boid.hasDot = false;
             }
             
-            // Check what type of bird was hit for appropriate scoring
-            let event: ScoringEvent;
-            if (hadDot) {
-              // Triple points for birds with stolen energy dots
-              event = ScoringEvent.BIRD_WITH_ENERGY_HIT;
-            } else if (boid.isShooter) {
-              // Double points for shooters
-              event = ScoringEvent.SHOOTER_HIT;
-            } else if (boid.isSuperNavigator) {
-              // Double points for super navigators
-              event = ScoringEvent.SUPER_NAVIGATOR_HIT;
+            // Track which asteroid destroyed this bird for combo counting
+            if (asteroid) {
+              if (!asteroidKills.has(asteroid)) {
+                asteroidKills.set(asteroid, { birds: [], score: 0 });
+              }
+              const kills = asteroidKills.get(asteroid)!;
+              kills.birds.push(boid);
+              
+              // Calculate score for this kill (but don't add it yet)
+              let scoreValue = 0;
+              if (hadDot) {
+                scoreValue = 120; // Triple points for birds with stolen energy dots
+              } else if (boid.isShooter) {
+                scoreValue = 80; // Double points for shooters
+              } else if (boid.isSuperNavigator) {
+                scoreValue = 80; // Double points for super navigators
+              } else {
+                scoreValue = 40; // Regular bird hit
+              }
+              kills.score += scoreValue;
             } else {
-              // Regular bird hit
-              event = ScoringEvent.BIRD_HIT;
+              // No asteroid (shouldn't happen), just add score normally
+              let event: ScoringEvent;
+              if (hadDot) {
+                event = ScoringEvent.BIRD_WITH_ENERGY_HIT;
+              } else if (boid.isShooter) {
+                event = ScoringEvent.SHOOTER_HIT;
+              } else if (boid.isSuperNavigator) {
+                event = ScoringEvent.SUPER_NAVIGATOR_HIT;
+              } else {
+                event = ScoringEvent.BIRD_HIT;
+              }
+              scoringSystem.addEvent(event);
+              this.updateScoreDisplay();
             }
-            scoringSystem.addEvent(event);
-            this.updateScoreDisplay();
             
             // Deferred visual effects - won't freeze!
             requestAnimationFrame(() => {
@@ -1175,6 +1196,58 @@ export class NeonFlockEngine {
       if (newFragments && newFragments.length > 0) {
         this.asteroids.push(...newFragments);
       }
+      
+      // Process asteroid kills for proper combo counting
+      for (const kills of asteroidKills.values()) {
+        const killCount = kills.birds.length;
+        
+        if (killCount === 1) {
+          // Single kill - no combo
+          const bird = kills.birds[0];
+          let event: ScoringEvent;
+          if (bird.hasDot) {
+            event = ScoringEvent.BIRD_WITH_ENERGY_HIT;
+          } else if (bird.isShooter) {
+            event = ScoringEvent.SHOOTER_HIT;
+          } else if (bird.isSuperNavigator) {
+            event = ScoringEvent.SUPER_NAVIGATOR_HIT;
+          } else {
+            event = ScoringEvent.BIRD_HIT;
+          }
+          scoringSystem.addEvent(event);
+        } else if (killCount > 1) {
+          // Multi-kill by same asteroid - THIS IS A COMBO!
+          console.log(`[COMBO] Asteroid destroyed ${killCount} enemies at once!`);
+          
+          // Add score for each bird
+          for (const bird of kills.birds) {
+            let event: ScoringEvent;
+            if (bird.hasDot) {
+              event = ScoringEvent.BIRD_WITH_ENERGY_HIT;
+            } else if (bird.isShooter) {
+              event = ScoringEvent.SHOOTER_HIT;
+            } else if (bird.isSuperNavigator) {
+              event = ScoringEvent.SUPER_NAVIGATOR_HIT;
+            } else {
+              event = ScoringEvent.BIRD_HIT;
+            }
+            scoringSystem.addEvent(event);
+          }
+          
+          // Show combo visual
+          if (kills.birds.length > 0) {
+            const avgX = kills.birds.reduce((sum, b) => sum + b.x, 0) / kills.birds.length;
+            const avgY = kills.birds.reduce((sum, b) => sum + b.y, 0) / kills.birds.length;
+            this.comboEffects.createComboDisplay(
+              killCount,
+              avgX,
+              avgY,
+              1.0
+            );
+          }
+        }
+      }
+      this.updateScoreDisplay();
       
       // End collision performance tracking  
       if (this.debug) {

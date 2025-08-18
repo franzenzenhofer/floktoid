@@ -24,7 +24,7 @@ export class SafeCollisionSystemExtended extends SafeCollisionSystem {
     asteroids: Asteroid[],
     dots: EnergyDot[],
     callbacks: {
-      onBoidHit?: (boid: Boid) => void;
+      onBoidHit?: (boid: Boid, ast?: Asteroid) => void;
       onAsteroidHit?: (ast: Asteroid) => boolean;
       onBossShieldHit?: (ast: Asteroid, boss: Boid) => Asteroid[] | void;
     }
@@ -75,7 +75,7 @@ export class SafeCollisionSystemExtended extends SafeCollisionSystem {
           if (!processedBoids.has(boidIndex)) {
             processedBoids.add(boidIndex);
             if (callbacks.onBoidHit) {
-              const result = callbacks.onBoidHit(boid) as boolean | void;
+              const result = callbacks.onBoidHit(boid, ast) as boolean | void;
               // Only destroy boss if callback returns true
               if (result === true) {
                 removeBoids.add(boidIndex);
@@ -90,7 +90,7 @@ export class SafeCollisionSystemExtended extends SafeCollisionSystem {
             // Handle boid hit
             let shouldRemove = true;
             if (callbacks.onBoidHit) {
-              const result = callbacks.onBoidHit(boid) as boolean | void;
+              const result = callbacks.onBoidHit(boid, ast) as boolean | void;
               shouldRemove = result !== false;
             }
             
@@ -127,7 +127,7 @@ export class SafeCollisionSystemExtended extends SafeCollisionSystem {
     dots: EnergyDot[],
     projectiles: BirdProjectile[],
     callbacks: {
-      onBoidHit?: (boid: Boid) => void;
+      onBoidHit?: (boid: Boid, ast?: Asteroid) => void;
       onAsteroidHit?: (ast: Asteroid) => boolean;
       onProjectileHit?: (proj: BirdProjectile, ast: Asteroid) => Asteroid[] | void;
       onBossShieldHit?: (ast: Asteroid, boss: Boid) => Asteroid[] | void; // NEW: Boss shield callback
