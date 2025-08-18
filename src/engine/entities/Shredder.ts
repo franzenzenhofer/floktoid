@@ -53,6 +53,12 @@ export class Shredder {
   private maxSpeed: number;
   private hue: number; // Hue like birds use (0-360)
   
+  // Wave movement parameters
+  private waveAmplitude: number; // How wide the wave is
+  private waveFrequency: number; // How fast to oscillate
+  private wavePhase: number; // Starting phase offset
+  private usesSineWave: boolean; // true for sine, false for cosine
+  
   // Smooth movement variables
   private desiredVx: number = 0;
   private desiredVy: number = 0;
@@ -97,6 +103,12 @@ export class Shredder {
 
     // Movement speed like birds
     this.maxSpeed = GameConfig.BASE_SPEED * (0.8 + Math.random() * 0.4);
+    
+    // Initialize wave movement parameters
+    this.waveAmplitude = 80 + Math.random() * 60; // 80-140 pixels side-to-side
+    this.waveFrequency = 2 + Math.random() * 2; // 2-4 oscillations per second
+    this.wavePhase = Math.random() * Math.PI * 2; // Random starting phase
+    this.usesSineWave = Math.random() < 0.5; // 50/50 sine or cosine
     
     // Spawn from top like other ships
     this.x = Math.random() * app.screen.width;
@@ -559,9 +571,28 @@ export class Shredder {
         break;
     }
     
-    // SMOOTH MOVEMENT SYSTEM - Calculate desired velocity
-    this.desiredVx = (separationX + targetForceX) * dt;
-    this.desiredVy = (separationY + targetForceY) * dt;
+    // WAVY MOVEMENT OVERLAY - Add sine/cosine wave motion
+    let waveX = 0;
+    let waveY = 0;
+    
+    // Calculate wave offset based on time and movement direction
+    const waveTime = this.t * this.waveFrequency + this.wavePhase;
+    
+    if (this.usesSineWave) {
+      // Sine wave - smooth side-to-side motion
+      waveX = Math.sin(waveTime) * this.waveAmplitude;
+      // Small vertical oscillation too
+      waveY = Math.cos(waveTime * 0.5) * (this.waveAmplitude * 0.3);
+    } else {
+      // Cosine wave - offset phase for different pattern
+      waveX = Math.cos(waveTime) * this.waveAmplitude;
+      // Different vertical pattern
+      waveY = Math.sin(waveTime * 0.7) * (this.waveAmplitude * 0.25);
+    }
+    
+    // SMOOTH MOVEMENT SYSTEM - Calculate desired velocity WITH WAVE
+    this.desiredVx = (separationX + targetForceX + waveX) * dt;
+    this.desiredVy = (separationY + targetForceY + waveY) * dt;
     
     // Smooth interpolation to desired velocity (prevents jerky movement)
     this.vx += (this.desiredVx - this.vx) * this.smoothingFactor;
