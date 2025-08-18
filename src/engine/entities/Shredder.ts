@@ -166,12 +166,15 @@ export class Shredder {
       }
     }
     
-    // Separation from other Shredders and birds
+    // ENHANCED SEPARATION - Prevent overlapping
     let separationX = 0;
     let separationY = 0;
-    const separationRadius = this.radius * 3; // Keep distance from others
     
-    // Avoid other Shredders
+    // CRITICAL: Much larger separation radius for Shredders to prevent overlap
+    const shredderSeparationRadius = this.radius * 5; // Increased from 3 to 5
+    const birdSeparationRadius = this.radius * 3;
+    
+    // Avoid other Shredders with STRONG repulsion
     if (otherShredders) {
       for (const other of otherShredders) {
         if (other === this || other.destroyed) continue;
@@ -179,16 +182,32 @@ export class Shredder {
         const dy = this.y - other.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist > 0 && dist < separationRadius) {
-          // Push away from other shredder
-          const force = (separationRadius - dist) / separationRadius;
-          separationX += (dx / dist) * force * 100;
-          separationY += (dy / dist) * force * 100;
+        // Check for overlap or near-overlap
+        const minSafeDistance = this.radius + other.radius + 20; // Add buffer space
+        
+        if (dist > 0 && dist < shredderSeparationRadius) {
+          // Exponential force for close encounters to prevent overlap
+          let force: number;
+          if (dist < minSafeDistance) {
+            // EMERGENCY SEPARATION - they're overlapping or too close!
+            force = 5.0; // Maximum force
+          } else {
+            // Normal separation with stronger force
+            force = Math.pow((shredderSeparationRadius - dist) / shredderSeparationRadius, 2) * 3;
+          }
+          
+          // Apply force in opposite direction
+          separationX += (dx / dist) * force * 200; // Doubled from 100
+          separationY += (dy / dist) * force * 200;
+          
+          // Add slight random offset to prevent locked positions
+          separationX += (Math.random() - 0.5) * 10;
+          separationY += (Math.random() - 0.5) * 10;
         }
       }
     }
     
-    // Avoid birds/spaceships
+    // Avoid birds/spaceships (less critical but still important)
     if (boids) {
       for (const boid of boids) {
         if (!boid || !boid.alive) continue;
@@ -196,9 +215,9 @@ export class Shredder {
         const dy = this.y - boid.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist > 0 && dist < separationRadius) {
-          // Push away from bird
-          const force = (separationRadius - dist) / separationRadius;
+        if (dist > 0 && dist < birdSeparationRadius) {
+          // Gentler force for birds
+          const force = (birdSeparationRadius - dist) / birdSeparationRadius;
           separationX += (dx / dist) * force * 80;
           separationY += (dy / dist) * force * 80;
         }

@@ -881,13 +881,54 @@ export class NeonFlockEngine {
       return true;
     });
     
-    // Update asteroids
+    // Update asteroids and detect zombies
     this.asteroids = this.asteroids.filter(asteroid => {
-      const keepAsteroid = asteroid.update(dt);
+      // ZOMBIE CHECK: Detect asteroids that aren't moving or updating properly
+      const prevX = asteroid.x;
+      const prevY = asteroid.y;
+      
+      // Try to update
+      let keepAsteroid = false;
+      try {
+        keepAsteroid = asteroid.update(dt);
+      } catch (error) {
+        console.warn('[ASTEROID] Update error, removing zombie:', error);
+        asteroid.destroy();
+        return false;
+      }
+      
+      // Check if asteroid is actually moving (zombie detection)
+      const moved = Math.abs(asteroid.x - prevX) > 0.001 || Math.abs(asteroid.y - prevY) > 0.001;
+      
+      // Check for zombie conditions:
+      // 1. Marked as destroyed but still in array
+      // 2. Not moving when it should be (has velocity but position unchanged)
+      // 3. Missing sprite or sprite destroyed
+      const hasVelocity = Math.abs(asteroid.vx) > 0.1 || Math.abs(asteroid.vy) > 0.1;
+      const isZombie = asteroid.destroyed || 
+                       (hasVelocity && !moved && dt > 0) ||
+                       !asteroid.sprite || 
+                       asteroid.sprite.destroyed;
+      
+      if (isZombie) {
+        console.warn('[ASTEROID] Zombie detected, removing:', {
+          destroyed: asteroid.destroyed,
+          moved,
+          hasVelocity,
+          hasSprite: !!asteroid.sprite
+        });
+        if (!asteroid.destroyed) {
+          asteroid.destroy();
+        }
+        return false;
+      }
+      
+      // Normal removal conditions
       if (!keepAsteroid || asteroid.isOffScreen(this.app.screen)) {
         asteroid.destroy();
         return false;
       }
+      
       return true;
     });
 

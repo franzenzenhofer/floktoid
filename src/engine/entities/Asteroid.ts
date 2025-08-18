@@ -89,6 +89,24 @@ export class Asteroid {
   }
   
   public update(dt: number): boolean {
+    // Validate velocity to prevent zombies
+    if (!Number.isFinite(this.vx) || !Number.isFinite(this.vy)) {
+      console.warn('[ASTEROID] Invalid velocity detected, destroying:', this.vx, this.vy);
+      return false; // Remove invalid asteroid
+    }
+    
+    // Validate position
+    if (!Number.isFinite(this.x) || !Number.isFinite(this.y)) {
+      console.warn('[ASTEROID] Invalid position detected, destroying:', this.x, this.y);
+      return false;
+    }
+    
+    // Check if already destroyed (zombie check)
+    if (this.destroyed) {
+      console.warn('[ASTEROID] Already destroyed but still updating');
+      return false;
+    }
+    
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.rotation += this.rotSpeed * dt;
@@ -114,6 +132,12 @@ export class Asteroid {
       if (this.size < SIZES.ASTEROID.MIN / 2) {
         return false; // Signal removal
       }
+    }
+    
+    // Validate sprite before updating
+    if (!this.sprite || this.sprite.destroyed) {
+      console.warn('[ASTEROID] Sprite missing or destroyed, marking as zombie');
+      return false; // Remove zombie asteroid
     }
     
     this.sprite.x = this.x;
