@@ -15,17 +15,17 @@ FLOKTOID flips the classic Asteroids game on its head. You defend energy dots fr
 ## Features
 
 - **Reversed Gameplay**: Launch asteroids to destroy evil spaceships
-- **Smart AI Flocking**: Birds use Craig Reynolds' boids algorithm with advanced behaviors
+- **Smart AI Flocking**: Spaceships use Craig Reynolds' boids algorithm with advanced behaviors
 - **Special Enemy Types**: 
-  - Regular birds that steal energy
+  - Regular spaceships that steal energy
   - Shooters that fire lasers at your asteroids
   - Super navigators with enhanced pathfinding
-  - Boss birds with extreme health
+  - Boss spaceships with extreme health
 - **Scoring System**:
-  - 40 points for regular birds
+  - 40 points for regular spaceships
   - 80 points for shooters (2x)
   - 80 points for super navigators (2x)
-  - 120 points for birds carrying energy dots (3x)
+  - 120 points for spaceships carrying energy cores (3x)
   - Combo multipliers up to 3x
 - **Global Leaderboard**: Compete with players worldwide (24h and all-time)
 - **Authentic Asteroids Physics**: Realistic splitting mechanics from the 1979 original
@@ -138,7 +138,7 @@ The evil spaceships use an advanced implementation of Craig Reynolds' boids algo
 
 ### Difficulty Progression
 
-- Exponential bird count increase (1.15x per wave)
+- Exponential spaceship count increase (1.15x per wave)
 - Gradual speed increase (1.03x per wave)
 - Special enemy introduction at higher waves
 - Boss battles every 10 waves
@@ -186,9 +186,9 @@ wrangler deploy
 
 ## Documentation
 
-- [Boss Mechanics](documentation/BOSS_MECHANICS.md) - Detailed boss bird system (currently inactive)
+- [Boss Mechanics](documentation/BOSS_MECHANICS.md) - Detailed boss spaceship system (currently inactive)
 - [Game Design Document](documentation/GAME_DESIGN_DOCUMENT.md) - Complete game design specifications
-- [Root Cause Analysis](documentation/ROOT_CAUSE_ANALYSIS_BIRD_SPAWN_FREEZE.md) - Technical debugging documentation
+- [Root Cause Analysis](documentation/ROOT_CAUSE_ANALYSIS_SHIP_SPAWN_FREEZE.md) - Technical debugging documentation
 
 ## API Endpoints
 
