@@ -75,20 +75,18 @@ export class ComboEffects {
    * Create stylish combo text with effects
    */
   /**
-   * Get minimum combo to display based on wave - AGGRESSIVE PROGRESSION
+   * Get minimum combo to display based on wave - BALANCED PROGRESSION
    */
   private getMinComboThreshold(wave: number): number {
-    if (wave <= 2) return 2;      // Waves 1-2: show 2x and up
-    if (wave <= 4) return 3;      // Waves 3-4: show 3x and up
-    if (wave <= 6) return 5;      // Waves 5-6: show 5x and up
-    if (wave <= 9) return 7;      // Waves 7-9: show 7x and up
-    if (wave <= 14) return 10;    // Waves 10-14: show 10x and up
-    if (wave <= 19) return 12;    // Waves 15-19: show 12x and up
-    if (wave <= 24) return 15;    // Waves 20-24: show 15x and up
-    if (wave <= 29) return 18;    // Waves 25-29: show 18x and up
-    if (wave <= 39) return 20;    // Waves 30-39: show 20x and up
-    if (wave <= 49) return 25;    // Waves 40-49: show 25x and up
-    return 30;                     // Waves 50+: show 30x and up only!
+    // ALWAYS show 2x combos! They're exciting and important for gameplay!
+    if (wave <= 5) return 2;      // Waves 1-5: show ALL combos (2x and up)
+    if (wave <= 10) return 3;     // Waves 6-10: show 3x and up
+    if (wave <= 15) return 4;     // Waves 11-15: show 4x and up
+    if (wave <= 20) return 5;     // Waves 16-20: show 5x and up
+    if (wave <= 30) return 7;     // Waves 21-30: show 7x and up
+    if (wave <= 40) return 10;    // Waves 31-40: show 10x and up
+    if (wave <= 50) return 15;    // Waves 41-50: show 15x and up
+    return 20;                     // Waves 50+: show 20x and up only!
   }
   
   /**
@@ -106,7 +104,9 @@ export class ComboEffects {
   ): void {
     // Check if combo meets wave threshold
     const minThreshold = this.getMinComboThreshold(this.currentWave);
+    // CRITICAL FIX: Show combo if it's EQUAL TO or greater than threshold!
     if (combo < minThreshold) {
+      console.log(`[COMBO] Suppressed ${combo}x combo (min threshold: ${minThreshold}x for wave ${this.currentWave})`);
       return; // Don't display combos below threshold
     }
     const tier = this.getComboTier(combo);
