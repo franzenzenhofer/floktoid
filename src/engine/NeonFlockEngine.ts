@@ -1219,20 +1219,9 @@ export class NeonFlockEngine {
           // Multi-kill by same asteroid - THIS IS A COMBO!
           console.log(`[COMBO] Asteroid destroyed ${killCount} enemies at once!`);
           
-          // Add score for each bird
-          for (const bird of kills.birds) {
-            let event: ScoringEvent;
-            if (bird.hasDot) {
-              event = ScoringEvent.BIRD_WITH_ENERGY_HIT;
-            } else if (bird.isShooter) {
-              event = ScoringEvent.SHOOTER_HIT;
-            } else if (bird.isSuperNavigator) {
-              event = ScoringEvent.SUPER_NAVIGATOR_HIT;
-            } else {
-              event = ScoringEvent.BIRD_HIT;
-            }
-            scoringSystem.addEvent(event);
-          }
+          // Add multi-kill event ONCE (not per bird!)
+          // This increments combo ONCE and adds bonus points
+          scoringSystem.addEvent(ScoringEvent.MULTI_KILL, { count: killCount });
           
           // Show combo visual
           if (kills.birds.length > 0) {
