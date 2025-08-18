@@ -244,25 +244,25 @@ export class ScoringSystem {
       case ScoringEvent.BIRD_HIT:
         points = POINT_VALUES.REWARDS.BIRD_HIT;
         this.statistics.totalBirdsHit++;
-        // NO COMBO for single kills - only multi-kills trigger combos
+        this.incrementCombo();
         break;
         
       case ScoringEvent.BIRD_WITH_ENERGY_HIT:
         points = POINT_VALUES.REWARDS.BIRD_WITH_ENERGY_HIT;
         this.statistics.totalBirdsHit++;
-        // NO COMBO for single kills - only multi-kills trigger combos
+        this.incrementCombo();
         break;
         
       case ScoringEvent.SHOOTER_HIT:
         points = POINT_VALUES.REWARDS.SHOOTER_HIT;
         this.statistics.totalBirdsHit++;
-        // NO COMBO for single kills - only multi-kills trigger combos
+        this.incrementCombo();
         break;
         
       case ScoringEvent.SUPER_NAVIGATOR_HIT:
         points = POINT_VALUES.REWARDS.SUPER_NAVIGATOR_HIT;
         this.statistics.totalBirdsHit++;
-        // NO COMBO for single kills - only multi-kills trigger combos
+        this.incrementCombo();
         break;
         
       case ScoringEvent.BOSS_HIT:
@@ -294,7 +294,7 @@ export class ScoringSystem {
         
       case ScoringEvent.SHREDDER_DESTROYED:
         points = POINT_VALUES.REWARDS.SHREDDER_DESTROYED;
-        // NO COMBO for single kills - only multi-kills trigger combos
+        this.incrementCombo();
         break;
         
       case ScoringEvent.WAVE_COMPLETE:
