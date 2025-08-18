@@ -1123,14 +1123,13 @@ export class NeonFlockEngine {
         this.asteroids.push(...newFragments);
       }
       
-      // Process asteroid kills - track which asteroid got the kills for combo display
-      const asteroidComboInfo = new Map<Asteroid, { count: number, x: number, y: number }>();
-      
-      for (const [asteroid, kills] of asteroidKills) {
+      // SUPER SIMPLE COMBO LOGIC!
+      // For each asteroid that hit enemies, show combo if it hit 2+
+      for (const [, kills] of asteroidKills) {
         const killCount = kills.birds.length;
         
         if (killCount > 0) {
-          // Process each kill for scoring (this triggers combo increment)
+          // Add score for each kill
           for (const bird of kills.birds) {
             let event: ScoringEvent;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1148,55 +1147,24 @@ export class NeonFlockEngine {
             scoringSystem.addEvent(event);
           }
           
-          // Track combo info for this asteroid
-          if (killCount > 1) {
-            // Multi-kill! Track for combo display
-            const avgX = kills.birds.reduce((sum, b) => sum + b.x, 0) / kills.birds.length;
-            const avgY = kills.birds.reduce((sum, b) => sum + b.y, 0) / kills.birds.length;
-            asteroidComboInfo.set(asteroid, { count: killCount, x: avgX, y: avgY });
+          // SIMPLE: If this ONE asteroid hit 2+ enemies, show combo!
+          if (killCount >= 2) {
+            // Calculate average position of kills
+            const avgX = kills.birds.reduce((sum, b) => sum + b.x, 0) / killCount;
+            const avgY = kills.birds.reduce((sum, b) => sum + b.y, 0) / killCount;
             
-            // Log the combo
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const shredderCount = kills.birds.filter((b: any) => b.isShredder).length;
-            const birdCount = killCount - shredderCount;
-            if (shredderCount > 0) {
-              console.log(`[COMBO] Asteroid destroyed ${birdCount} birds and ${shredderCount} shredders at once!`);
-            } else {
-              console.log(`[COMBO] Asteroid destroyed ${killCount} enemies at once!`);
-            }
+            // SIMPLE: Display combo message immediately!
+            // 2 = DOUBLE, 3 = TRIPLE, 4 = QUAD, etc.
+            this.comboEffects.createComboDisplay(
+              killCount,  // Just use the kill count as combo!
+              avgX,
+              avgY,
+              1.0
+            );
+            
+            console.log(`[COMBO] ${killCount}x combo! Asteroid destroyed ${killCount} enemies at once!`);
           }
         }
-      }
-      
-      // Show ONLY ONE combo display per frame for ALL multi-kills combined
-      // This prevents overlapping text spam
-      if (asteroidComboInfo.size > 0) {
-        // Calculate average position of all multi-kills
-        let totalX = 0;
-        let totalY = 0;
-        let totalKills = 0;
-        
-        for (const comboInfo of asteroidComboInfo.values()) {
-          totalX += comboInfo.x * comboInfo.count; // Weight by kill count
-          totalY += comboInfo.y * comboInfo.count;
-          totalKills += comboInfo.count;
-        }
-        
-        const avgX = totalX / totalKills;
-        const avgY = totalY / totalKills;
-        
-        // Get the final combo count after all kills processed
-        const currentCombo = scoringSystem.getComboInfo().count;
-        
-        // Show ONE combo display at the weighted center of all kills
-        this.comboEffects.createComboDisplay(
-          currentCombo,
-          avgX,
-          avgY,
-          1.0
-        );
-        
-        console.log(`[COMBO] Showing ${currentCombo}x combo at (${avgX.toFixed(0)}, ${avgY.toFixed(0)})`);
       }
       this.updateScoreDisplay();
       
