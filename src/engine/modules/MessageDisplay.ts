@@ -4,9 +4,6 @@
  */
 
 import * as PIXI from 'pixi.js';
-import CentralConfig from '../CentralConfig';
-
-const { VISUALS, UI } = CentralConfig;
 
 interface ComboTier {
   threshold: number;
@@ -20,8 +17,6 @@ interface ComboTier {
 
 export class MessageDisplay {
   private app: PIXI.Application;
-  private activeComboText: PIXI.Text | null = null;
-  private comboTextAnimationActive = false;
   private currentWave = 1;
   
   constructor(app: PIXI.Application) {
@@ -127,15 +122,9 @@ export class MessageDisplay {
   }
   
   /**
-   * Display combo text on screen
+   * Display combo text on screen - STUPID VERSION (like boss level)
    */
   displayCombo(combo: number, x: number, y: number): void {
-    // Prevent multiple overlapping combo texts
-    if (this.comboTextAnimationActive) {
-      console.log(`[COMBO] Skipping combo display - animation already active`);
-      return;
-    }
-    
     // Check if combo meets wave threshold
     const minThreshold = this.getMinComboThreshold(this.currentWave);
     if (combo < minThreshold) {
@@ -144,121 +133,75 @@ export class MessageDisplay {
     }
     
     const tier = this.getComboTier(combo);
+    const comboTextString = combo >= 20 ? `${tier.name}!\n${combo}x COMBO!` : `${combo}x ${tier.name}!`;
     
+    // Use the SAME stupid simple logic as boss level!
+    this.displaySimpleMessage(comboTextString, tier.color, x, y);
+  }
+  
+  
+  /**
+   * SIMPLE STUPID MESSAGE DISPLAY - DRY CODE!
+   */
+  private displaySimpleMessage(text: string, color: number, x?: number, y?: number): void {
     // Calculate font size
     const screenWidth = this.app.screen.width;
-    const screenHeight = this.app.screen.height;
     const isMobile = screenWidth < 768;
+    const fontSize = isMobile ? 
+      Math.min(screenWidth * 0.1, 36) : 
+      48;
     
-    const maxFontSize = isMobile ? 
-      Math.min(screenWidth * 0.15, 60) : 
-      Math.min(screenWidth * 0.1, 100);
-    
-    const baseFontSize = UI.FONTS.SIZES.LARGE + (tier.scale - 1) * 20;
-    const fontSize = Math.min(baseFontSize, maxFontSize);
-    
-    // Destroy any existing combo text
-    if (this.activeComboText && !this.activeComboText.destroyed) {
-      this.app.stage.removeChild(this.activeComboText);
-      this.activeComboText.destroy();
-      this.activeComboText = null;
-    }
-    
-    // Create combo text
-    const comboText = new PIXI.Text({
-      text: combo >= 20 ? `${tier.name}!\n${combo}x COMBO!` : `${combo}x ${tier.name}!`,
+    // Create text
+    const messageText = new PIXI.Text({
+      text: text,
       style: {
-        fontFamily: UI.FONTS.PRIMARY,
+        fontFamily: 'Arial',
         fontSize: fontSize,
         fontWeight: 'bold',
-        fontStyle: combo >= 10 ? 'italic' : 'normal',
-        fill: tier.color,
-        stroke: { 
-          color: combo >= 20 ? 0xFFFFFF : VISUALS.COLORS.BLACK, 
-          width: combo >= 10 ? 5 : 3 
-        },
-        align: 'center',
+        fill: color,
         dropShadow: {
-          color: tier.color,
-          blur: combo >= 10 ? 12 : 6,
-          angle: Math.PI / 4,
-          distance: 4,
-          alpha: 0.8
+          alpha: 0.8,
+          angle: Math.PI / 2,
+          blur: 4,
+          color: color,
+          distance: 0
         },
-        letterSpacing: combo >= 10 ? 3 : 1
+        stroke: { color: 0xFFFFFF, width: 3 },
       }
     });
     
-    // Store reference
-    this.activeComboText = comboText;
-    this.comboTextAnimationActive = true;
-    
     // Position text
-    comboText.anchor.set(0.5);
-    const padding = fontSize * 0.5;
-    comboText.x = Math.max(padding, Math.min(x, screenWidth - padding));
-    comboText.y = Math.max(padding, Math.min(y, screenHeight - padding));
-    comboText.scale.set(0.1);
-    comboText.rotation = (Math.random() - 0.5) * 0.2;
-    comboText.zIndex = 1002;
-    this.app.stage.addChild(comboText);
+    messageText.anchor.set(0.5);
+    messageText.x = x ?? this.app.screen.width / 2;
+    messageText.y = y ?? this.app.screen.height / 3;
+    messageText.zIndex = 9999;
+    messageText.alpha = 1;
     
-    // Animate
-    this.animateComboText(comboText, tier);
-  }
-  
-  /**
-   * Animate combo text with punch and fade
-   */
-  private animateComboText(text: PIXI.Text, tier: ComboTier): void {
+    this.app.stage.addChild(messageText);
+    
+    // Animate - EXACT SAME AS BOSS!
     let frame = 0;
-    const maxFrames = 120;
-    
-    const screenWidth = this.app.screen.width;
-    const isMobile = screenWidth < 768;
-    const maxSafeScale = isMobile ? 1.0 : 1.5;
-    const targetScale = Math.min(tier.scale, maxSafeScale);
+    const animationDuration = 180; // 3 seconds at 60fps
     
     const animate = () => {
       frame++;
       
-      if (!text || text.destroyed || frame > maxFrames) {
+      // Pulse effect
+      const pulse = 1 + Math.sin(frame * 0.1) * 0.1;
+      messageText.scale.set(pulse);
+      
+      // Rotation wobble
+      messageText.rotation = Math.sin(frame * 0.05) * 0.02;
+      
+      // Fade out after 2 seconds
+      if (frame > 120) {
+        messageText.alpha = Math.max(0, 1 - (frame - 120) / 60);
+      }
+      
+      if (frame >= animationDuration) {
         this.app.ticker.remove(animate);
-        if (text && !text.destroyed) {
-          text.destroy();
-        }
-        
-        if (this.activeComboText === text) {
-          this.activeComboText = null;
-          this.comboTextAnimationActive = false;
-        }
-        return;
-      }
-      
-      // Punch-in effect (first 20 frames)
-      if (frame <= 20) {
-        const progress = frame / 20;
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        text.scale.set(0.1 + (targetScale - 0.1) * easeOut);
-      }
-      
-      // Float and rotate (frames 20-80)
-      else if (frame <= 80) {
-        text.y -= 0.5;
-        text.rotation = Math.sin(frame * 0.1) * 0.05;
-        
-        // Pulse effect for high combos
-        if (tier.threshold >= 5) {
-          const pulse = 1 + Math.sin(frame * 0.2) * 0.05;
-          text.scale.set(targetScale * pulse);
-        }
-      }
-      
-      // Fade out (frames 80-120)
-      else {
-        const fadeProgress = (frame - 80) / 40;
-        text.alpha = 1 - fadeProgress;
-        text.scale.set(targetScale * (1 - fadeProgress * 0.3));
+        this.app.stage.removeChild(messageText);
+        messageText.destroy();
       }
     };
     
@@ -270,80 +213,14 @@ export class MessageDisplay {
    */
   displayBossAnnouncement(): void {
     console.log('[BOSS ANNOUNCEMENT] Starting boss announcement');
-    
-    // Calculate font size
-    const screenWidth = this.app.screen.width;
-    const isMobile = screenWidth < 768;
-    const fontSize = isMobile ? 
-      Math.min(screenWidth * 0.1, 36) : 
-      48;
-    
-    // Create boss text
-    const bossText = new PIXI.Text({
-      text: 'BOSS LEVEL!',
-      style: {
-        fontFamily: 'Arial',
-        fontSize: fontSize,
-        fontWeight: 'bold',
-        fill: 0xFF00FF,
-        dropShadow: {
-          alpha: 0.8,
-          angle: Math.PI / 2,
-          blur: 4,
-          color: 0xFF00FF,
-          distance: 0
-        },
-        stroke: { color: 0xFFFFFF, width: 3 },
-      }
-    });
-    
-    // Position text
-    bossText.anchor.set(0.5);
-    bossText.x = this.app.screen.width / 2;
-    bossText.y = this.app.screen.height / 3;
-    bossText.zIndex = 9999;
-    bossText.alpha = 1;
-    
-    this.app.stage.addChild(bossText);
-    
-    // Animate
-    let frame = 0;
-    const animationDuration = 180; // 3 seconds at 60fps
-    
-    const animate = () => {
-      frame++;
-      
-      // Pulse effect
-      const pulse = 1 + Math.sin(frame * 0.1) * 0.1;
-      bossText.scale.set(pulse);
-      
-      // Rotation wobble
-      bossText.rotation = Math.sin(frame * 0.05) * 0.02;
-      
-      // Fade out after 2 seconds
-      if (frame > 120) {
-        bossText.alpha = Math.max(0, 1 - (frame - 120) / 60);
-      }
-      
-      if (frame >= animationDuration) {
-        this.app.ticker.remove(animate);
-        this.app.stage.removeChild(bossText);
-        bossText.destroy();
-      }
-    };
-    
-    this.app.ticker.add(animate);
+    this.displaySimpleMessage('BOSS LEVEL!', 0xFF00FF);
   }
   
   /**
    * Clear any active messages
    */
   clearActiveMessages(): void {
-    if (this.activeComboText && !this.activeComboText.destroyed) {
-      this.app.stage.removeChild(this.activeComboText);
-      this.activeComboText.destroy();
-      this.activeComboText = null;
-      this.comboTextAnimationActive = false;
-    }
+    // Nothing to clear - messages clean themselves up!
+    // Stupid simple = no state tracking needed
   }
 }
