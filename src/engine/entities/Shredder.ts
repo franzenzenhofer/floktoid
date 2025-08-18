@@ -76,15 +76,15 @@ export class Shredder {
       this.maxSpeed = 150; // Moderate speed for defensive orbiting
     }
     
-    // AGGRESSIVE SHREDDING ROTATION - MUCH FASTER!
-    // Speed: 12-20 radians/sec (was 2-6) for violent shredding effect
-    this.rotationSpeed = 12 + Math.random() * 8;
+    // EXTREME SHREDDING ROTATION - ABSOLUTELY VIOLENT!
+    // Speed: 25-40 radians/sec for maximum shredding carnage!
+    this.rotationSpeed = 25 + Math.random() * 15;
     
     // 50/50 chance to start rotating left or right
     this.rotationDirection = Math.random() < 0.5 ? 1 : -1;
     
-    // Fewer rotations before switching for more erratic movement (2-5 instead of 3-10)
-    this.rotationsUntilSwitch = 2 + Math.floor(Math.random() * 4);
+    // Very few rotations before switching for chaotic shredding (1-3)
+    this.rotationsUntilSwitch = 1 + Math.floor(Math.random() * 3);
 
     // Movement speed like birds
     this.maxSpeed = GameConfig.BASE_SPEED * (0.8 + Math.random() * 0.4);
