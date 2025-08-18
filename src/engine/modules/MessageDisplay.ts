@@ -108,18 +108,18 @@ export class MessageDisplay {
   }
   
   /**
-   * Get minimum combo to display based on wave - PROGRESSIVE FILTER FROM WAVE 4!
+   * Get minimum combo to display based on wave - RELAXED: Hide 2x at wave 4, then increase every 8 waves!
    */
   private getMinComboThreshold(wave: number): number {
     if (wave <= 3) return 2;      // Waves 1-3: show ALL combos (2x and up)
-    if (wave <= 5) return 3;      // Waves 4-5: show 3x and up
-    if (wave <= 8) return 4;      // Waves 6-8: show 4x and up
-    if (wave <= 12) return 5;     // Waves 9-12: show 5x and up
-    if (wave <= 18) return 7;     // Waves 13-18: show 7x and up
-    if (wave <= 25) return 10;    // Waves 19-25: show 10x and up
-    if (wave <= 35) return 15;    // Waves 26-35: show 15x and up
-    if (wave <= 50) return 20;    // Waves 36-50: show 20x and up
-    return 30;                     // Waves 50+: show 30x and up only!
+    if (wave <= 11) return 3;     // Waves 4-11: show 3x and up (8 waves)
+    if (wave <= 19) return 4;     // Waves 12-19: show 4x and up (8 waves)
+    if (wave <= 27) return 5;     // Waves 20-27: show 5x and up (8 waves)
+    if (wave <= 35) return 7;     // Waves 28-35: show 7x and up (8 waves)
+    if (wave <= 43) return 10;    // Waves 36-43: show 10x and up (8 waves)
+    if (wave <= 51) return 15;    // Waves 44-51: show 15x and up (8 waves)
+    if (wave <= 59) return 20;    // Waves 52-59: show 20x and up (8 waves)
+    return 30;                     // Waves 60+: show 30x and up only!
   }
   
   /**

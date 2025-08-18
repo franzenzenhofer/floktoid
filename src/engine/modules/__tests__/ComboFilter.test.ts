@@ -40,7 +40,7 @@ describe('Combo Filter - Progressive Filtering', () => {
     });
   });
   
-  describe('Wave 4-5: Show 3x and up only', () => {
+  describe('Wave 4-11: Show 3x and up only (8 waves)', () => {
     it('should NOT show 2x combo in wave 4', () => {
       messageDisplay.setWave(4);
       messageDisplay.displayCombo(2, 400, 300);
@@ -54,73 +54,81 @@ describe('Combo Filter - Progressive Filtering', () => {
       expect(displayOldStyleMessageSpy).toHaveBeenCalled();
     });
     
-    it('should NOT show 2x combo in wave 5', () => {
+    it('should NOT show 2x combo in wave 11', () => {
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.setWave(5);
+      messageDisplay.setWave(11);
       messageDisplay.displayCombo(2, 400, 300);
       expect(displayOldStyleMessageSpy).not.toHaveBeenCalled();
     });
     
-    it('should show 4x combo in wave 5', () => {
+    it('should show 3x combo in wave 11', () => {
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.setWave(5);
-      messageDisplay.displayCombo(4, 400, 300);
+      messageDisplay.setWave(11);
+      messageDisplay.displayCombo(3, 400, 300);
       expect(displayOldStyleMessageSpy).toHaveBeenCalled();
     });
   });
   
-  describe('Wave 6-8: Show 4x and up only', () => {
-    it('should NOT show 3x combo in wave 6', () => {
+  describe('Wave 12-19: Show 4x and up only (8 waves)', () => {
+    it('should NOT show 3x combo in wave 12', () => {
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.setWave(6);
+      messageDisplay.setWave(12);
       messageDisplay.displayCombo(3, 400, 300);
       expect(displayOldStyleMessageSpy).not.toHaveBeenCalled();
     });
     
-    it('should show 4x combo in wave 6', () => {
+    it('should show 4x combo in wave 12', () => {
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.setWave(6);
+      messageDisplay.setWave(12);
       messageDisplay.displayCombo(4, 400, 300);
       expect(displayOldStyleMessageSpy).toHaveBeenCalled();
     });
     
-    it('should show 5x combo in wave 8', () => {
+    it('should show 5x combo in wave 19', () => {
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.setWave(8);
+      messageDisplay.setWave(19);
       messageDisplay.displayCombo(5, 400, 300);
       expect(displayOldStyleMessageSpy).toHaveBeenCalled();
     });
   });
   
-  describe('Higher waves', () => {
-    it('should NOT show 6x combo in wave 13 (requires 7x)', () => {
+  describe('Higher waves (every 8 waves)', () => {
+    it('should require 5x combo in wave 20', () => {
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.setWave(13);
-      messageDisplay.displayCombo(6, 400, 300);
+      messageDisplay.setWave(20);
+      messageDisplay.displayCombo(4, 400, 300);
       expect(displayOldStyleMessageSpy).not.toHaveBeenCalled();
+      
+      displayOldStyleMessageSpy.mockClear();
+      messageDisplay.displayCombo(5, 400, 300);
+      expect(displayOldStyleMessageSpy).toHaveBeenCalled();
     });
     
-    it('should show 7x combo in wave 13', () => {
+    it('should require 7x combo in wave 28', () => {
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.setWave(13);
+      messageDisplay.setWave(28);
+      messageDisplay.displayCombo(6, 400, 300);
+      expect(displayOldStyleMessageSpy).not.toHaveBeenCalled();
+      
+      displayOldStyleMessageSpy.mockClear();
       messageDisplay.displayCombo(7, 400, 300);
       expect(displayOldStyleMessageSpy).toHaveBeenCalled();
     });
     
-    it('should require 20x combo in wave 40', () => {
+    it('should require 10x combo in wave 36', () => {
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.setWave(40);
-      messageDisplay.displayCombo(19, 400, 300);
+      messageDisplay.setWave(36);
+      messageDisplay.displayCombo(9, 400, 300);
       expect(displayOldStyleMessageSpy).not.toHaveBeenCalled();
       
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.displayCombo(20, 400, 300);
+      messageDisplay.displayCombo(10, 400, 300);
       expect(displayOldStyleMessageSpy).toHaveBeenCalled();
     });
     
-    it('should require 30x combo in wave 51+', () => {
+    it('should require 30x combo in wave 60+', () => {
       displayOldStyleMessageSpy.mockClear();
-      messageDisplay.setWave(51);
+      messageDisplay.setWave(60);
       messageDisplay.displayCombo(29, 400, 300);
       expect(displayOldStyleMessageSpy).not.toHaveBeenCalled();
       
