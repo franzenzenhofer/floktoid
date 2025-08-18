@@ -183,7 +183,15 @@ export class ComboEffects {
   private animateComboText(text: PIXI.Text, tier: ComboTier): void {
     let frame = 0;
     const maxFrames = 120;
-    const targetScale = tier.scale;
+    
+    // MOBILE-AWARE SCALING: Cap scale based on screen size
+    const screenWidth = this.app.screen.width;
+    const isMobile = screenWidth < 768;
+    
+    // Calculate max safe scale to keep text on screen
+    // We already limited font size, so don't scale up too much
+    const maxSafeScale = isMobile ? 1.0 : 1.5; // Mobile: no scaling, Desktop: up to 1.5x
+    const targetScale = Math.min(tier.scale, maxSafeScale);
     
     const animate = () => {
       frame++;
@@ -196,17 +204,19 @@ export class ComboEffects {
         return;
       }
       
-      // Punch-in effect (first 10 frames)
+      // Punch-in effect (first 10 frames) - REDUCED OVERSHOOT
       if (frame <= 10) {
         const t = frame / 10;
         const easeOut = 1 - Math.pow(1 - t, 3);
-        text.scale.set(0.1 + (targetScale * 1.3 - 0.1) * easeOut);
+        const overshoot = isMobile ? 1.1 : 1.2; // Less overshoot on mobile
+        text.scale.set(0.1 + (targetScale * overshoot - 0.1) * easeOut);
       }
       // Bounce back (frames 10-20)
       else if (frame <= 20) {
         const t = (frame - 10) / 10;
         const easeIn = t * t;
-        text.scale.set(targetScale * 1.3 - (0.3 * targetScale) * easeIn);
+        const overshoot = isMobile ? 0.1 : 0.2; // Less bounce on mobile
+        text.scale.set(targetScale * (1 + overshoot) - (overshoot * targetScale) * easeIn);
       }
       // Float up and fade (frames 20+)
       else {
