@@ -888,6 +888,11 @@ export class NeonFlockEngine {
             shredder.destroy();
             this.particleSystem.createExplosion(shredder.x, shredder.y, 0x00FF00, 30); // Green explosion for good!
             
+            // INCREMENT LIFETIME KILL COUNT FOR SHREDDER!
+            asteroid.killCount++;
+            asteroid.lastKillTime = Date.now();
+            console.log(`[LIFETIME COMBO] Asteroid killed shredder! Total kills: ${asteroid.killCount}`);
+            
             // Track this shredder kill for combo counting
             if (!asteroidShredderKills.has(asteroid)) {
               asteroidShredderKills.set(asteroid, { shredders: [], x: 0, y: 0 });
