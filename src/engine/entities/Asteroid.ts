@@ -15,7 +15,7 @@ export class Asteroid {
   public baseSize: number;
   public hue: number;
   
-  private sprite: PIXI.Graphics;
+  public sprite: PIXI.Graphics;
   private rotation = 0;
   private rotSpeed: number;
   private app: PIXI.Application;
