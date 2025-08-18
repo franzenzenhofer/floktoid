@@ -64,7 +64,6 @@ export class NeonFlockEngine {
   private speedMultiplier = 1;
   private waveDotsLost = 0; // Track dots lost in current wave
   private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
-  private DOT_RESPAWN_DELAY = TIMING.DOT_RESPAWN_DELAY_MS;
   
   // Dynamic respawn delay: 35 seconds + 1 second per wave
   private getDotRespawnDelay(): number {
