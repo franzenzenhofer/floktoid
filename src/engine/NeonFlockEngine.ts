@@ -18,11 +18,13 @@ import { GameConfig } from './GameConfig';
 import CentralConfig from './CentralConfig';
 import { scoringSystem, ScoringEvent } from './ScoringSystem';
 import { hueToRGB } from './utils/ColorUtils';
+import { BackgroundRenderer } from './modules/BackgroundRenderer';
 
 const { VISUALS, SIZES, TIMING, ENTITY_LIMITS, PHYSICS, FLOCKING, ERRORS, UI, GAME_CONSTANTS, SHREDDER } = CentralConfig;
 
 export class NeonFlockEngine {
   private app!: PIXI.Application;
+  private backgroundRenderer!: BackgroundRenderer;
   private debug = false;
   private frameCount = 0;
   
@@ -92,8 +94,6 @@ export class NeonFlockEngine {
     return this.wave;
   }
   
-  private gridOverlay!: PIXI.Graphics;
-  private backgroundStars!: PIXI.Container;
   private container: HTMLDivElement;
   private initialized = false;
 
@@ -143,9 +143,10 @@ export class NeonFlockEngine {
       this.collisionDebugger = new CollisionDebugger();
       this.asteroidSplitter = new AsteroidSplitter(this.app);
       this.inputManager = new InputManager(this.app, this);
+      this.backgroundRenderer = new BackgroundRenderer(this.app);
       
       // Setup game
-      this.setupBackground();
+      this.backgroundRenderer.setupBackground();
       this.initializeGame();
       
       // Setup resize handler
@@ -196,50 +197,6 @@ export class NeonFlockEngine {
       // CRASH HARD!
       throw new Error(`${ERRORS.ENGINE.INIT_FAILED}: ${errorMsg}`);
     }
-  }
-  
-  private setupBackground() {
-    // Neon grid
-    this.gridOverlay = new PIXI.Graphics();
-    this.drawGrid();
-    this.app.stage.addChild(this.gridOverlay);
-    
-    // Animated stars
-    this.backgroundStars = new PIXI.Container();
-    for (let i = 0; i < VISUALS.STARS.COUNT; i++) {
-      const star = new PIXI.Graphics();
-      star.circle(0, 0, VISUALS.STARS.MIN_SIZE + Math.random() * (VISUALS.STARS.MAX_SIZE - VISUALS.STARS.MIN_SIZE));
-      star.fill({ color: VISUALS.COLORS.WHITE, alpha: VISUALS.STARS.MIN_ALPHA + Math.random() * (VISUALS.STARS.MAX_ALPHA - VISUALS.STARS.MIN_ALPHA) });
-      star.x = Math.random() * this.app.screen.width;
-      star.y = Math.random() * this.app.screen.height;
-      this.backgroundStars.addChild(star);
-    }
-    this.app.stage.addChild(this.backgroundStars);
-  }
-  
-  private drawGrid() {
-    const gridSize = VISUALS.GRID.SIZE;
-    this.gridOverlay.clear();
-    this.gridOverlay.stroke({ width: VISUALS.GRID.LINE_WIDTH, color: VISUALS.COLORS.NEON_CYAN, alpha: VISUALS.GRID.LINE_ALPHA });
-    
-    for (let x = 0; x < this.app.screen.width; x += gridSize) {
-      this.gridOverlay.moveTo(x, 0);
-      this.gridOverlay.lineTo(x, this.app.screen.height);
-    }
-    
-    for (let y = 0; y < this.app.screen.height; y += gridSize) {
-      this.gridOverlay.moveTo(0, y);
-      this.gridOverlay.lineTo(this.app.screen.width, y);
-    }
-    
-    // Energy zone glow
-    const baseY = this.app.screen.height * GameConfig.BASE_Y;
-    const gradient = new PIXI.Graphics();
-    gradient.rect(0, baseY - 100, this.app.screen.width, 150);
-    gradient.fill({ color: VISUALS.COLORS.NEON_CYAN, alpha: VISUALS.ALPHA.MINIMAL });
-    gradient.rect(0, baseY + 50, this.app.screen.width, 100);
-    gradient.fill({ color: VISUALS.COLORS.NEON_MAGENTA, alpha: VISUALS.ALPHA.MINIMAL });
-    this.gridOverlay.addChild(gradient);
   }
   
   private initializeGame() {
@@ -1713,7 +1670,7 @@ export class NeonFlockEngine {
   private handleResize = () => {
     if (!this.app) return;
     this.app.renderer.resize(window.innerWidth, window.innerHeight);
-    this.drawGrid();
+    this.backgroundRenderer.drawGrid();
     this.spawnEnergyDots();
   };
   

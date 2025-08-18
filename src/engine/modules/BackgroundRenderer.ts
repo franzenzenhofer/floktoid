@@ -1,0 +1,91 @@
+/**
+ * BackgroundRenderer - Handles game background, grid, and stars
+ * Extracted from NeonFlockEngine to reduce file size
+ */
+
+import * as PIXI from 'pixi.js';
+import { GameConfig } from '../GameConfig';
+import CentralConfig from '../CentralConfig';
+
+const { VISUALS } = CentralConfig;
+
+export class BackgroundRenderer {
+  private app: PIXI.Application;
+  private gridOverlay!: PIXI.Container;
+  private backgroundStars!: PIXI.Container;
+  
+  constructor(app: PIXI.Application) {
+    this.app = app;
+  }
+  
+  /**
+   * Initialize background elements
+   */
+  setupBackground(): void {
+    // Neon grid
+    this.gridOverlay = new PIXI.Container();
+    this.drawGrid();
+    this.app.stage.addChild(this.gridOverlay);
+    
+    // Animated stars
+    this.backgroundStars = new PIXI.Container();
+    for (let i = 0; i < VISUALS.STARS.COUNT; i++) {
+      const star = new PIXI.Graphics();
+      star.circle(0, 0, VISUALS.STARS.MIN_SIZE + Math.random() * (VISUALS.STARS.MAX_SIZE - VISUALS.STARS.MIN_SIZE));
+      star.fill({ color: VISUALS.COLORS.WHITE, alpha: VISUALS.STARS.MIN_ALPHA + Math.random() * (VISUALS.STARS.MAX_ALPHA - VISUALS.STARS.MIN_ALPHA) });
+      star.x = Math.random() * this.app.screen.width;
+      star.y = Math.random() * this.app.screen.height;
+      this.backgroundStars.addChild(star);
+    }
+    this.app.stage.addChild(this.backgroundStars);
+  }
+  
+  /**
+   * Draw the grid overlay
+   */
+  drawGrid(): void {
+    const gridSize = VISUALS.GRID.SIZE;
+    
+    // Clear existing grid
+    this.gridOverlay.removeChildren();
+    
+    // Create grid lines
+    const gridGraphics = new PIXI.Graphics();
+    gridGraphics.stroke({ width: VISUALS.GRID.LINE_WIDTH, color: VISUALS.COLORS.NEON_CYAN, alpha: VISUALS.GRID.LINE_ALPHA });
+    
+    for (let x = 0; x < this.app.screen.width; x += gridSize) {
+      gridGraphics.moveTo(x, 0);
+      gridGraphics.lineTo(x, this.app.screen.height);
+    }
+    
+    for (let y = 0; y < this.app.screen.height; y += gridSize) {
+      gridGraphics.moveTo(0, y);
+      gridGraphics.lineTo(this.app.screen.width, y);
+    }
+    
+    this.gridOverlay.addChild(gridGraphics);
+    
+    // Energy zone glow
+    const baseY = this.app.screen.height * GameConfig.BASE_Y;
+    const gradient = new PIXI.Graphics();
+    gradient.rect(0, baseY - 100, this.app.screen.width, 150);
+    gradient.fill({ color: VISUALS.COLORS.NEON_CYAN, alpha: VISUALS.ALPHA.MINIMAL });
+    gradient.rect(0, baseY + 50, this.app.screen.width, 100);
+    gradient.fill({ color: VISUALS.COLORS.NEON_MAGENTA, alpha: VISUALS.ALPHA.MINIMAL });
+    this.gridOverlay.addChild(gradient);
+  }
+  
+  /**
+   * Get grid overlay for external use
+   */
+  getGridOverlay(): PIXI.Container {
+    return this.gridOverlay;
+  }
+  
+  /**
+   * Get stars container for external use
+   */
+  getBackgroundStars(): PIXI.Container {
+    return this.backgroundStars;
+  }
+}
