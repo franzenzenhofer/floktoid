@@ -75,15 +75,20 @@ export class ComboEffects {
    * Create stylish combo text with effects
    */
   /**
-   * Get minimum combo to display based on wave
+   * Get minimum combo to display based on wave - AGGRESSIVE PROGRESSION
    */
   private getMinComboThreshold(wave: number): number {
     if (wave <= 2) return 2;      // Waves 1-2: show 2x and up
     if (wave <= 4) return 3;      // Waves 3-4: show 3x and up
-    if (wave <= 9) return 4;      // Waves 5-9: show 4x and up
-    if (wave <= 19) return 5;     // Waves 10-19: show 5x and up
-    if (wave <= 29) return 7;     // Waves 20-29: show 7x and up
-    return 10;                     // Waves 30+: show 10x and up
+    if (wave <= 6) return 5;      // Waves 5-6: show 5x and up
+    if (wave <= 9) return 7;      // Waves 7-9: show 7x and up
+    if (wave <= 14) return 10;    // Waves 10-14: show 10x and up
+    if (wave <= 19) return 12;    // Waves 15-19: show 12x and up
+    if (wave <= 24) return 15;    // Waves 20-24: show 15x and up
+    if (wave <= 29) return 18;    // Waves 25-29: show 18x and up
+    if (wave <= 39) return 20;    // Waves 30-39: show 20x and up
+    if (wave <= 49) return 25;    // Waves 40-49: show 25x and up
+    return 30;                     // Waves 50+: show 30x and up only!
   }
   
   /**
