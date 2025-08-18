@@ -109,8 +109,20 @@ export class ComboEffects {
     // Update combo timer
     this.comboTimer = 2000; // 2 seconds
     
-    // Create main combo text
-    const fontSize = UI.FONTS.SIZES.LARGE + (tier.scale - 1) * 20;
+    // Create main combo text - MOBILE RESPONSIVE!
+    // Calculate base font size with screen-aware scaling
+    const screenWidth = this.app.screen.width;
+    const screenHeight = this.app.screen.height;
+    const isMobile = screenWidth < 768; // Mobile breakpoint
+    
+    // Limit font size based on screen size to ensure visibility
+    const maxFontSize = isMobile ? 
+      Math.min(screenWidth * 0.15, 60) : // Mobile: max 15% of width or 60px
+      Math.min(screenWidth * 0.1, 100); // Desktop: max 10% of width or 100px
+    
+    const baseFontSize = UI.FONTS.SIZES.LARGE + (tier.scale - 1) * 20;
+    const fontSize = Math.min(baseFontSize, maxFontSize);
+    
     const comboText = new PIXI.Text(
       combo >= 20 ? `${tier.name}!\n${combo}x COMBO!` : `${combo}x ${tier.name}!`,
       {
@@ -136,8 +148,10 @@ export class ComboEffects {
     );
     
     comboText.anchor.set(0.5);
-    comboText.x = x;
-    comboText.y = y;
+    // Ensure text stays within screen bounds
+    const padding = fontSize * 0.5;
+    comboText.x = Math.max(padding, Math.min(x, screenWidth - padding));
+    comboText.y = Math.max(padding, Math.min(y, screenHeight - padding));
     comboText.scale.set(0.1); // Start small for punch-in effect
     comboText.rotation = (Math.random() - 0.5) * 0.2; // Slight random rotation
     comboText.zIndex = 1002;
@@ -262,7 +276,14 @@ export class ComboEffects {
    */
   createBossAnnouncement(): void {
     console.log('[BOSS ANNOUNCEMENT] Starting boss announcement creation');
-    const fontSize = 48; // Fixed size instead of using UI.FONTS
+    
+    // MOBILE RESPONSIVE font sizing
+    const screenWidth = this.app.screen.width;
+    const isMobile = screenWidth < 768;
+    const fontSize = isMobile ? 
+      Math.min(screenWidth * 0.1, 36) : // Mobile: max 10% of width or 36px
+      48; // Desktop: 48px
+    
     const bossText = new PIXI.Text({
       text: 'BOSS LEVEL!',
       style: {

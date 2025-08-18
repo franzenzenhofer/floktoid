@@ -1510,10 +1510,17 @@ export class NeonFlockEngine {
   }
   
   private showNoPointsWarning() {
-    // Create warning text effect
+    // Create warning text effect - MOBILE RESPONSIVE!
+    const screenWidth = this.app.screen.width;
+    const isMobile = screenWidth < 768;
+    
+    // Limit font size for mobile visibility
+    const maxFontSize = isMobile ? 40 : 60;
+    const fontSize = Math.min(UI.FONTS.SIZES.LARGE, maxFontSize);
+    
     const warningText = new PIXI.Text('NOT ENOUGH POINTS!', {
       fontFamily: UI.FONTS.PRIMARY,
-      fontSize: UI.FONTS.SIZES.LARGE,
+      fontSize: fontSize,
       fill: VISUALS.COLORS.NEON_RED,
       stroke: { color: VISUALS.COLORS.BLACK, width: VISUALS.STROKE.VERY_THICK },
       dropShadow: {
