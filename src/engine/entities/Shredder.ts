@@ -518,18 +518,8 @@ export class Shredder {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     
-    // Smooth rotation toward movement direction
-    if (currentSpeed > 10) {
-      const targetAngle = Math.atan2(this.vy, this.vx);
-      let angleDiff = targetAngle - this.rotation;
-      
-      // Normalize angle difference
-      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-      
-      // Smooth rotation interpolation
-      this.rotation += angleDiff * 0.1;
-    }
+    // NO MOVEMENT-BASED ROTATION! Shredders spin aggressively regardless of movement!
+    // The rotation is already updated earlier in the function with the aggressive spinning
     
     // Update sprite
     this.sprite.x = this.x;
