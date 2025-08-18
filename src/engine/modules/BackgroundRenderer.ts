@@ -49,8 +49,8 @@ export class BackgroundRenderer {
     // Clear existing grid - check if method exists (for test compatibility)
     if (this.gridOverlay.removeChildren) {
       this.gridOverlay.removeChildren();
-    } else {
-      // Fallback for test environment
+    } else if (this.gridOverlay.children && this.gridOverlay.children.length > 0) {
+      // Fallback for test environment - check children exists
       while (this.gridOverlay.children.length > 0) {
         this.gridOverlay.removeChild(this.gridOverlay.children[0]);
       }

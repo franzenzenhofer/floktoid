@@ -122,9 +122,9 @@ export class MessageDisplay {
   }
   
   /**
-   * Display combo text on screen - STUPID VERSION (like boss level)
+   * Display combo text on screen - EXACT SAME AS BOSS!
    */
-  displayCombo(combo: number, x: number, y: number): void {
+  displayCombo(combo: number, _x: number, _y: number): void {
     // Check if combo meets wave threshold
     const minThreshold = this.getMinComboThreshold(this.currentWave);
     if (combo < minThreshold) {
@@ -135,15 +135,21 @@ export class MessageDisplay {
     const tier = this.getComboTier(combo);
     const comboTextString = combo >= 20 ? `${tier.name}!\n${combo}x COMBO!` : `${combo}x ${tier.name}!`;
     
-    // Use the SAME stupid simple logic as boss level!
-    this.displaySimpleMessage(comboTextString, tier.color, x, y);
+    // EXACT SAME CALL AS BOSS - only text different!
+    this.displayMessage(comboTextString);
   }
   
   
   /**
-   * SIMPLE STUPID MESSAGE DISPLAY - DRY CODE!
+   * THE ONE MESSAGE DISPLAY FUNCTION - SUPER DRY!
    */
-  private displaySimpleMessage(text: string, color: number, x?: number, y?: number): void {
+  displayMessage(text: string): void {
+    // Fixed color - magenta for ALL messages
+    const color = 0xFF00FF;
+    
+    // Fixed position - center for ALL messages
+    const x = this.app.screen.width / 2;
+    const y = this.app.screen.height / 3;
     // Calculate font size
     const screenWidth = this.app.screen.width;
     const isMobile = screenWidth < 768;
@@ -172,8 +178,8 @@ export class MessageDisplay {
     
     // Position text
     messageText.anchor.set(0.5);
-    messageText.x = x ?? this.app.screen.width / 2;
-    messageText.y = y ?? this.app.screen.height / 3;
+    messageText.x = x;
+    messageText.y = y;
     messageText.zIndex = 9999;
     messageText.alpha = 1;
     
@@ -213,7 +219,8 @@ export class MessageDisplay {
    */
   displayBossAnnouncement(): void {
     console.log('[BOSS ANNOUNCEMENT] Starting boss announcement');
-    this.displaySimpleMessage('BOSS LEVEL!', 0xFF00FF);
+    // EXACT SAME CALL AS COMBO - only text different!
+    this.displayMessage('BOSS LEVEL!');
   }
   
   /**
