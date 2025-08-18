@@ -44,7 +44,7 @@ export class Shredder {
   // Rotation state management
   private rotationState: 'spinning' | 'slowing' | 'stopped' | 'accelerating' = 'spinning';
   private rotationStateTimer: number = 0;
-  private stopDuration: number = 0.2; // 200ms stop
+  private stopDuration: number = 0.05; // 50ms stop - much shorter!
   
   private t = 0;
   private app: PIXI.Application;
@@ -92,8 +92,8 @@ export class Shredder {
     // 50/50 chance to start rotating left or right
     this.rotationDirection = Math.random() < 0.5 ? 1 : -1;
     
-    // Moderate rotations before switching (2-4) for controlled chaos
-    this.rotationsUntilSwitch = 2 + Math.floor(Math.random() * 3);
+    // LONGER rotation phases - 5-10 rotations before switching
+    this.rotationsUntilSwitch = 5 + Math.floor(Math.random() * 6);
 
     // Movement speed like birds
     this.maxSpeed = GameConfig.BASE_SPEED * (0.8 + Math.random() * 0.4);
@@ -183,9 +183,9 @@ export class Shredder {
       }
         
       case 'slowing': {
-        // Gradually slow down rotation
+        // Gradually slow down rotation - MUCH LONGER
         this.rotationStateTimer += dt;
-        const slowdownDuration = 0.3; // 300ms to slow down
+        const slowdownDuration = 0.8; // 800ms to slow down - was 300ms
         const slowdownProgress = Math.min(this.rotationStateTimer / slowdownDuration, 1);
         
         // Ease out - slow down smoothly
@@ -210,7 +210,7 @@ export class Shredder {
           this.rotationDirection *= -1;
           this.rotationCount = 0;
           this.cumulativeRotation = 0; // Reset cumulative rotation
-          this.rotationsUntilSwitch = 2 + Math.floor(Math.random() * 3);
+          this.rotationsUntilSwitch = 5 + Math.floor(Math.random() * 6); // 5-10 rotations
           this.rotationState = 'accelerating';
           this.rotationStateTimer = 0;
         }
@@ -218,9 +218,9 @@ export class Shredder {
       }
         
       case 'accelerating': {
-        // Speed back up to full rotation
+        // Speed back up to full rotation - also longer
         this.rotationStateTimer += dt;
-        const accelDuration = 0.3; // 300ms to accelerate
+        const accelDuration = 0.6; // 600ms to accelerate - was 300ms
         const accelProgress = Math.min(this.rotationStateTimer / accelDuration, 1);
         
         // Ease in - speed up smoothly
