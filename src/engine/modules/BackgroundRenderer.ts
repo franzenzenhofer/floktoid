@@ -46,8 +46,15 @@ export class BackgroundRenderer {
   drawGrid(): void {
     const gridSize = VISUALS.GRID.SIZE;
     
-    // Clear existing grid
-    this.gridOverlay.removeChildren();
+    // Clear existing grid - check if method exists (for test compatibility)
+    if (this.gridOverlay.removeChildren) {
+      this.gridOverlay.removeChildren();
+    } else {
+      // Fallback for test environment
+      while (this.gridOverlay.children.length > 0) {
+        this.gridOverlay.removeChild(this.gridOverlay.children[0]);
+      }
+    }
     
     // Create grid lines
     const gridGraphics = new PIXI.Graphics();

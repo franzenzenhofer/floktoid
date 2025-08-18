@@ -133,8 +133,10 @@ export class NeonFlockEngine {
       this.backgroundRenderer = new BackgroundRenderer(this.app);
       this.waveManager = new WaveManager();
       
-      // Setup wave callbacks
-      this.waveManager.onWaveUpdate = this.onWaveUpdate;
+      // Setup wave callbacks - bind to preserve context
+      this.waveManager.onWaveUpdate = (wave: number) => {
+        this.onWaveUpdate?.(wave);
+      };
       
       // Setup game
       this.backgroundRenderer.setupBackground();
