@@ -39,6 +39,7 @@ export class Shredder {
   private rotationDirection: number; // 1 for right, -1 for left (50/50 chance)
   private rotationCount: number = 0; // Count full rotations
   private rotationsUntilSwitch: number; // Random 3-10 rotations before switching
+  private cumulativeRotation: number = 0; // CRITICAL: Track total rotation since last reset
   
   // Rotation state management
   private rotationState: 'spinning' | 'slowing' | 'stopped' | 'accelerating' = 'spinning';
@@ -161,13 +162,16 @@ export class Shredder {
     switch (this.rotationState) {
       case 'spinning': {
         // Normal rotation
-        const prevRotation = this.rotation;
-        this.rotation += this.rotationSpeed * this.rotationDirection * dt;
+        const rotationDelta = this.rotationSpeed * this.rotationDirection * dt;
+        this.rotation += rotationDelta;
         
-        // Check if we completed a full rotation
-        const rotationDiff = Math.abs(this.rotation - prevRotation);
-        if (rotationDiff > Math.PI * 2) {
+        // CRITICAL FIX: Track cumulative rotation, not single-frame difference!
+        this.cumulativeRotation += Math.abs(rotationDelta);
+        
+        // Check if we completed a full rotation (2π radians)
+        if (this.cumulativeRotation >= Math.PI * 2) {
           this.rotationCount++;
+          this.cumulativeRotation -= Math.PI * 2; // Reset for next rotation
           
           // Time to switch direction after reaching target rotations
           if (this.rotationCount >= this.rotationsUntilSwitch) {
@@ -205,6 +209,7 @@ export class Shredder {
           // Change direction and start accelerating
           this.rotationDirection *= -1;
           this.rotationCount = 0;
+          this.cumulativeRotation = 0; // Reset cumulative rotation
           this.rotationsUntilSwitch = 2 + Math.floor(Math.random() * 3);
           this.rotationState = 'accelerating';
           this.rotationStateTimer = 0;
