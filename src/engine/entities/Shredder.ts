@@ -159,7 +159,7 @@ export class Shredder {
     
     // Rotation state machine with slowdown/stop/change
     switch (this.rotationState) {
-      case 'spinning':
+      case 'spinning': {
         // Normal rotation
         const prevRotation = this.rotation;
         this.rotation += this.rotationSpeed * this.rotationDirection * dt;
@@ -176,8 +176,9 @@ export class Shredder {
           }
         }
         break;
+      }
         
-      case 'slowing':
+      case 'slowing': {
         // Gradually slow down rotation
         this.rotationStateTimer += dt;
         const slowdownDuration = 0.3; // 300ms to slow down
@@ -193,8 +194,9 @@ export class Shredder {
           this.rotationSpeed = 0;
         }
         break;
+      }
         
-      case 'stopped':
+      case 'stopped': {
         // Pause for 200ms
         this.rotationStateTimer += dt;
         // No rotation during stop
@@ -208,8 +210,9 @@ export class Shredder {
           this.rotationStateTimer = 0;
         }
         break;
+      }
         
-      case 'accelerating':
+      case 'accelerating': {
         // Speed back up to full rotation
         this.rotationStateTimer += dt;
         const accelDuration = 0.3; // 300ms to accelerate
@@ -224,6 +227,7 @@ export class Shredder {
           this.rotationSpeed = this.baseRotationSpeed;
         }
         break;
+      }
     }
     
     // ENHANCED SEPARATION - Prevent overlapping
