@@ -954,6 +954,13 @@ export class NeonFlockEngine {
       }
     }
     
+    // Track kills per asteroid for proper combo counting
+    const asteroidKills = new Map<Asteroid, { birds: Boid[], score: number }>();
+    
+    // Track shredder kills per asteroid for combo counting
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const asteroidShredderKills = new Map<Asteroid, { shredders: any[], x: number, y: number }>();
+    
     // Update shredders and handle collisions with asteroids
     this.shredders = this.shredders.filter(shredder => {
       // Pass asteroids, other shredders, boids, launch positions, and flock center
@@ -983,13 +990,19 @@ export class NeonFlockEngine {
             scoringSystem.addEvent(ScoringEvent.SHREDDER_SHRED);
             this.updateScoreDisplay();
           } else if (rA > rS * (1 + tau)) {
-            // Big asteroid destroys shredder - GOOD!
+            // Big asteroid destroys shredder - Track for combos!
             shredder.destroy();
             this.particleSystem.createExplosion(shredder.x, shredder.y, 0x00FF00, 30); // Green explosion for good!
             
-            // Big points for destroying shredder!
-            scoringSystem.addEvent(ScoringEvent.SHREDDER_DESTROYED);
-            this.updateScoreDisplay();
+            // Track this shredder kill for combo counting
+            if (!asteroidShredderKills.has(asteroid)) {
+              asteroidShredderKills.set(asteroid, { shredders: [], x: 0, y: 0 });
+            }
+            const kills = asteroidShredderKills.get(asteroid)!;
+            kills.shredders.push(shredder);
+            kills.x = shredder.x;
+            kills.y = shredder.y;
+            
             return false;
           } else {
             asteroid.destroy();
@@ -1003,8 +1016,27 @@ export class NeonFlockEngine {
       return true;
     });
     
-    // Track kills per asteroid for proper combo counting
-    const asteroidKills = new Map<Asteroid, { birds: Boid[], score: number }>();
+    // Process shredder kills - add them to the main asteroid kills tracking
+    for (const [asteroid, shredderKills] of asteroidShredderKills) {
+      if (!asteroidKills.has(asteroid)) {
+        asteroidKills.set(asteroid, { birds: [], score: 0 });
+      }
+      const kills = asteroidKills.get(asteroid)!;
+      // Add shredders as "special birds" for combo purposes
+      for (let i = 0; i < shredderKills.shredders.length; i++) {
+        // Create a pseudo-bird object for combo counting
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        kills.birds.push({ 
+          x: shredderKills.x, 
+          y: shredderKills.y, 
+          isShredder: true,
+          hasDot: false,
+          isShooter: false,
+          isSuperNavigator: false
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
+      }
+    }
     
     // WRAP ENTIRE COLLISION SYSTEM IN TRY-CATCH
     try {
@@ -1205,7 +1237,10 @@ export class NeonFlockEngine {
           // Single kill - no combo
           const bird = kills.birds[0];
           let event: ScoringEvent;
-          if (bird.hasDot) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((bird as any).isShredder) {
+            event = ScoringEvent.SHREDDER_DESTROYED;
+          } else if (bird.hasDot) {
             event = ScoringEvent.BIRD_WITH_ENERGY_HIT;
           } else if (bird.isShooter) {
             event = ScoringEvent.SHOOTER_HIT;
@@ -1217,11 +1252,28 @@ export class NeonFlockEngine {
           scoringSystem.addEvent(event);
         } else if (killCount > 1) {
           // Multi-kill by same asteroid - THIS IS A COMBO!
-          console.log(`[COMBO] Asteroid destroyed ${killCount} enemies at once!`);
+          // Count types of enemies for logging
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const shredderCount = kills.birds.filter((b: any) => b.isShredder).length;
+          const birdCount = killCount - shredderCount;
+          if (shredderCount > 0) {
+            console.log(`[COMBO] Asteroid destroyed ${birdCount} birds and ${shredderCount} shredders at once!`);
+          } else {
+            console.log(`[COMBO] Asteroid destroyed ${killCount} enemies at once!`);
+          }
           
           // Add multi-kill event ONCE (not per bird!)
           // This increments combo ONCE and adds bonus points
           scoringSystem.addEvent(ScoringEvent.MULTI_KILL, { count: killCount });
+          
+          // Add individual score for each enemy type (shredders give more points)
+          for (const bird of kills.birds) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((bird as any).isShredder) {
+              // Shredder destroyed as part of combo - add base score
+              scoringSystem.addEvent(ScoringEvent.SHREDDER_DESTROYED);
+            }
+          }
           
           // Show combo visual
           if (kills.birds.length > 0) {

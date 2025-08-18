@@ -294,7 +294,7 @@ export class ScoringSystem {
         
       case ScoringEvent.SHREDDER_DESTROYED:
         points = POINT_VALUES.REWARDS.SHREDDER_DESTROYED;
-        this.incrementCombo();
+        // NO COMBO for single kills - only multi-kills trigger combos
         break;
         
       case ScoringEvent.WAVE_COMPLETE:
