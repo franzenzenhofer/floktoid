@@ -137,7 +137,7 @@ describe('Shredder Rotation System', () => {
     (shredder as any).rotationState = 'spinning';
     
     const dt = 0.016;
-    let initialDirection = (shredder as any).rotationDirection;
+    const initialDirection = (shredder as any).rotationDirection;
     let directionChanged = false;
     
     // Run for enough time to complete cycle
