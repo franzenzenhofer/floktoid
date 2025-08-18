@@ -35,9 +35,16 @@ export class Shredder {
   private sprite: PIXI.Graphics;
   private rotation = 0;
   private rotationSpeed: number; // Each shredder has different speed
+  private baseRotationSpeed: number; // Store original speed for transitions
   private rotationDirection: number; // 1 for right, -1 for left (50/50 chance)
   private rotationCount: number = 0; // Count full rotations
   private rotationsUntilSwitch: number; // Random 3-10 rotations before switching
+  
+  // Rotation state management
+  private rotationState: 'spinning' | 'slowing' | 'stopped' | 'accelerating' = 'spinning';
+  private rotationStateTimer: number = 0;
+  private stopDuration: number = 0.2; // 200ms stop
+  
   private t = 0;
   private app: PIXI.Application;
   private vx: number = 0; // Velocity for hunting
@@ -77,8 +84,9 @@ export class Shredder {
     }
     
     // BALANCED SHREDDING ROTATION - AGGRESSIVE BUT CONTROLLED!
-    // Speed: 18-28 radians/sec (middle ground between 12-20 and 25-40)
-    this.rotationSpeed = 18 + Math.random() * 10;
+    // Speed: 15-22 radians/sec (lowered max from 28 to 22)
+    this.baseRotationSpeed = 15 + Math.random() * 7;
+    this.rotationSpeed = this.baseRotationSpeed;
     
     // 50/50 chance to start rotating left or right
     this.rotationDirection = Math.random() < 0.5 ? 1 : -1;
@@ -149,22 +157,73 @@ export class Shredder {
          launchPositions?: { x: number; y: number }[], flockCenter?: { x: number; y: number }): boolean {
     this.t += dt;
     
-    // Rotation with random switching pattern
-    const prevRotation = this.rotation;
-    this.rotation += this.rotationSpeed * this.rotationDirection * dt;
-    
-    // Check if we completed a full rotation
-    const rotationDiff = Math.abs(this.rotation - prevRotation);
-    if (rotationDiff > Math.PI * 2) {
-      this.rotationCount++;
-      
-      // Switch direction after reaching target rotations
-      if (this.rotationCount >= this.rotationsUntilSwitch) {
-        this.rotationDirection *= -1; // Reverse direction
-        this.rotationCount = 0;
-        // New random target for next switch (2-4 rotations) - keep consistent
-        this.rotationsUntilSwitch = 2 + Math.floor(Math.random() * 3);
-      }
+    // Rotation state machine with slowdown/stop/change
+    switch (this.rotationState) {
+      case 'spinning':
+        // Normal rotation
+        const prevRotation = this.rotation;
+        this.rotation += this.rotationSpeed * this.rotationDirection * dt;
+        
+        // Check if we completed a full rotation
+        const rotationDiff = Math.abs(this.rotation - prevRotation);
+        if (rotationDiff > Math.PI * 2) {
+          this.rotationCount++;
+          
+          // Time to switch direction after reaching target rotations
+          if (this.rotationCount >= this.rotationsUntilSwitch) {
+            this.rotationState = 'slowing';
+            this.rotationStateTimer = 0;
+          }
+        }
+        break;
+        
+      case 'slowing':
+        // Gradually slow down rotation
+        this.rotationStateTimer += dt;
+        const slowdownDuration = 0.3; // 300ms to slow down
+        const slowdownProgress = Math.min(this.rotationStateTimer / slowdownDuration, 1);
+        
+        // Ease out - slow down smoothly
+        this.rotationSpeed = this.baseRotationSpeed * (1 - slowdownProgress);
+        this.rotation += this.rotationSpeed * this.rotationDirection * dt;
+        
+        if (slowdownProgress >= 1) {
+          this.rotationState = 'stopped';
+          this.rotationStateTimer = 0;
+          this.rotationSpeed = 0;
+        }
+        break;
+        
+      case 'stopped':
+        // Pause for 200ms
+        this.rotationStateTimer += dt;
+        // No rotation during stop
+        
+        if (this.rotationStateTimer >= this.stopDuration) {
+          // Change direction and start accelerating
+          this.rotationDirection *= -1;
+          this.rotationCount = 0;
+          this.rotationsUntilSwitch = 2 + Math.floor(Math.random() * 3);
+          this.rotationState = 'accelerating';
+          this.rotationStateTimer = 0;
+        }
+        break;
+        
+      case 'accelerating':
+        // Speed back up to full rotation
+        this.rotationStateTimer += dt;
+        const accelDuration = 0.3; // 300ms to accelerate
+        const accelProgress = Math.min(this.rotationStateTimer / accelDuration, 1);
+        
+        // Ease in - speed up smoothly
+        this.rotationSpeed = this.baseRotationSpeed * accelProgress;
+        this.rotation += this.rotationSpeed * this.rotationDirection * dt;
+        
+        if (accelProgress >= 1) {
+          this.rotationState = 'spinning';
+          this.rotationSpeed = this.baseRotationSpeed;
+        }
+        break;
     }
     
     // ENHANCED SEPARATION - Prevent overlapping
