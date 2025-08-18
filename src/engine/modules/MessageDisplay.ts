@@ -154,53 +154,59 @@ export class MessageDisplay {
   }
   
   /**
-   * OLD STYLE MESSAGE WITH PUNCH ANIMATION!
+   * OLD EXACT STYLE WITH PROPER ANIMATION!
    */
   private displayOldStyleMessage(text: string, color: number, x: number, y: number, scale: number): void {
-    // Calculate font size - MOBILE RESPONSIVE!
+    // Calculate font size - EXACT OLD FORMULA!
     const screenWidth = this.app.screen.width;
     const screenHeight = this.app.screen.height;
     const isMobile = screenWidth < 768;
     
+    // OLD EXACT: Mobile gets 15% of width max, Desktop 10% max
     const maxFontSize = isMobile ? 
       Math.min(screenWidth * 0.15, 60) : 
       Math.min(screenWidth * 0.1, 100);
     
-    const baseFontSize = 48 + (scale - 1) * 20;
+    // OLD EXACT: Base was 24 (LARGE) + scale difference * 20
+    const baseFontSize = 24 + (scale - 1) * 20;
     const fontSize = Math.min(baseFontSize, maxFontSize);
     
-    // Create text with OLD STYLE
+    // Determine if this is a big combo (10+ has scale >= 1.4)
+    const isBigCombo = scale >= 1.4;
+    const isEpicCombo = scale >= 2.0;
+    
+    // Create text with EXACT OLD STYLE
     const messageText = new PIXI.Text({
       text: text,
       style: {
-        fontFamily: 'Arial',
+        fontFamily: 'Space Mono, monospace', // OLD used Space Mono!
         fontSize: fontSize,
         fontWeight: 'bold',
-        fontStyle: scale >= 1.4 ? 'italic' : 'normal', // Italic for big combos
+        fontStyle: isBigCombo ? 'italic' : 'normal', // Italic for 10+
         fill: color,
         stroke: { 
-          color: scale >= 2.0 ? 0xFFFFFF : 0x000000, // White for big, black for small
-          width: scale >= 1.4 ? 5 : 3 
+          color: isEpicCombo ? 0xFFFFFF : 0x000000, // White for 20+, black otherwise
+          width: isBigCombo ? 5 : 3 
         },
         align: 'center',
         dropShadow: {
           color: color,
-          blur: scale >= 1.4 ? 12 : 6,
+          blur: isBigCombo ? 12 : 6,
           angle: Math.PI / 4,
           distance: 4,
           alpha: 0.8
         },
-        letterSpacing: scale >= 1.4 ? 3 : 1
+        letterSpacing: isBigCombo ? 3 : 1
       }
     });
     
-    // Position with screen bounds clamping
+    // EXACT OLD POSITIONING - clamp to screen with padding!
     messageText.anchor.set(0.5);
     const padding = fontSize * 0.5;
     messageText.x = Math.max(padding, Math.min(x, screenWidth - padding));
     messageText.y = Math.max(padding, Math.min(y, screenHeight - padding));
-    messageText.scale.set(0.1); // Start small for punch-in
-    messageText.rotation = (Math.random() - 0.5) * 0.2; // Slight random rotation
+    messageText.scale.set(0.1); // Start at 0.1 for punch
+    messageText.rotation = (Math.random() - 0.5) * 0.2; // ±0.2 radians random
     messageText.zIndex = 1002;
     messageText.alpha = 1;
     
