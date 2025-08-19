@@ -212,7 +212,7 @@ export const SIZES = {
     HEALTH_BAR_WIDTH: 60,
     HEALTH_BAR_HEIGHT: 8,
   },
-  MINE_RADIUS: 5, // Super tiny pulsating diamond!
+  MINE_RADIUS: 3, // ULTRA tiny fast pulsating diamond!
 } as const;
 
 // ============================================

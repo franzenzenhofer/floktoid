@@ -32,15 +32,16 @@ export class Mine {
   private draw(): void {
     clearGraphics(this.sprite);
     
-    // CONTINUOUS DRAMATIC PULSATING!
-    const fastPulse = Math.sin(this.pulseTime * 0.4) * 0.6 + 0.4; // Bigger range pulsing
-    const mediumPulse = Math.sin(this.pulseTime * 0.2) * 0.4 + 0.6; // Medium speed pulse
-    const slowPulse = Math.sin(this.pulseTime * 0.1) * 0.3 + 0.7;  // Slow pulse
-    const ultraFastPulse = Math.sin(this.pulseTime * 0.8) * 0.5 + 0.5; // Very fast pulse
-    const flash = 0.5 + Math.sin(this.pulseTime * 0.6) * 0.5; // Smooth flashing, always visible
+    // HYPER FAST PULSATING - 3X FASTER!
+    const fastPulse = Math.sin(this.pulseTime * 3.6) * 0.7 + 0.3; // 3x faster
+    const mediumPulse = Math.sin(this.pulseTime * 2.4) * 0.5 + 0.5; // 3x faster
+    const slowPulse = Math.sin(this.pulseTime * 1.2) * 0.4 + 0.6;  // 3x faster
+    const ultraFastPulse = Math.sin(this.pulseTime * 6.0) * 0.5 + 0.5; // 3x faster
+    const hyperPulse = Math.sin(this.pulseTime * 9.0) * 0.5 + 0.5; // 3x faster
+    const flash = 0.5 + Math.sin(this.pulseTime * 4.5) * 0.5; // 3x faster
     
-    // Rotating colors - purple to cyan to white
-    const colorPhase = (this.pulseTime * 0.2) % (Math.PI * 2);
+    // Rotating colors MUCH FASTER - purple to cyan to white
+    const colorPhase = (this.pulseTime * 0.6) % (Math.PI * 2); // 3x faster color rotation
     let color: number;
     if (colorPhase < Math.PI / 2) {
       color = 0xFF00FF; // Purple
@@ -52,17 +53,17 @@ export class Mine {
       color = 0xFFFFFF; // White
     }
     
-    // Draw MULTIPLE pulsating glow rings
-    const glowRadius1 = this.radius * (2.5 + fastPulse);
+    // Draw TINY fast pulsating glow rings - much smaller for tiny mine
+    const glowRadius1 = this.radius * (2 + fastPulse); // Smaller glow
     this.sprite.circle(0, 0, glowRadius1);
-    this.sprite.fill({ color, alpha: 0.15 * flash });
+    this.sprite.fill({ color, alpha: 0.3 * flash });
     
-    const glowRadius2 = this.radius * (2 + mediumPulse);
+    const glowRadius2 = this.radius * (1.5 + hyperPulse * 0.5); // Smaller glow
     this.sprite.circle(0, 0, glowRadius2);
-    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.1 * ultraFastPulse });
+    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.2 * ultraFastPulse });
     
-    // Draw HEAVILY pulsating diamond shape - CONSTANTLY CHANGING SIZE
-    const size = this.radius * (0.8 + fastPulse * 0.8); // Big size variation!
+    // Draw TINY HEAVILY pulsating diamond shape - CONSTANTLY CHANGING SIZE
+    const size = this.radius * (0.6 + fastPulse * 0.6); // Smaller base size with variation
     
     // Outer diamond with continuous pulsing
     this.sprite.poly([
@@ -94,12 +95,12 @@ export class Mine {
     ]);
     this.sprite.fill({ color: 0xFFFFFF, alpha: 0.7 + flash * 0.3 });
     
-    // Energy beams shooting out - PULSATING LENGTH
-    const beamLength = size * (1.5 + fastPulse * 1.5); // Beams grow and shrink dramatically
+    // Energy beams shooting out - SHORTER AND FASTER PULSATING
+    const beamLength = size * (1.0 + fastPulse * 0.5); // Shorter beams
     for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2 + this.pulseTime * 0.1; // Slight rotation
-      const individualPulse = Math.sin(this.pulseTime * 0.5 + i) * 0.5 + 0.5;
-      const thisBeamLength = beamLength * (0.7 + individualPulse * 0.3);
+      const angle = (i / 8) * Math.PI * 2 + this.pulseTime * 0.3; // Faster rotation
+      const individualPulse = Math.sin(this.pulseTime * 1.5 + i) * 0.5 + 0.5; // 3x faster individual pulse
+      const thisBeamLength = beamLength * (0.5 + individualPulse * 0.5); // Shorter beams
       this.sprite.moveTo(0, 0);
       this.sprite.lineTo(
         Math.cos(angle) * thisBeamLength,
@@ -112,8 +113,8 @@ export class Mine {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     
-    // Rotate the diamond faster for more energy
-    this.sprite.rotation = this.pulseTime * 0.2;
+    // Rotate the diamond MUCH faster for hyper energy
+    this.sprite.rotation = this.pulseTime * 0.6; // 3x faster rotation
   }
   
   update(dt: number): void {
