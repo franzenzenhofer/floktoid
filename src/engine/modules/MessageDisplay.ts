@@ -279,10 +279,10 @@ export class MessageDisplay {
     const screenWidth = this.app.screen.width;
     const isMobile = screenWidth < 768;
     
-    // Responsive font for boss announcement - MUST FIT ON MOBILE!
+    // Responsive font for boss announcement - SMALLER to account for ANIMATION SCALING!
     const fontSize = isMobile ? 
-      Math.min(screenWidth * 0.12, 48) :  // Mobile: 12% of width max, cap at 48px
-      Math.min(screenWidth * 0.1, 80);     // Desktop: 10% of width max, cap at 80px
+      Math.min(screenWidth * 0.08, 36) :  // Mobile: 8% of width max, cap at 36px (animation scales to 1.2x)
+      Math.min(screenWidth * 0.08, 60);    // Desktop: 8% of width max, cap at 60px
     
     const messageText = new PIXI.Text({
       text: text,
@@ -332,22 +332,22 @@ export class MessageDisplay {
         return;
       }
       
-      // Phase 1: Zoom in (frames 1-20)
+      // Phase 1: Zoom in (frames 1-20) - SMALLER TARGET SCALE
       if (frame <= 20) {
         const t = frame / 20;
         const easeOut = 1 - Math.pow(1 - t, 3);
-        messageText.scale.set(easeOut * 1.2);
+        messageText.scale.set(easeOut * 0.9);  // Max scale 0.9 instead of 1.2
       }
-      // Phase 2: Pulse effect (frames 21-120)
+      // Phase 2: Pulse effect (frames 21-120) - GENTLER PULSE
       else if (frame <= 120) {
-        const pulse = 1.2 + Math.sin((frame - 20) * 0.15) * 0.15;
+        const pulse = 0.9 + Math.sin((frame - 20) * 0.15) * 0.1;  // Pulse between 0.8 and 1.0
         messageText.scale.set(pulse);
         messageText.rotation = Math.sin((frame - 20) * 0.05) * 0.02;
       }
       // Phase 3: Zoom out and fade (frames 121-180)
       else {
         const t = (frame - 120) / 60;
-        messageText.scale.set(1.2 * (1 + t * 0.5));
+        messageText.scale.set(0.9 * (1 + t * 0.3));  // Less zoom out
         messageText.alpha = 1 - t;
       }
     };

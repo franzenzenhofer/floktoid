@@ -41,7 +41,7 @@ export default {
 
 async function handleScoreSubmit(request, env, corsHeaders) {
   try {
-    const { username, score, wave } = await request.json();
+    const { username, score, wave, gameId } = await request.json();
     
     if (!username || typeof score !== 'number') {
       return new Response(JSON.stringify({ error: 'Invalid data' }), {
@@ -59,14 +59,47 @@ async function handleScoreSubmit(request, env, corsHeaders) {
     }
     
     const timestamp = Date.now();
-    const key = `score:${timestamp}:${username}`;
     
-    // Store in KV with score and wave as value
+    // CRITICAL FIX: Use gameId to prevent duplicate entries from same game!
+    // If no gameId provided, generate one (for backwards compatibility)
+    const uniqueGameId = gameId || `game_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Check if this game already has an entry
+    if (gameId) {
+      // List all scores for this user to find existing game entry
+      const userScores = await env.LEADERBOARD.list({ prefix: `score:${username}:` });
+      
+      for (const key of userScores.keys) {
+        const existingData = await env.LEADERBOARD.get(key.name);
+        if (existingData) {
+          const parsed = JSON.parse(existingData);
+          if (parsed.gameId === gameId) {
+            // Found existing entry for this game
+            if (score <= parsed.score) {
+              // New score is not higher, ignore it
+              console.log(`Ignoring lower score ${score} for game ${gameId}, keeping ${parsed.score}`);
+              return new Response(JSON.stringify({ success: true, message: 'Score not improved' }), {
+                headers: { 'Content-Type': 'application/json', ...corsHeaders }
+              });
+            } else {
+              // Delete the old lower score
+              console.log(`Replacing score ${parsed.score} with higher ${score} for game ${gameId}`);
+              await env.LEADERBOARD.delete(key.name);
+            }
+          }
+        }
+      }
+    }
+    
+    // Store new score with username in the key for efficient lookup
+    const key = `score:${username}:${timestamp}`;
+    
     await env.LEADERBOARD.put(key, JSON.stringify({
       username,
       score,
-      wave: wave || null,  // Store wave or null if not provided
-      timestamp
+      wave: wave || null,
+      timestamp,
+      gameId: uniqueGameId  // Store gameId to track unique games
     }), {
       expirationTtl: 86400 * 30 // 30 days
     });
@@ -81,7 +114,8 @@ async function handleScoreSubmit(request, env, corsHeaders) {
         username,
         score,
         wave: wave || null,
-        timestamp
+        timestamp,
+        gameId: uniqueGameId
       }));
     }
     
@@ -131,20 +165,36 @@ async function handleGetLeaderboard(env, corsHeaders) {
     const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
     const recentList = await env.LEADERBOARD.list({ prefix: 'score:', limit: 1000 });
     
-    const recentScores = [];
+    // Map to track highest score per gameId (to prevent duplicates from same game)
+    const gameHighScores = new Map();
+    
     for (const key of recentList.keys) {
       const parts = key.name.split(':');
-      if (parts.length >= 2) {
-        const timestamp = parseInt(parts[1]);
+      // Format is now: score:username:timestamp
+      if (parts.length >= 3) {
+        const timestamp = parseInt(parts[2]);
         if (timestamp > dayAgo) {
           const data = await env.LEADERBOARD.get(key.name);
           if (data) {
-            recentScores.push(JSON.parse(data));
+            const scoreData = JSON.parse(data);
+            
+            // Only keep highest score per gameId
+            if (scoreData.gameId) {
+              const existing = gameHighScores.get(scoreData.gameId);
+              if (!existing || scoreData.score > existing.score) {
+                gameHighScores.set(scoreData.gameId, scoreData);
+              }
+            } else {
+              // No gameId means old entry, include it
+              gameHighScores.set(`legacy_${key.name}`, scoreData);
+            }
           }
         }
       }
     }
     
+    // Convert map to array and sort
+    const recentScores = Array.from(gameHighScores.values());
     recentScores.sort((a, b) => b.score - a.score);
     const last24h = recentScores.slice(0, 10);
     
