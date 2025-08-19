@@ -33,29 +33,52 @@ export class Mine {
   private draw(): void {
     clearGraphics(this.sprite);
     
-    // Pulsing effect
-    const pulse = Math.sin(this.pulseTime * 0.1) * 0.3 + 0.7;
-    const color = hueToRGB(this.hue);
+    // Pulsing effect - more dramatic pulsing for diamonds
+    const pulse = Math.sin(this.pulseTime * 0.15) * 0.4 + 0.8;
+    const glow = Math.sin(this.pulseTime * 0.2) * 0.3 + 0.7;
     
-    // Draw mine with spiky appearance
-    this.sprite.circle(0, 0, this.radius * pulse);
-    this.sprite.fill({ color, alpha: 0.8 });
+    // Rotating diamond colors - purple to cyan
+    const colorShift = Math.sin(this.pulseTime * 0.1) * 30;
+    const diamondHue = 280 + colorShift; // Purple-ish to cyan-ish
+    const color = hueToRGB(diamondHue);
     
-    // Draw danger spikes
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      const spikeLength = this.radius * 1.5 * pulse;
-      this.sprite.moveTo(0, 0);
-      this.sprite.lineTo(
-        Math.cos(angle) * spikeLength,
-        Math.sin(angle) * spikeLength
-      );
-    }
-    this.sprite.stroke({ color, width: 1, alpha: 0.9 });
+    // Draw tiny pulsating diamond shape
+    const size = this.radius * pulse;
+    
+    // Diamond shape (4 points)
+    this.sprite.poly([
+      0, -size,        // Top
+      size * 0.7, 0,   // Right
+      0, size,         // Bottom
+      -size * 0.7, 0   // Left
+    ]);
+    this.sprite.fill({ color, alpha: 0.9 });
+    this.sprite.stroke({ color: 0xFFFFFF, width: 1, alpha: glow });
+    
+    // Inner diamond for depth effect
+    const innerSize = size * 0.5;
+    this.sprite.poly([
+      0, -innerSize,
+      innerSize * 0.7, 0,
+      0, innerSize,
+      -innerSize * 0.7, 0
+    ]);
+    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.3 * glow });
+    
+    // Sparkle effect - tiny cross in center
+    const sparkleSize = size * 0.2;
+    this.sprite.moveTo(-sparkleSize, 0);
+    this.sprite.lineTo(sparkleSize, 0);
+    this.sprite.moveTo(0, -sparkleSize);
+    this.sprite.lineTo(0, sparkleSize);
+    this.sprite.stroke({ color: 0xFFFFFF, width: 2, alpha: glow });
     
     // Position sprite
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    
+    // Rotate the diamond slowly
+    this.sprite.rotation = this.pulseTime * 0.05;
   }
   
   update(dt: number): void {

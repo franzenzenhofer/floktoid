@@ -302,17 +302,48 @@ export class Boid {
       // NO clown nose dot - shooters are identified by red glow and stroke only
     }
     
-    // Miner bird purple shimmer effect (EXACT SAME AS OTHER SPECIAL BIRDS!)
+    // Miner bird diamond shimmer effect - UNIQUE DIAMOND PATTERN!
     if (this.isMiner) {
-      drawSpecialGlow(this.minerGlowTime, 0xFF00FF); // Bright purple glow
+      // Draw diamond-shaped glow instead of triangle
+      const shimmerPhase = Math.sin(this.minerGlowTime * 8) * 0.5 + 0.5;
+      const shimmerAlpha = 0.4 + shimmerPhase * 0.4; // Stronger glow
+      
+      // Draw outer diamond glow
+      this.sprite.poly([
+        0, -SIZES.BIRD.BASE * 1.5,                    // Top
+        SIZES.BIRD.BASE * 1.2, 0,                     // Right
+        0, SIZES.BIRD.BASE * 1.5,                     // Bottom
+        -SIZES.BIRD.BASE * 1.2, 0                     // Left
+      ]);
+      this.sprite.fill({ color: 0xFF00FF, alpha: shimmerAlpha });
+      
+      // Draw inner diamond pattern
+      this.sprite.poly([
+        0, -SIZES.BIRD.BASE * 0.7,
+        SIZES.BIRD.BASE * 0.5, 0,
+        0, SIZES.BIRD.BASE * 0.7,
+        -SIZES.BIRD.BASE * 0.5, 0
+      ]);
+      this.sprite.fill({ color: 0xFFFFFF, alpha: shimmerAlpha * 0.5 });
     }
     
-    // Draw triangle with shimmer on outline only
-    this.sprite.poly([
-      SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER, 0,
-      -SIZES.BIRD.BASE, SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER,
-      -SIZES.BIRD.BASE, -SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER
-    ]);
+    // Draw ship shape - diamond for miners, triangle for others
+    if (this.isMiner) {
+      // Draw diamond-shaped ship body
+      this.sprite.poly([
+        SIZES.BIRD.BASE * 1.3, 0,                     // Front point
+        0, SIZES.BIRD.BASE * 0.8,                     // Bottom
+        -SIZES.BIRD.BASE * 1.1, 0,                    // Back point
+        0, -SIZES.BIRD.BASE * 0.8                     // Top
+      ]);
+    } else {
+      // Draw normal triangle shape
+      this.sprite.poly([
+        SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER, 0,
+        -SIZES.BIRD.BASE, SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER,
+        -SIZES.BIRD.BASE, -SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_BACK_MULTIPLIER
+      ]);
+    }
     
     // Super navigators get a blue-tinted stroke
     let finalStrokeColor = strokeColor;
@@ -336,6 +367,19 @@ export class Boid {
       const dotColor = hueToRGB(this.targetDot.hue);
       this.sprite.circle(0, 0, SIZES.BIRD.DOT_INDICATOR_RADIUS);
       this.sprite.fill({ color: dotColor, alpha: VISUALS.ALPHA.FULL });
+    }
+    
+    // Miner indicator - tiny diamond on the back
+    if (this.isMiner && !this.hasDot) {
+      const diamondSize = SIZES.BIRD.DOT_INDICATOR_RADIUS * 0.6;
+      this.sprite.poly([
+        -SIZES.BIRD.BASE * 0.5, -diamondSize,
+        -SIZES.BIRD.BASE * 0.5 - diamondSize * 0.7, 0,
+        -SIZES.BIRD.BASE * 0.5, diamondSize,
+        -SIZES.BIRD.BASE * 0.5 + diamondSize * 0.7, 0
+      ]);
+      this.sprite.fill({ color: 0xFF00FF, alpha: 0.8 });
+      this.sprite.stroke({ color: 0xFFFFFF, width: 1, alpha: 0.5 });
     }
   }
   
@@ -445,6 +489,13 @@ export class Boid {
         const blueHue = 210;
         const blendFactor = 0.5; // 50% blue blend for trail
         trailHue = this.hue * (1 - blendFactor) + blueHue * blendFactor;
+      }
+      // Miners have purple-tinted sparkly trails
+      else if (this.isMiner) {
+        // Blend with purple for trail
+        const purpleHue = 280;
+        const blendFactor = 0.6; // 60% purple blend for trail
+        trailHue = this.hue * (1 - blendFactor) + purpleHue * blendFactor;
       }
       
       const color = hueToRGB(trailHue);

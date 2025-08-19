@@ -1771,8 +1771,8 @@ export class NeonFlockEngine {
     this.waveManager.setBirdsToSpawn(totalBirdsForWave); // FULL bird count!
     this.waveManager.setWaveDotsLost(stolenDots.length); // Dots lost = stolen dots count
     
-    // Set spawn time to start spawning immediately
-    this.waveManager.setNextSpawnTime(performance.now() + 1000); // Start spawning in 1 second
+    // CRITICAL FIX: Set spawn time to start NOW (time is in SECONDS, not milliseconds!)
+    this.waveManager.setNextSpawnTime(0); // Start spawning immediately!
     
     if (this.onWaveUpdate) {
       this.onWaveUpdate(wave);
