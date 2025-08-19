@@ -32,10 +32,12 @@ export class Mine {
   private draw(): void {
     clearGraphics(this.sprite);
     
-    // DRAMATIC flashing and pulsing!
-    const fastPulse = Math.sin(this.pulseTime * 0.3) * 0.5 + 0.5; // Fast pulse
+    // CONTINUOUS DRAMATIC PULSATING!
+    const fastPulse = Math.sin(this.pulseTime * 0.4) * 0.6 + 0.4; // Bigger range pulsing
+    const mediumPulse = Math.sin(this.pulseTime * 0.2) * 0.4 + 0.6; // Medium speed pulse
     const slowPulse = Math.sin(this.pulseTime * 0.1) * 0.3 + 0.7;  // Slow pulse
-    const flash = Math.sin(this.pulseTime * 0.5) > 0.5 ? 1 : 0.3; // Sharp flashing
+    const ultraFastPulse = Math.sin(this.pulseTime * 0.8) * 0.5 + 0.5; // Very fast pulse
+    const flash = 0.5 + Math.sin(this.pulseTime * 0.6) * 0.5; // Smooth flashing, always visible
     
     // Rotating colors - purple to cyan to white
     const colorPhase = (this.pulseTime * 0.2) % (Math.PI * 2);
@@ -50,55 +52,61 @@ export class Mine {
       color = 0xFFFFFF; // White
     }
     
-    // Draw flashing outer glow ring
-    const glowRadius = this.radius * (2 + fastPulse);
-    this.sprite.circle(0, 0, glowRadius);
-    this.sprite.fill({ color, alpha: 0.2 * flash });
+    // Draw MULTIPLE pulsating glow rings
+    const glowRadius1 = this.radius * (2.5 + fastPulse);
+    this.sprite.circle(0, 0, glowRadius1);
+    this.sprite.fill({ color, alpha: 0.15 * flash });
     
-    // Draw pulsating diamond shape - BIGGER and more dramatic
-    const size = this.radius * (1 + fastPulse * 0.5);
+    const glowRadius2 = this.radius * (2 + mediumPulse);
+    this.sprite.circle(0, 0, glowRadius2);
+    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.1 * ultraFastPulse });
     
-    // Outer diamond with flash effect
+    // Draw HEAVILY pulsating diamond shape - CONSTANTLY CHANGING SIZE
+    const size = this.radius * (0.8 + fastPulse * 0.8); // Big size variation!
+    
+    // Outer diamond with continuous pulsing
     this.sprite.poly([
-      0, -size * 1.2,        // Top
-      size * 0.9, 0,         // Right
-      0, size * 1.2,         // Bottom
-      -size * 0.9, 0         // Left
+      0, -size * (1.2 + ultraFastPulse * 0.3),  // Top pulsates
+      size * (0.9 + mediumPulse * 0.2), 0,      // Right pulsates
+      0, size * (1.2 + ultraFastPulse * 0.3),   // Bottom pulsates
+      -size * (0.9 + mediumPulse * 0.2), 0      // Left pulsates
     ]);
-    this.sprite.fill({ color, alpha: 0.8 * flash });
-    this.sprite.stroke({ color: 0xFFFFFF, width: 2, alpha: flash });
+    this.sprite.fill({ color, alpha: 0.7 + flash * 0.3 });
+    this.sprite.stroke({ color: 0xFFFFFF, width: 2 + fastPulse, alpha: flash });
     
-    // Middle diamond layer - contrasting color
-    const midSize = size * 0.7;
+    // Middle diamond layer - ALSO PULSATING
+    const midSize = size * (0.7 + ultraFastPulse * 0.2);
     this.sprite.poly([
-      0, -midSize,
+      0, -midSize * (1 + fastPulse * 0.2),
       midSize * 0.7, 0,
-      0, midSize,
+      0, midSize * (1 + fastPulse * 0.2),
       -midSize * 0.7, 0
     ]);
-    this.sprite.fill({ color: color === 0xFF00FF ? 0x00FFFF : 0xFF00FF, alpha: 0.6 * slowPulse });
+    this.sprite.fill({ color: color === 0xFF00FF ? 0x00FFFF : 0xFF00FF, alpha: 0.5 + slowPulse * 0.3 });
     
-    // Inner diamond core - bright white flash
-    const innerSize = size * 0.4;
+    // Inner diamond core - INTENSE PULSATING
+    const innerSize = size * (0.3 + ultraFastPulse * 0.3);
     this.sprite.poly([
       0, -innerSize,
       innerSize * 0.7, 0,
       0, innerSize,
       -innerSize * 0.7, 0
     ]);
-    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.9 * flash });
+    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.7 + flash * 0.3 });
     
-    // Energy beams shooting out (like a star)
-    const beamLength = size * 2 * fastPulse;
+    // Energy beams shooting out - PULSATING LENGTH
+    const beamLength = size * (1.5 + fastPulse * 1.5); // Beams grow and shrink dramatically
     for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
+      const angle = (i / 8) * Math.PI * 2 + this.pulseTime * 0.1; // Slight rotation
+      const individualPulse = Math.sin(this.pulseTime * 0.5 + i) * 0.5 + 0.5;
+      const thisBeamLength = beamLength * (0.7 + individualPulse * 0.3);
       this.sprite.moveTo(0, 0);
       this.sprite.lineTo(
-        Math.cos(angle) * beamLength,
-        Math.sin(angle) * beamLength
+        Math.cos(angle) * thisBeamLength,
+        Math.sin(angle) * thisBeamLength
       );
     }
-    this.sprite.stroke({ color: 0xFFFFFF, width: 1, alpha: 0.5 * flash });
+    this.sprite.stroke({ color: 0xFFFFFF, width: 1 + ultraFastPulse, alpha: 0.4 + flash * 0.3 });
     
     // Position sprite
     this.sprite.x = this.x;
