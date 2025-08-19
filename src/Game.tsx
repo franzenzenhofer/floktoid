@@ -82,20 +82,23 @@ export function Game() {
           engine.onWaveUpdate = (newWave) => {
             setWave(newWave);
             
-            // AUTO-SAVE on wave completion!
+            // AUTO-SAVE at start of each new wave (not wave 1)
             if (session && session.isActive() && newWave > 1) {
-              const engineState = engine.getGameStateForSave();
-              const saveState: SavedGame = {
-                gameId: session.getGameId(),
-                score: engine.getScore(),
-                wave: newWave,
-                timestamp: Date.now(),
-                birdsRemaining: engineState.birdsRemaining,
-                stolenDots: engineState.stolenDots,
-                dotsLost: engineState.dotsLost
-              };
-              SavedGameState.save(saveState);
-              console.log('[AUTO-SAVE] Saved game at wave', newWave);
+              // Small delay to let wave initialize properly
+              setTimeout(() => {
+                const engineState = engine.getGameStateForSave();
+                const saveState: SavedGame = {
+                  gameId: session.getGameId(),
+                  score: engine.getScore(),
+                  wave: engine.getWave(), // Use actual current wave from engine
+                  timestamp: Date.now(),
+                  birdsRemaining: engineState.birdsRemaining,
+                  stolenDots: engineState.stolenDots,
+                  dotsLost: engineState.dotsLost
+                };
+                SavedGameState.save(saveState);
+                console.log('[AUTO-SAVE] Saved game at start of wave', engine.getWave());
+              }, 100);
             }
           };
           engine.onEnergyStatus = (critical: boolean) => setEnergyCritical(critical);
