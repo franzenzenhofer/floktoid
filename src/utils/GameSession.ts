@@ -10,10 +10,19 @@ export class GameSession {
   private lastSubmittedScore: number = 0;
   private isGameActive: boolean = true;
   
-  constructor() {
-    // Generate unique game ID using timestamp + random
-    this.gameId = `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    console.log(`[GAME SESSION] New game started with ID: ${this.gameId}`);
+  constructor(existingGameId?: string, existingScore?: number, existingWave?: number) {
+    if (existingGameId) {
+      // Restore from saved game
+      this.gameId = existingGameId;
+      this.highestScore = existingScore || 0;
+      this.highestWave = existingWave || 1;
+      this.lastSubmittedScore = 0; // Reset submission tracking
+      console.log(`[GAME SESSION] Resumed game ${this.gameId} at score ${this.highestScore}, wave ${this.highestWave}`);
+    } else {
+      // Generate unique game ID using timestamp + random
+      this.gameId = `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log(`[GAME SESSION] New game started with ID: ${this.gameId}`);
+    }
   }
   
   /**

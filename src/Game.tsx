@@ -8,6 +8,7 @@ import { LeaderboardScreen } from './components/LeaderboardScreen';
 import { HomeButton } from './components/HomeButton';
 import { leaderboardService } from './services/LeaderboardService';
 import { GameSession } from './utils/GameSession';
+import { SavedGameState, SavedGame } from './utils/SavedGameState';
 
 export function Game() {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -30,8 +31,19 @@ export function Game() {
           const engine = new NeonFlockEngine(canvasRef.current!, devMode);
           await engine.initialize();
           
-          // Create new game session
-          gameSessionRef.current = new GameSession();
+          // Check for saved game
+          const savedGame = SavedGameState.load();
+          
+          // Create or restore game session
+          if (savedGame) {
+            gameSessionRef.current = new GameSession(savedGame.gameId, savedGame.score, savedGame.wave);
+            // Restore engine state
+            engine.restoreGameState(savedGame.score, savedGame.wave, savedGame.energyDots, savedGame.boids);
+            // Clear saved game after restoration
+            SavedGameState.clear();
+          } else {
+            gameSessionRef.current = new GameSession();
+          }
           const session = gameSessionRef.current;
           
           // CRITICAL FIX: Use stable highScore reference to prevent re-initialization loops
@@ -123,6 +135,8 @@ export function Game() {
   }, [gameState, devMode]); // Include devMode to reinitialize engine with debug mode
 
   const handleStart = (isDevMode = false) => {
+    // Clear any saved game when starting fresh
+    SavedGameState.clear();
     setScore(0);
     setWave(1);
     setDevMode(isDevMode);
@@ -131,14 +145,48 @@ export function Game() {
     }
     setGameState('playing');
   };
+  
+  const handleContinue = () => {
+    const saved = SavedGameState.load();
+    if (saved) {
+      setScore(saved.score);
+      setWave(saved.wave);
+      setGameState('playing');
+      // Engine will restore from saved state in useEffect
+    }
+  };
 
   const handleRestart = () => {
+    // Clear saved game on restart after game over
+    SavedGameState.clear();
     setScore(0);
     setWave(1);
     setGameState('playing');
   };
 
   const handleMenu = () => {
+    // Save game state ONLY if game is active (not game over)
+    if (gameState === 'playing' && engineRef.current && gameSessionRef.current) {
+      const engine = engineRef.current;
+      const session = gameSessionRef.current;
+      
+      // Only save if game is still running (not game over)
+      if (session.isActive()) {
+        const saveState: SavedGame = {
+          gameId: session.getGameId(),
+          score: engine.getScore(),
+          wave: engine.getWave(),
+          timestamp: Date.now(),
+          // Get engine state for restoration
+          energyDots: engine.getEnergyDotsState(),
+          boids: engine.getBoidsState()
+        };
+        
+        SavedGameState.save(saveState);
+        console.log('[GAME] Saved game state for continuation');
+      }
+    }
+    
     setGameState('menu');
   };
 
@@ -150,7 +198,9 @@ export function Game() {
     <div className={gameState === 'leaderboard' ? '' : 'game-container'}>
       {gameState === 'menu' && (
         <StartScreen 
-          onStart={handleStart} 
+          onStart={handleStart}
+          onContinue={handleContinue}
+          savedGame={SavedGameState.load()}
           highScore={highScore} 
           onShowLeaderboard={handleShowLeaderboard}
         />

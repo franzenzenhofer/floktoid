@@ -161,6 +161,13 @@ export class ScoringSystem {
   }
   
   /**
+   * Set score directly (for restoring saved games)
+   */
+  setScore(score: number): void {
+    this.score = Math.max(this.MIN_SCORE, score);
+  }
+  
+  /**
    * Check if player can afford to launch an asteroid
    */
   canAffordAsteroid(asteroidSize: number): boolean {

@@ -53,6 +53,19 @@ export class WaveManager {
   }
   
   /**
+   * Set wave directly (for restoring saved games)
+   */
+  setWave(wave: number): void {
+    this.wave = Math.max(1, wave);
+    // Recalculate speed multiplier for this wave
+    this.speedMultiplier = 1 + (wave - 1) * GameConfig.SPEED_GROWTH;
+    // Trigger update callback
+    if (this.onWaveUpdate) {
+      this.onWaveUpdate(this.wave);
+    }
+  }
+  
+  /**
    * Get current speed multiplier
    */
   getSpeedMultiplier(): number {

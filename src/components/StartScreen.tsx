@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react';
 import { VERSION_INFO } from '../version';
 import { UsernameGenerator } from '../utils/UsernameGenerator';
 import { leaderboardService, type LeaderboardEntry } from '../services/LeaderboardService';
+import type { SavedGame } from '../utils/SavedGameState';
 
 interface StartScreenProps {
   onStart: (devMode?: boolean) => void;
+  onContinue?: () => void;
+  savedGame?: SavedGame | null;
   highScore: number;
   onShowLeaderboard?: () => void;
 }
 
-export function StartScreen({ onStart, highScore }: StartScreenProps) {
+export function StartScreen({ onStart, onContinue, savedGame, highScore }: StartScreenProps) {
   const [username] = useState(() => UsernameGenerator.getSessionUsername());
   const [topPlayer, setTopPlayer] = useState<LeaderboardEntry | null>(null);
   
@@ -59,6 +62,15 @@ export function StartScreen({ onStart, highScore }: StartScreenProps) {
           <div className="text-lg sm:text-xl md:text-2xl neon-yellow">
             HIGH SCORE: {highScore.toString().padStart(6, '0')}
           </div>
+        )}
+        
+        {savedGame && onContinue && (
+          <button
+            onClick={onContinue}
+            className="px-6 sm:px-10 py-2 sm:py-3 text-base sm:text-lg md:text-xl font-bold bg-transparent border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,0,255,0.5)]"
+          >
+            CONTINUE GAME (W{savedGame.wave})
+          </button>
         )}
         
         <button

@@ -1668,6 +1668,72 @@ export class NeonFlockEngine {
     }
   }
   
+  /**
+   * Get current energy dots state for saving
+   */
+  public getEnergyDotsState(): Array<{ x: number; y: number }> {
+    return this.energyDots.map(dot => {
+      const pos = dot.getSpritePosition();
+      return { x: pos.x, y: pos.y };
+    });
+  }
+  
+  /**
+   * Get current boids state for saving
+   */
+  public getBoidsState(): Array<{ x: number; y: number; vx: number; vy: number }> {
+    return this.boids.map(boid => ({
+      x: boid.x,
+      y: boid.y,
+      vx: boid.vx,
+      vy: boid.vy
+    }));
+  }
+  
+  /**
+   * Restore game from saved state
+   */
+  public restoreGameState(
+    score: number,
+    wave: number,
+    energyDots: Array<{ x: number; y: number }>,
+    boids: Array<{ x: number; y: number; vx: number; vy: number }>
+  ): void {
+    // Restore score
+    scoringSystem.setScore(score);
+    
+    // Restore wave and trigger callback
+    this.waveManager.setWave(wave);
+    if (this.onWaveUpdate) {
+      this.onWaveUpdate(wave);
+    }
+    
+    // Update combo effects with current wave
+    this.comboEffects.setWave(wave);
+    
+    // Clear existing entities
+    this.boids.forEach(b => b.destroy());
+    this.boids = [];
+    this.energyDots.forEach(d => d.destroy());
+    this.energyDots = [];
+    
+    // Restore energy dots with random hues
+    energyDots.forEach(dot => {
+      const hue = Math.random() * 360;
+      const energyDot = new EnergyDot(this.app, dot.x, dot.y, hue);
+      this.energyDots.push(energyDot);
+    });
+    
+    // Restore boids with current wave's speed multiplier
+    const speedMultiplier = this.waveManager.getSpeedMultiplier();
+    boids.forEach(boidData => {
+      const boid = new Boid(this.app, boidData.x, boidData.y, speedMultiplier, { vx: boidData.vx, vy: boidData.vy });
+      this.boids.push(boid);
+    });
+    
+    console.log(`[ENGINE] Restored game state - Wave ${wave}, Score ${score}, Boids: ${boids.length}, Dots: ${energyDots.length}`);
+  }
+  
   public destroy() {
     if (!this.initialized) return;
     

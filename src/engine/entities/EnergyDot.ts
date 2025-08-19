@@ -16,6 +16,13 @@ export class EnergyDot {
   private glowSprite: PIXI.Graphics;
   private app: PIXI.Application;
   private pulsePhase: number;
+  
+  /**
+   * Get sprite position (for save/restore)
+   */
+  public getSpritePosition(): { x: number; y: number } {
+    return { x: this.sprite.x, y: this.sprite.y };
+  }
 
   constructor(app: PIXI.Application, x: number, y: number, hue: number) {
     this.app = app;
