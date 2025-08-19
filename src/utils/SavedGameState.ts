@@ -8,11 +8,12 @@ export interface SavedGame {
   score: number;
   wave: number;
   timestamp: number;
-  // Mid-wave state - continue exactly where left off
-  birdsRemaining: number;  // How many birds left to spawn in this wave
-  activeBirds: number;     // How many birds are currently on screen
+  // KISS: Save important progress, restart wave fresh
   stolenDots: number[];    // Which dot indices are stolen (0-based)
-  dotsLost: number;        // Total dots lost this wave
+  // Legacy fields kept for compatibility
+  birdsRemaining?: number;
+  activeBirds?: number;
+  dotsLost?: number;
 }
 
 export class SavedGameState {

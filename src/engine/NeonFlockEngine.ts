@@ -1669,13 +1669,10 @@ export class NeonFlockEngine {
   }
   
   /**
-   * Get current game state for saving (mid-wave progress)
+   * Get current game state for saving (KISS: just the essentials)
    */
   public getGameStateForSave(): { 
-    birdsRemaining: number;
-    activeBirds: number;
     stolenDots: number[];
-    dotsLost: number;
   } {
     // Get which dots are stolen (by index)
     const stolenDots: number[] = [];
@@ -1686,34 +1683,29 @@ export class NeonFlockEngine {
     });
     
     return {
-      birdsRemaining: this.waveManager.getBirdsToSpawn(),
-      activeBirds: this.boids.length,  // Current birds on screen
-      stolenDots,
-      dotsLost: this.waveManager.getWaveDotsLost()
+      stolenDots  // That's all we need!
     };
   }
   
   /**
-   * Restore game from saved state (continue exactly where left off)
+   * Restore game from saved state (KISS: restart wave with saved progress)
    */
   public restoreGameState(
     score: number,
     wave: number,
-    birdsRemaining: number,
-    activeBirds: number,
-    stolenDots: number[],
-    dotsLost: number
+    stolenDots: number[]
   ): void {
     // Restore score
     scoringSystem.setScore(score);
     
-    // Restore wave WITHOUT calling startWave (which would reset everything)
+    // KISS: Set wave and reset birds to FULL count for this wave
     this.waveManager.setWave(wave);
-    this.waveManager.setBirdsToSpawn(birdsRemaining);
-    this.waveManager.setWaveDotsLost(dotsLost);
+    const totalBirdsForWave = this.waveManager.getTotalBirdsForWave(wave);
+    this.waveManager.setBirdsToSpawn(totalBirdsForWave); // FULL bird count!
+    this.waveManager.setWaveDotsLost(stolenDots.length); // Dots lost = stolen dots count
     
-    // IMPORTANT: Set next spawn time to continue spawning birds
-    this.waveManager.setNextSpawnTime(performance.now() + 1000); // Spawn next bird in 1 second
+    // Set spawn time to start spawning soon
+    this.waveManager.setNextSpawnTime(performance.now() + 2000); // Start spawning in 2 seconds
     
     if (this.onWaveUpdate) {
       this.onWaveUpdate(wave);
@@ -1739,7 +1731,7 @@ export class NeonFlockEngine {
         hue
       );
       
-      // Mark as stolen if it was stolen in saved state
+      // KEEP stolen dots status!
       if (stolenDots.includes(i)) {
         dot.stolen = true;
       }
@@ -1747,20 +1739,10 @@ export class NeonFlockEngine {
       this.energyDots.push(dot);
     }
     
-    // Restore active birds that were on screen when saved
-    if (activeBirds > 0) {
-      const speedMultiplier = this.waveManager.getSpeedMultiplier();
-      for (let i = 0; i < activeBirds; i++) {
-        // Spawn birds in reasonable positions (spread across screen)
-        const x = Math.random() * this.app.screen.width;
-        const y = Math.random() * this.app.screen.height * 0.6; // Upper 60% of screen
-        const boid = new Boid(this.app, x, y, speedMultiplier);
-        this.boids.push(boid);
-      }
-    }
+    // KISS: Don't spawn any birds initially - let wave manager handle it
+    // Player gets a fresh start at the wave with their score/dots preserved
     
-    const totalBirdsForWave = this.waveManager.getTotalBirdsForWave(wave);
-    console.log(`[ENGINE] Restored mid-wave state - Wave ${wave}, Score ${score}, Birds remaining: ${birdsRemaining}/${totalBirdsForWave}, Active birds: ${this.boids.length}`);
+    console.log(`[ENGINE] KISS Restore - Wave ${wave}, Score ${score}, Birds to spawn: ${totalBirdsForWave}, Stolen dots: ${stolenDots.length}`);
   }
   
   public destroy() {

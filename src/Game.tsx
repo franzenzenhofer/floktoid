@@ -37,14 +37,11 @@ export function Game() {
           // Create or restore game session
           if (savedGame) {
             gameSessionRef.current = new GameSession(savedGame.gameId, savedGame.score, savedGame.wave);
-            // Restore engine state with mid-wave progress
+            // KISS: Restore with simplified state
             engine.restoreGameState(
               savedGame.score, 
               savedGame.wave, 
-              savedGame.birdsRemaining,
-              savedGame.activeBirds || 0,  // Fallback for old saves
-              savedGame.stolenDots,
-              savedGame.dotsLost
+              savedGame.stolenDots
             );
             // Clear saved game after restoration
             SavedGameState.clear();
@@ -93,10 +90,7 @@ export function Game() {
                   score: engine.getScore(),
                   wave: engine.getWave(), // Use actual current wave from engine
                   timestamp: Date.now(),
-                  birdsRemaining: engineState.birdsRemaining,
-                  activeBirds: engineState.activeBirds,
-                  stolenDots: engineState.stolenDots,
-                  dotsLost: engineState.dotsLost
+                  stolenDots: engineState.stolenDots
                 };
                 SavedGameState.save(saveState);
                 console.log('[AUTO-SAVE] Saved game at start of wave', engine.getWave());
@@ -138,10 +132,7 @@ export function Game() {
                 score: engine.getScore(),
                 wave: engine.getWave(),
                 timestamp: Date.now(),
-                birdsRemaining: engineState.birdsRemaining,
-                activeBirds: engineState.activeBirds,
-                stolenDots: engineState.stolenDots,
-                dotsLost: engineState.dotsLost
+                stolenDots: engineState.stolenDots
               };
               SavedGameState.save(saveState);
               console.log('[UNLOAD-SAVE] Saved game on page unload');
@@ -229,11 +220,8 @@ export function Game() {
           score: engine.getScore(),
           wave: engine.getWave(),
           timestamp: Date.now(),
-          // Mid-wave state
-          birdsRemaining: engineState.birdsRemaining,
-          activeBirds: engineState.activeBirds,
-          stolenDots: engineState.stolenDots,
-          dotsLost: engineState.dotsLost
+          // KISS: Just save the essentials
+          stolenDots: engineState.stolenDots
         };
         
         SavedGameState.save(saveState);
