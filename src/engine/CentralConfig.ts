@@ -212,6 +212,7 @@ export const SIZES = {
     HEALTH_BAR_WIDTH: 60,
     HEALTH_BAR_HEIGHT: 8,
   },
+  MINE_RADIUS: 8, // Tiny and cool!
 } as const;
 
 // ============================================

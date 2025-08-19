@@ -8,6 +8,7 @@ import { clearGraphics } from '../utils/SpriteFactory';
 import { VectorUtils } from '../utils/VectorUtils';
 import { BirdProjectile } from './BirdProjectile';
 import { Asteroid } from './Asteroid';
+import { Mine } from './Mine';
 
 const { FLOCKING, VISUALS, SIZES, PHYSICS } = CentralConfig;
 
@@ -49,6 +50,12 @@ export class Boid {
   public maxShootCooldown = 60; // 1 second at 60fps
   private shooterGlowTime = 0;
   
+  // MINER - 10% chance of laying mines!
+  public isMiner: boolean;
+  public mineCooldown = 0;
+  public maxMineCooldown = 120; // 2 seconds at 60fps
+  private minerGlowTime = 0;
+  
   // PERSONALITY SYSTEM - Each bird is unique!
   public personality: BirdPersonality;
   public personalityWeights: {
@@ -76,15 +83,15 @@ export class Boid {
     this.x = x;
     this.y = y;
     
-    // SUPER DRY: Use EXACT SAME logic for both special types!
+    // SUPER DRY: Use EXACT SAME logic for all three special types!
     const superNavigatorRoll = Math.random();
     const shooterRoll = Math.random();
+    const minerRoll = Math.random();
     
-    // SUPER NAVIGATOR - 10% chance!
+    // Each special type has independent 10% chance
     this.isSuperNavigator = superNavigatorRoll < SPECIAL_BIRD_CHANCE;
-    
-    // SHOOTER - 10% chance (EXACT SAME LOGIC AS SUPER NAVIGATOR!)
     this.isShooter = shooterRoll < SPECIAL_BIRD_CHANCE;
+    this.isMiner = minerRoll < SPECIAL_BIRD_CHANCE;
     
     // Debug logging for verification
     if (this.isSuperNavigator) {
@@ -92,6 +99,9 @@ export class Boid {
     }
     if (this.isShooter) {
       console.log('[SPECIAL BIRD] Shooter spawned!');
+    }
+    if (this.isMiner) {
+      console.log('[SPECIAL BIRD] Miner spawned!');
     }
     
     // ASSIGN RANDOM PERSONALITY
@@ -292,6 +302,11 @@ export class Boid {
       // NO clown nose dot - shooters are identified by red glow and stroke only
     }
     
+    // Miner bird purple shimmer effect (EXACT SAME AS OTHER SPECIAL BIRDS!)
+    if (this.isMiner) {
+      drawSpecialGlow(this.minerGlowTime, 0xFF00FF); // Bright purple glow
+    }
+    
     // Draw triangle with shimmer on outline only
     this.sprite.poly([
       SIZES.BIRD.BASE * SIZES.BIRD.TRIANGLE_FRONT_MULTIPLIER, 0,
@@ -307,6 +322,10 @@ export class Boid {
     // Shooters get a red-tinted stroke
     if (this.isShooter) {
       finalStrokeColor = 0xFF0000; // BRIGHT RED stroke
+    }
+    // Miners get a purple-tinted stroke
+    if (this.isMiner) {
+      finalStrokeColor = 0xFF00FF; // BRIGHT PURPLE stroke
     }
     
     this.sprite.stroke({ width: this.hasDot ? VISUALS.STROKE.THICK : VISUALS.STROKE.NORMAL, color: finalStrokeColor, alpha: VISUALS.ALPHA.FULL });
@@ -374,6 +393,14 @@ export class Boid {
       this.shooterGlowTime += dt;
       if (this.shootCooldown > 0) {
         this.shootCooldown -= 1; // Frame-based cooldown
+      }
+    }
+    
+    // Update miner mechanics (EXACT SAME AS SHOOTER!)
+    if (this.isMiner) {
+      this.minerGlowTime += dt;
+      if (this.mineCooldown > 0) {
+        this.mineCooldown -= 1; // Frame-based cooldown
       }
     }
     
@@ -534,6 +561,29 @@ export class Boid {
    */
   public canShoot(): boolean {
     return this.isShooter && this.shootCooldown <= 0 && this.alive;
+  }
+  
+  /**
+   * Check if ready to lay mine
+   */
+  public canLayMine(): boolean {
+    return this.isMiner && this.mineCooldown <= 0 && this.alive;
+  }
+  
+  /**
+   * Lay a mine at current position
+   */
+  public layMine(): Mine | null {
+    if (!this.canLayMine()) return null;
+    
+    this.mineCooldown = this.maxMineCooldown;
+    
+    // Create mine slightly behind the bird
+    const mineX = this.x - this.vx * 0.5;
+    const mineY = this.y - this.vy * 0.5;
+    
+    console.log('[MINER] Laying mine at', mineX, mineY);
+    return new Mine(this.app, mineX, mineY);
   }
   
   public destroy() {

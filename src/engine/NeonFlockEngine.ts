@@ -5,6 +5,7 @@ import type { BirdProjectile } from './entities/BirdProjectile';
 import { EnergyDot } from './entities/EnergyDot';
 import { Asteroid } from './entities/Asteroid';
 import { Shredder, calculateShredderSpawnProbability } from './entities/Shredder';
+import { Mine } from './entities/Mine';
 import { AsteroidSplitter } from './systems/AsteroidSplitter';
 import { ParticleSystem } from './systems/ParticleSystem';
 import { FlockingSystem } from './systems/FlockingSystem';
@@ -35,6 +36,7 @@ export class NeonFlockEngine {
   private energyDots: EnergyDot[] = [];
   private asteroids: Asteroid[] = [];
   private shredders: Shredder[] = [];
+  private mines: Mine[] = [];
   private recentLaunchPositions: { x: number; y: number }[] = []; // Track last 10 launch positions
   private fallingDots: Array<{
     x: number;
@@ -613,6 +615,17 @@ export class NeonFlockEngine {
           }
         }
         
+        // MINER BIRDS - Check if they should lay mines!
+        if (boid.isMiner && boid.canLayMine()) {
+          const mine = boid.layMine();
+          if (mine) {
+            this.mines.push(mine);
+            console.log('[MINER] Mine laid! Total mines:', this.mines.length);
+            // Visual feedback for mine laying
+            this.particleSystem.createExplosion(mine.x, mine.y, 0xFF00FF, 5);
+          }
+        }
+        
         // Check dot pickup - both stationary and falling dots
         for (const dot of this.energyDots) {
           if (!dot.stolen && boid.checkDotPickup(dot)) {
@@ -787,6 +800,16 @@ export class NeonFlockEngine {
       return true;
     });
     
+    // Update mines
+    this.mines = this.mines.filter(mine => {
+      mine.update(dt);
+      if (!mine.active) {
+        mine.destroy();
+        return false;
+      }
+      return true;
+    });
+    
     // Update asteroids and detect zombies
     this.asteroids = this.asteroids.filter(asteroid => {
       // ZOMBIE CHECK: Detect asteroids that aren't moving or updating properly
@@ -952,6 +975,41 @@ export class NeonFlockEngine {
         this.collisionDebugger.startFrame();
         this.collisionDebugger.logCollisionCheck('asteroid-boid', this.asteroids.length, this.boids.length);
         console.log(`[COLLISION] Frame ${this.frameCount}: ${this.asteroids.length} asteroids, ${this.boids.length} boids`);
+      }
+      
+      // Check mine-asteroid collisions (before other collisions)
+      for (let i = this.mines.length - 1; i >= 0; i--) {
+        const mine = this.mines[i];
+        if (!mine.active) continue;
+        
+        for (let j = this.asteroids.length - 1; j >= 0; j--) {
+          const asteroid = this.asteroids[j];
+          if (mine.checkCollision(asteroid)) {
+            // Mine destroys asteroid on contact!
+            console.log('[MINE] Detonated on asteroid!');
+            
+            // Create explosion
+            this.particleSystem.createExplosion(mine.x, mine.y, 0xFF00FF, 30);
+            this.particleSystem.createExplosion(asteroid.x, asteroid.y, asteroid.hue, 20);
+            
+            // Split asteroid
+            const fragments = this.asteroidSplitter.split(asteroid, this.asteroids.length);
+            if (fragments.length > 0) {
+              this.asteroids.push(...fragments);
+            }
+            
+            // Destroy both mine and asteroid
+            mine.explode();
+            asteroid.destroy();
+            this.asteroids.splice(j, 1);
+            
+            // Score for mine hit
+            scoringSystem.addEvent(ScoringEvent.ASTEROID_SPLIT);
+            this.updateScoreDisplay();
+            
+            break; // Mine is used up
+          }
+        }
       }
       
       // Use extended collision system with projectiles
@@ -1704,12 +1762,17 @@ export class NeonFlockEngine {
     
     // KISS: Set wave and reset birds to FULL count for this wave
     this.waveManager.setWave(wave);
+    
+    // Actually START the wave properly!
+    this.waveManager.startWave();
+    
+    // Override birds to spawn with full count (startWave already set it, but just to be sure)
     const totalBirdsForWave = this.waveManager.getTotalBirdsForWave(wave);
     this.waveManager.setBirdsToSpawn(totalBirdsForWave); // FULL bird count!
     this.waveManager.setWaveDotsLost(stolenDots.length); // Dots lost = stolen dots count
     
-    // Set spawn time to start spawning soon
-    this.waveManager.setNextSpawnTime(performance.now() + 2000); // Start spawning in 2 seconds
+    // Set spawn time to start spawning immediately
+    this.waveManager.setNextSpawnTime(performance.now() + 1000); // Start spawning in 1 second
     
     if (this.onWaveUpdate) {
       this.onWaveUpdate(wave);

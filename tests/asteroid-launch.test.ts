@@ -6,6 +6,17 @@ import * as PIXI from 'pixi.js';
 // Mock PIXI modules
 vi.mock('pixi.js', async () => {
   const actual = await vi.importActual('pixi.js');
+  
+  // Create a reusable container mock factory
+  const createMockContainer = () => ({
+    addChild: vi.fn(),
+    removeChild: vi.fn(),
+    children: [],
+    destroy: vi.fn(),
+    x: 0,
+    y: 0
+  });
+  
   return {
     ...actual,
     Graphics: vi.fn().mockImplementation(() => ({
@@ -25,12 +36,7 @@ vi.mock('pixi.js', async () => {
       scale: { x: 1, y: 1 },
       visible: true
     })),
-    Container: vi.fn().mockImplementation(() => ({
-      addChild: vi.fn(),
-      removeChild: vi.fn(),
-      children: [],
-      destroy: vi.fn()
-    })),
+    Container: vi.fn().mockImplementation(createMockContainer),
     Text: vi.fn().mockImplementation(() => ({
       x: 0,
       y: 0,
@@ -70,6 +76,16 @@ describe('Asteroid Launch Mechanics', () => {
     mockCanvas.getBoundingClientRect = vi.fn(() => ({ left: 0, top: 0, width: 800, height: 600 }));
     mockCanvas.style = {} as any;
     
+    // Create mock container for gridOverlay
+    const mockGridOverlay = {
+      addChild: vi.fn(),
+      removeChild: vi.fn(),
+      children: [],
+      destroy: vi.fn(),
+      x: 0,
+      y: 0
+    };
+    
     // Mock the app that will be created in initialize
     mockApp = {
       init: vi.fn().mockResolvedValue(undefined),
@@ -77,7 +93,8 @@ describe('Asteroid Launch Mechanics', () => {
       stage: {
         addChild: vi.fn(),
         removeChild: vi.fn(),
-        children: []
+        children: [],
+        gridOverlay: mockGridOverlay // Add gridOverlay to stage
       },
       ticker: {
         add: vi.fn(),
@@ -88,11 +105,15 @@ describe('Asteroid Launch Mechanics', () => {
       view: mockCanvas, // InputManager uses app.view, not app.canvas
       renderer: {
         render: vi.fn()
-      }
+      },
+      gridOverlay: mockGridOverlay // Also at app level
     };
     
     // Mock PIXI.Application constructor to return our mock
     vi.spyOn(PIXI, 'Application').mockImplementation(() => mockApp as any);
+    
+    // Ensure Container returns proper mock with addChild method
+    vi.spyOn(PIXI, 'Container').mockImplementation(() => mockGridOverlay as any);
     
     // Initialize the engine
     await engine.initialize();
