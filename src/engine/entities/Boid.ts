@@ -53,7 +53,7 @@ export class Boid {
   // MINER - 10% chance of laying mines!
   public isMiner: boolean;
   public mineCooldown = 0;
-  public maxMineCooldown = 120; // 2 seconds at 60fps
+  public maxMineCooldown = 60; // 1 second at 60fps - FASTER mine laying!
   private minerGlowTime = 0;
   private minerAngle = 0; // Current flight angle
   private hasReversed = false; // Track if just reversed to prevent oscillation
@@ -85,15 +85,32 @@ export class Boid {
     this.x = x;
     this.y = y;
     
-    // SUPER DRY: Use EXACT SAME logic for all three special types!
-    const superNavigatorRoll = Math.random();
-    const shooterRoll = Math.random();
-    const minerRoll = Math.random();
+    // SUPER DRY: Special types are MUTUALLY EXCLUSIVE!
+    // Roll once to determine special type
+    const specialRoll = Math.random();
     
-    // Each special type has independent 10% chance
-    this.isSuperNavigator = superNavigatorRoll < SPECIAL_BIRD_CHANCE;
-    this.isShooter = shooterRoll < SPECIAL_BIRD_CHANCE;
-    this.isMiner = minerRoll < SPECIAL_BIRD_CHANCE;
+    // 10% chance each, but ONLY ONE type per bird!
+    if (specialRoll < SPECIAL_BIRD_CHANCE) {
+      // Super Navigator (0-10%)
+      this.isSuperNavigator = true;
+      this.isShooter = false;
+      this.isMiner = false;
+    } else if (specialRoll < SPECIAL_BIRD_CHANCE * 2) {
+      // Shooter (10-20%)
+      this.isSuperNavigator = false;
+      this.isShooter = true;
+      this.isMiner = false;
+    } else if (specialRoll < SPECIAL_BIRD_CHANCE * 3) {
+      // Miner (20-30%)
+      this.isSuperNavigator = false;
+      this.isShooter = false;
+      this.isMiner = true;
+    } else {
+      // Normal bird (70%)
+      this.isSuperNavigator = false;
+      this.isShooter = false;
+      this.isMiner = false;
+    }
     
     // Debug logging for verification
     if (this.isSuperNavigator) {
@@ -637,6 +654,11 @@ export class Boid {
    * Shoot a projectile at the nearest asteroid
    */
   public shoot(_asteroids?: Asteroid[]): BirdProjectile | null {
+    // CRITICAL: Miners NEVER shoot!
+    if (this.isMiner) {
+      return null;
+    }
+    
     // Check if can shoot
     if (!this.isShooter || this.shootCooldown > 0 || !this.alive) {
       return null;

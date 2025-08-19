@@ -126,6 +126,9 @@ export class MessageDisplay {
    * Display combo text on screen - OLD STYLE WITH TIER COLORS!
    */
   displayCombo(combo: number, x: number, y: number): void {
+    // DISABLED - User doesn't like combo text!
+    return;
+    
     // Check if combo meets wave threshold
     const minThreshold = this.getMinComboThreshold(this.currentWave);
     if (combo < minThreshold) {

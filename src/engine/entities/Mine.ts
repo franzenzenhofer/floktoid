@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Asteroid } from './Asteroid';
 import { EntityDestroyer } from '../utils/EntityDestroyer';
 import { clearGraphics } from '../utils/SpriteFactory';
+import { hueToRGB } from '../utils/ColorUtils';
 import CentralConfig from '../CentralConfig';
 
 const { SIZES } = CentralConfig;
@@ -40,27 +41,38 @@ export class Mine {
     const hyperPulse = Math.sin(this.pulseTime * 9.0) * 0.5 + 0.5; // 3x faster
     const flash = 0.5 + Math.sin(this.pulseTime * 4.5) * 0.5; // 3x faster
     
-    // Rotating colors MUCH FASTER - purple to cyan to white
-    const colorPhase = (this.pulseTime * 0.6) % (Math.PI * 2); // 3x faster color rotation
+    // NEON SHIMMERING COLORS - Each mine has its own unique hue!
+    // Shimmer between the mine's base hue and complementary colors
+    const shimmerSpeed = 0.8; // Speed of color shifting
+    const currentHue = (this.hue + this.pulseTime * shimmerSpeed * 360) % 360;
+    
+    // Create beautiful neon variations
+    const baseColor = hueToRGB(currentHue);
+    const complementColor = hueToRGB((currentHue + 180) % 360); // Opposite color
+    const triadColor1 = hueToRGB((currentHue + 120) % 360); // Triad harmony
+    const triadColor2 = hueToRGB((currentHue + 240) % 360); // Triad harmony
+    
+    // Oscillate between colors for shimmering effect
+    const colorPhase = (this.pulseTime * 0.6) % (Math.PI * 2);
     let color: number;
     if (colorPhase < Math.PI / 2) {
-      color = 0xFF00FF; // Purple
+      color = baseColor; // Base neon color
     } else if (colorPhase < Math.PI) {
-      color = 0x00FFFF; // Cyan
+      color = complementColor; // Complementary neon
     } else if (colorPhase < Math.PI * 1.5) {
-      color = 0xFFFF00; // Yellow
+      color = triadColor1; // First triad neon
     } else {
-      color = 0xFFFFFF; // White
+      color = triadColor2; // Second triad neon
     }
     
-    // Draw TINY fast pulsating glow rings - much smaller for tiny mine
+    // Draw TINY fast pulsating glow rings with NEON COLORS
     const glowRadius1 = this.radius * (2 + fastPulse); // Smaller glow
     this.sprite.circle(0, 0, glowRadius1);
     this.sprite.fill({ color, alpha: 0.3 * flash });
     
     const glowRadius2 = this.radius * (1.5 + hyperPulse * 0.5); // Smaller glow
     this.sprite.circle(0, 0, glowRadius2);
-    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.2 * ultraFastPulse });
+    this.sprite.fill({ color: complementColor, alpha: 0.2 * ultraFastPulse });
     
     // Draw TINY HEAVILY pulsating diamond shape - CONSTANTLY CHANGING SIZE
     const size = this.radius * (0.6 + fastPulse * 0.6); // Smaller base size with variation
@@ -73,7 +85,7 @@ export class Mine {
       -size * (0.9 + mediumPulse * 0.2), 0      // Left pulsates
     ]);
     this.sprite.fill({ color, alpha: 0.7 + flash * 0.3 });
-    this.sprite.stroke({ color: 0xFFFFFF, width: 2 + fastPulse, alpha: flash });
+    this.sprite.stroke({ color: triadColor2, width: 2 + fastPulse, alpha: flash });
     
     // Middle diamond layer - ALSO PULSATING
     const midSize = size * (0.7 + ultraFastPulse * 0.2);
@@ -83,7 +95,7 @@ export class Mine {
       0, midSize * (1 + fastPulse * 0.2),
       -midSize * 0.7, 0
     ]);
-    this.sprite.fill({ color: color === 0xFF00FF ? 0x00FFFF : 0xFF00FF, alpha: 0.5 + slowPulse * 0.3 });
+    this.sprite.fill({ color: triadColor1, alpha: 0.5 + slowPulse * 0.3 });
     
     // Inner diamond core - INTENSE PULSATING
     const innerSize = size * (0.3 + ultraFastPulse * 0.3);
@@ -93,7 +105,7 @@ export class Mine {
       0, innerSize,
       -innerSize * 0.7, 0
     ]);
-    this.sprite.fill({ color: 0xFFFFFF, alpha: 0.7 + flash * 0.3 });
+    this.sprite.fill({ color: baseColor, alpha: 0.7 + flash * 0.3 });
     
     // Energy beams shooting out - SHORTER AND FASTER PULSATING
     const beamLength = size * (1.0 + fastPulse * 0.5); // Shorter beams
@@ -107,7 +119,7 @@ export class Mine {
         Math.sin(angle) * thisBeamLength
       );
     }
-    this.sprite.stroke({ color: 0xFFFFFF, width: 1 + ultraFastPulse, alpha: 0.4 + flash * 0.3 });
+    this.sprite.stroke({ color: complementColor, width: 1 + ultraFastPulse, alpha: 0.4 + flash * 0.3 });
     
     // Position sprite
     this.sprite.x = this.x;

@@ -199,8 +199,8 @@ export function Game() {
   };
 
   const handleRestart = () => {
-    // Clear saved game on restart after game over
-    SavedGameState.clear();
+    // DON'T clear saved game - user should be able to continue their saved game!
+    // Only clear the current game over state and start fresh
     setScore(0);
     setWave(1);
     setGameState('playing');
