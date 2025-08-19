@@ -55,8 +55,8 @@ export class Boid {
   public mineCooldown = 0;
   public maxMineCooldown = 120; // 2 seconds at 60fps
   private minerGlowTime = 0;
-  private zigzagPhase = 0; // For zigzag movement
-  private zigzagDirection = 1; // 1 or -1 for left/right
+  private minerAngle = 0; // Current flight angle
+  private hasReversed = false; // Track if just reversed to prevent oscillation
   
   // PERSONALITY SYSTEM - Each bird is unique!
   public personality: BirdPersonality;
@@ -104,6 +104,9 @@ export class Boid {
     }
     if (this.isMiner) {
       console.log('[SPECIAL BIRD] Miner spawned!');
+      // Start with a random diagonal angle
+      this.minerAngle = (Math.random() * Math.PI / 2) + Math.PI / 4; // 45-135 degrees
+      if (Math.random() > 0.5) this.minerAngle += Math.PI; // Sometimes go up instead of down
     }
     
     // ASSIGN RANDOM PERSONALITY
@@ -466,26 +469,47 @@ export class Boid {
       }
     }
     
-    // Update miner mechanics with ZIGZAG pattern!
-    if (this.isMiner) {
+    // Update miner mechanics - STRAIGHT LINE FLIGHT!
+    if (this.isMiner && !this.hasDot) {
       this.minerGlowTime += dt;
       if (this.mineCooldown > 0) {
         this.mineCooldown -= 1; // Frame-based cooldown
       }
       
-      // ZIGZAG MOVEMENT - angled straight lines up and down!
-      this.zigzagPhase += dt * 2; // Faster oscillation
+      // Fly in straight line at current angle
+      const minerSpeed = this.maxSpeed * 0.8; // Slightly slower for controlled movement
+      this.vx = Math.cos(this.minerAngle) * minerSpeed;
+      this.vy = Math.sin(this.minerAngle) * minerSpeed;
       
-      // Change direction every ~1 second
-      if (this.zigzagPhase > Math.PI) {
-        this.zigzagPhase = 0;
-        this.zigzagDirection *= -1; // Switch direction
+      // Check if hit boundary - then reverse and pick new angle
+      const margin = SIZES.BIRD.BASE * 3;
+      let hitBoundary = false;
+      
+      if ((this.x < margin && this.vx < 0) || (this.x > this.app.screen.width - margin && this.vx > 0)) {
+        hitBoundary = true;
+        this.vx = -this.vx; // Reverse X
       }
       
-      // Apply zigzag force (diagonal movement)
-      const zigzagForce = 50 * this.zigzagDirection;
-      this.vx += zigzagForce * dt * 0.5; // Horizontal component
-      this.vy += zigzagForce * dt * 0.3 * Math.sin(this.zigzagPhase * 2); // Vertical oscillation
+      if ((this.y < margin && this.vy < 0) || (this.y > this.app.screen.height - margin && this.vy > 0)) {
+        hitBoundary = true;
+        this.vy = -this.vy; // Reverse Y
+      }
+      
+      // When hitting boundary, pick a new angle for next flight
+      if (hitBoundary && !this.hasReversed) {
+        this.hasReversed = true;
+        // New random angle (45-135 degrees from current)
+        this.minerAngle = Math.atan2(this.vy, this.vx) + (Math.PI / 4) + (Math.random() * Math.PI / 2);
+        console.log('[MINER] Hit boundary, new angle:', this.minerAngle);
+      } else if (!hitBoundary) {
+        this.hasReversed = false; // Reset flag when away from boundary
+      }
+    } else if (this.isMiner && this.hasDot) {
+      // If miner has a dot, behave normally to deliver it
+      this.minerGlowTime += dt;
+      if (this.mineCooldown > 0) {
+        this.mineCooldown -= 1;
+      }
     }
     
     // Update position

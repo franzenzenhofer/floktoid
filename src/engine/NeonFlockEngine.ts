@@ -579,30 +579,36 @@ export class NeonFlockEngine {
           continue;
         }
       } else {
-        // Super navigators use their own AI!
-        let forces: { x: number; y: number };
-        
-        if (boid.isSuperNavigator) {
-          // SUPER NAVIGATOR AI - Advanced movement algorithm!
-          forces = this.superNavigatorAI.calculateSuperForces(
-            boid,
-            this.boids,
-            this.energyDots,
-            this.asteroids,
-            this.fallingDots
-          );
+        // MINERS fly in straight lines - no flocking forces!
+        if (boid.isMiner) {
+          // Miners handle their own movement in update() method
+          // No forces applied - they fly straight diagonal lines
         } else {
-          // Regular flocking behavior - now with falling dot awareness!
-          forces = this.flockingSystem.calculateForces(
-            boid,
-            this.boids,
-            this.energyDots,
-            this.asteroids,
-            this.fallingDots
-          );
+          // Super navigators use their own AI!
+          let forces: { x: number; y: number };
+          
+          if (boid.isSuperNavigator) {
+            // SUPER NAVIGATOR AI - Advanced movement algorithm!
+            forces = this.superNavigatorAI.calculateSuperForces(
+              boid,
+              this.boids,
+              this.energyDots,
+              this.asteroids,
+              this.fallingDots
+            );
+          } else {
+            // Regular flocking behavior - now with falling dot awareness!
+            forces = this.flockingSystem.calculateForces(
+              boid,
+              this.boids,
+              this.energyDots,
+              this.asteroids,
+              this.fallingDots
+            );
+          }
+          
+          boid.applyForces(forces, dt);
         }
-        
-        boid.applyForces(forces, dt);
         
         // SHOOTER BIRDS - Check if they should shoot!
         if (boid.isShooter && boid.canShoot() && this.asteroids.length > 0) {
