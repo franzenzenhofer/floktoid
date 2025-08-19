@@ -1669,41 +1669,46 @@ export class NeonFlockEngine {
   }
   
   /**
-   * Get current energy dots state for saving
+   * Get pragmatic game state for saving (like wave start, not exact positions)
    */
-  public getEnergyDotsState(): Array<{ x: number; y: number }> {
-    return this.energyDots.map(dot => {
-      const pos = dot.getSpritePosition();
-      return { x: pos.x, y: pos.y };
+  public getGameStateForSave(): { 
+    birdsRemaining: number;
+    stolenDots: number[];
+    dotsLost: number;
+  } {
+    // Get which dots are stolen (by index)
+    const stolenDots: number[] = [];
+    this.energyDots.forEach((dot, index) => {
+      if (dot.stolen) {
+        stolenDots.push(index);
+      }
     });
+    
+    return {
+      birdsRemaining: this.waveManager.getBirdsToSpawn(),
+      stolenDots,
+      dotsLost: this.waveManager.getWaveDotsLost()
+    };
   }
   
   /**
-   * Get current boids state for saving
-   */
-  public getBoidsState(): Array<{ x: number; y: number; vx: number; vy: number }> {
-    return this.boids.map(boid => ({
-      x: boid.x,
-      y: boid.y,
-      vx: boid.vx,
-      vy: boid.vy
-    }));
-  }
-  
-  /**
-   * Restore game from saved state
+   * Restore game from saved state (pragmatic - like starting a fresh wave)
    */
   public restoreGameState(
     score: number,
     wave: number,
-    energyDots: Array<{ x: number; y: number }>,
-    boids: Array<{ x: number; y: number; vx: number; vy: number }>
+    birdsRemaining: number,
+    stolenDots: number[],
+    dotsLost: number
   ): void {
     // Restore score
     scoringSystem.setScore(score);
     
     // Restore wave and trigger callback
     this.waveManager.setWave(wave);
+    this.waveManager.setBirdsToSpawn(birdsRemaining);
+    this.waveManager.setWaveDotsLost(dotsLost);
+    
     if (this.onWaveUpdate) {
       this.onWaveUpdate(wave);
     }
@@ -1717,21 +1722,27 @@ export class NeonFlockEngine {
     this.energyDots.forEach(d => d.destroy());
     this.energyDots = [];
     
-    // Restore energy dots with random hues
-    energyDots.forEach(dot => {
-      const hue = Math.random() * 360;
-      const energyDot = new EnergyDot(this.app, dot.x, dot.y, hue);
-      this.energyDots.push(energyDot);
-    });
+    // Place energy dots in PROPER FORMATION (like wave start)
+    const spacing = this.app.screen.width / (GameConfig.ENERGY_COUNT + 1);
+    for (let i = 0; i < GameConfig.ENERGY_COUNT; i++) {
+      const hue = (360 / GameConfig.ENERGY_COUNT) * i;
+      const dot = new EnergyDot(
+        this.app,
+        spacing * (i + 1),
+        this.app.screen.height * GameConfig.BASE_Y,
+        hue
+      );
+      
+      // Mark as stolen if it was stolen in saved state
+      if (stolenDots.includes(i)) {
+        dot.stolen = true;
+      }
+      
+      this.energyDots.push(dot);
+    }
     
-    // Restore boids with current wave's speed multiplier
-    const speedMultiplier = this.waveManager.getSpeedMultiplier();
-    boids.forEach(boidData => {
-      const boid = new Boid(this.app, boidData.x, boidData.y, speedMultiplier, { vx: boidData.vx, vy: boidData.vy });
-      this.boids.push(boid);
-    });
-    
-    console.log(`[ENGINE] Restored game state - Wave ${wave}, Score ${score}, Boids: ${boids.length}, Dots: ${energyDots.length}`);
+    // Don't spawn birds immediately - let the wave manager handle it
+    console.log(`[ENGINE] Restored game state - Wave ${wave}, Score ${score}, Birds to spawn: ${birdsRemaining}, Stolen dots: ${stolenDots.length}`);
   }
   
   public destroy() {

@@ -37,8 +37,14 @@ export function Game() {
           // Create or restore game session
           if (savedGame) {
             gameSessionRef.current = new GameSession(savedGame.gameId, savedGame.score, savedGame.wave);
-            // Restore engine state
-            engine.restoreGameState(savedGame.score, savedGame.wave, savedGame.energyDots, savedGame.boids);
+            // Restore engine state with pragmatic wave data
+            engine.restoreGameState(
+              savedGame.score, 
+              savedGame.wave, 
+              savedGame.birdsRemaining,
+              savedGame.stolenDots,
+              savedGame.dotsLost
+            );
             // Clear saved game after restoration
             SavedGameState.clear();
           } else {
@@ -73,7 +79,25 @@ export function Game() {
             }
           };
           
-          engine.onWaveUpdate = setWave;
+          engine.onWaveUpdate = (newWave) => {
+            setWave(newWave);
+            
+            // AUTO-SAVE on wave completion!
+            if (session && session.isActive() && newWave > 1) {
+              const engineState = engine.getGameStateForSave();
+              const saveState: SavedGame = {
+                gameId: session.getGameId(),
+                score: engine.getScore(),
+                wave: newWave,
+                timestamp: Date.now(),
+                birdsRemaining: engineState.birdsRemaining,
+                stolenDots: engineState.stolenDots,
+                dotsLost: engineState.dotsLost
+              };
+              SavedGameState.save(saveState);
+              console.log('[AUTO-SAVE] Saved game at wave', newWave);
+            }
+          };
           engine.onEnergyStatus = (critical: boolean) => setEnergyCritical(critical);
           engine.onGameOver = () => {
             // Submit final score to leaderboard with game ID
@@ -99,6 +123,25 @@ export function Game() {
           
           engine.start();
           engineRef.current = engine;
+          
+          // Save on page unload (browser close/refresh)
+          const handleBeforeUnload = () => {
+            if (session && session.isActive()) {
+              const engineState = engine.getGameStateForSave();
+              const saveState: SavedGame = {
+                gameId: session.getGameId(),
+                score: engine.getScore(),
+                wave: engine.getWave(),
+                timestamp: Date.now(),
+                birdsRemaining: engineState.birdsRemaining,
+                stolenDots: engineState.stolenDots,
+                dotsLost: engineState.dotsLost
+              };
+              SavedGameState.save(saveState);
+              console.log('[UNLOAD-SAVE] Saved game on page unload');
+            }
+          };
+          window.addEventListener('beforeunload', handleBeforeUnload);
           
           // Expose autopilot to window for testing
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,6 +169,8 @@ export function Game() {
         if (gameSessionRef.current?.isActive()) {
           gameSessionRef.current.endGame();
         }
+        // Remove beforeunload listener
+        window.removeEventListener('beforeunload', () => {});
         engineRef.current?.destroy();
         engineRef.current = null;
         gameSessionRef.current = null;
@@ -172,14 +217,16 @@ export function Game() {
       
       // Only save if game is still running (not game over)
       if (session.isActive()) {
+        const engineState = engine.getGameStateForSave();
         const saveState: SavedGame = {
           gameId: session.getGameId(),
           score: engine.getScore(),
           wave: engine.getWave(),
           timestamp: Date.now(),
-          // Get engine state for restoration
-          energyDots: engine.getEnergyDotsState(),
-          boids: engine.getBoidsState()
+          // Pragmatic wave state
+          birdsRemaining: engineState.birdsRemaining,
+          stolenDots: engineState.stolenDots,
+          dotsLost: engineState.dotsLost
         };
         
         SavedGameState.save(saveState);

@@ -8,9 +8,10 @@ export interface SavedGame {
   score: number;
   wave: number;
   timestamp: number;
-  // Engine state
-  energyDots: Array<{ x: number; y: number }>;
-  boids: Array<{ x: number; y: number; vx: number; vy: number }>;
+  // Pragmatic wave state - like starting a fresh wave
+  birdsRemaining: number;  // How many birds left to spawn in this wave
+  stolenDots: number[];    // Which dot indices are stolen (0-based)
+  dotsLost: number;        // Total dots lost this wave
 }
 
 export class SavedGameState {

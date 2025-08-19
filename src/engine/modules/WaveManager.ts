@@ -80,6 +80,13 @@ export class WaveManager {
   }
   
   /**
+   * Set birds to spawn (for restore)
+   */
+  setBirdsToSpawn(count: number): void {
+    this.birdsToSpawn = Math.max(0, count);
+  }
+  
+  /**
    * Decrement birds to spawn
    */
   decrementBirdsToSpawn(): void {
@@ -137,6 +144,13 @@ export class WaveManager {
    */
   getWaveDotsLost(): number {
     return this.waveDotsLost;
+  }
+  
+  /**
+   * Set dots lost (for restore)
+   */
+  setWaveDotsLost(count: number): void {
+    this.waveDotsLost = Math.max(0, count);
   }
   
   /**
