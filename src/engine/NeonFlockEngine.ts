@@ -81,6 +81,10 @@ export class NeonFlockEngine {
     return this.waveManager.getWave();
   }
   
+  public isBossWave(): boolean {
+    return this.waveManager.isBossWave();
+  }
+  
   private container: HTMLDivElement;
   private initialized = false;
 

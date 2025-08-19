@@ -177,11 +177,19 @@ export class WaveManager {
   }
   
   /**
+   * Check if wave is a boss wave
+   */
+  isBossWave(wave?: number): boolean {
+    const waveToCheck = wave ?? this.wave;
+    return waveToCheck % 5 === 0;
+  }
+  
+  /**
    * Calculate boss configuration for wave
    * Uses same pattern as described: 5hp, 10hp, 15hp cycling
    */
   private getBossConfig(wave: number): BossConfig {
-    if (wave % 5 !== 0) return { count: 0, health: 0 };
+    if (!this.isBossWave(wave)) return { count: 0, health: 0 };
     
     const bossWaveNumber = Math.floor(wave / 5);
     const cycleNumber = Math.floor((bossWaveNumber - 1) / 3);
