@@ -29,8 +29,9 @@ export class BossBird extends Boid {
     
     console.log(`[BOSS CREATED] Health: ${health}, Shield radius will be: ${GameConfig.BOID_SIZE * 2.5 * 1.8}px`);
     
-    // Enable shooting for ALL bosses - they're very goal oriented!
-    this.isShooter = true;
+    // CRITICAL: Bosses are SHOOTERS, never miners!
+    this.isMiner = false; // EXPLICITLY disable mining
+    this.isShooter = true; // Enable shooting for ALL bosses
     this.maxShootCooldown = 30; // Shoot very fast - goal oriented!
     
     // Make boss extra goal-oriented (prioritize energy dots)
@@ -76,8 +77,15 @@ export class BossBird extends Boid {
   }
   
   update(dt: number) {
+    // CRITICAL: Ensure boss is never treated as miner
+    const wasMiner = this.isMiner;
+    this.isMiner = false; // Force disable miner behavior
+    
     // Call parent update which handles all flocking behavior
     super.update(dt);
+    
+    // Restore original state (should always be false for bosses)
+    this.isMiner = wasMiner;
     
     // Update shield effect (no pulsing)
     this.updateShield();
