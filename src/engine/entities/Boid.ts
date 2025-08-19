@@ -55,6 +55,8 @@ export class Boid {
   public mineCooldown = 0;
   public maxMineCooldown = 120; // 2 seconds at 60fps
   private minerGlowTime = 0;
+  private zigzagPhase = 0; // For zigzag movement
+  private zigzagDirection = 1; // 1 or -1 for left/right
   
   // PERSONALITY SYSTEM - Each bird is unique!
   public personality: BirdPersonality;
@@ -302,29 +304,53 @@ export class Boid {
       // NO clown nose dot - shooters are identified by red glow and stroke only
     }
     
-    // Miner bird diamond shimmer effect - UNIQUE DIAMOND PATTERN!
+    // Miner bird ULTRA COOL diamond effect with energy rings!
     if (this.isMiner) {
-      // Draw diamond-shaped glow instead of triangle
-      const shimmerPhase = Math.sin(this.minerGlowTime * 8) * 0.5 + 0.5;
-      const shimmerAlpha = 0.4 + shimmerPhase * 0.4; // Stronger glow
+      const shimmerPhase = Math.sin(this.minerGlowTime * 10) * 0.5 + 0.5;
+      const pulsePhase = Math.sin(this.minerGlowTime * 5) * 0.3 + 0.7;
+      const shimmerAlpha = 0.5 + shimmerPhase * 0.5; // Stronger glow
       
-      // Draw outer diamond glow
+      // Draw energy ring (expanding circle)
+      const ringRadius = SIZES.BIRD.BASE * (1.8 + shimmerPhase * 0.5);
+      this.sprite.circle(0, 0, ringRadius);
+      this.sprite.stroke({ color: 0xFF00FF, width: 2, alpha: (1 - shimmerPhase) * 0.5 });
+      
+      // Draw outer diamond glow - PULSATING!
       this.sprite.poly([
-        0, -SIZES.BIRD.BASE * 1.5,                    // Top
-        SIZES.BIRD.BASE * 1.2, 0,                     // Right
-        0, SIZES.BIRD.BASE * 1.5,                     // Bottom
-        -SIZES.BIRD.BASE * 1.2, 0                     // Left
+        0, -SIZES.BIRD.BASE * 1.5 * pulsePhase,       // Top
+        SIZES.BIRD.BASE * 1.2 * pulsePhase, 0,        // Right
+        0, SIZES.BIRD.BASE * 1.5 * pulsePhase,        // Bottom
+        -SIZES.BIRD.BASE * 1.2 * pulsePhase, 0        // Left
       ]);
       this.sprite.fill({ color: 0xFF00FF, alpha: shimmerAlpha });
       
-      // Draw inner diamond pattern
+      // Draw middle diamond layer - cyan accent
       this.sprite.poly([
-        0, -SIZES.BIRD.BASE * 0.7,
-        SIZES.BIRD.BASE * 0.5, 0,
-        0, SIZES.BIRD.BASE * 0.7,
-        -SIZES.BIRD.BASE * 0.5, 0
+        0, -SIZES.BIRD.BASE * 1.0,
+        SIZES.BIRD.BASE * 0.8, 0,
+        0, SIZES.BIRD.BASE * 1.0,
+        -SIZES.BIRD.BASE * 0.8, 0
       ]);
-      this.sprite.fill({ color: 0xFFFFFF, alpha: shimmerAlpha * 0.5 });
+      this.sprite.fill({ color: 0x00FFFF, alpha: shimmerAlpha * 0.4 });
+      
+      // Draw inner diamond pattern - white core
+      this.sprite.poly([
+        0, -SIZES.BIRD.BASE * 0.5,
+        SIZES.BIRD.BASE * 0.4, 0,
+        0, SIZES.BIRD.BASE * 0.5,
+        -SIZES.BIRD.BASE * 0.4, 0
+      ]);
+      this.sprite.fill({ color: 0xFFFFFF, alpha: shimmerAlpha * 0.8 });
+      
+      // Draw energy sparks around the ship
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + this.minerGlowTime;
+        const sparkDist = SIZES.BIRD.BASE * 2;
+        const sparkX = Math.cos(angle) * sparkDist;
+        const sparkY = Math.sin(angle) * sparkDist;
+        this.sprite.circle(sparkX, sparkY, 2);
+        this.sprite.fill({ color: 0xFF00FF, alpha: shimmerPhase });
+      }
     }
     
     // Draw ship shape - diamond for miners, triangle for others
@@ -440,12 +466,26 @@ export class Boid {
       }
     }
     
-    // Update miner mechanics (EXACT SAME AS SHOOTER!)
+    // Update miner mechanics with ZIGZAG pattern!
     if (this.isMiner) {
       this.minerGlowTime += dt;
       if (this.mineCooldown > 0) {
         this.mineCooldown -= 1; // Frame-based cooldown
       }
+      
+      // ZIGZAG MOVEMENT - angled straight lines up and down!
+      this.zigzagPhase += dt * 2; // Faster oscillation
+      
+      // Change direction every ~1 second
+      if (this.zigzagPhase > Math.PI) {
+        this.zigzagPhase = 0;
+        this.zigzagDirection *= -1; // Switch direction
+      }
+      
+      // Apply zigzag force (diagonal movement)
+      const zigzagForce = 50 * this.zigzagDirection;
+      this.vx += zigzagForce * dt * 0.5; // Horizontal component
+      this.vy += zigzagForce * dt * 0.3 * Math.sin(this.zigzagPhase * 2); // Vertical oscillation
     }
     
     // Update position
