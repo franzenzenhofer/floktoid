@@ -279,10 +279,10 @@ export class MessageDisplay {
     const screenWidth = this.app.screen.width;
     const isMobile = screenWidth < 768;
     
-    // Larger font for boss announcement
+    // Responsive font for boss announcement - MUST FIT ON MOBILE!
     const fontSize = isMobile ? 
-      Math.min(screenWidth * 0.2, 80) : 
-      Math.min(screenWidth * 0.15, 120);
+      Math.min(screenWidth * 0.12, 48) :  // Mobile: 12% of width max, cap at 48px
+      Math.min(screenWidth * 0.1, 80);     // Desktop: 10% of width max, cap at 80px
     
     const messageText = new PIXI.Text({
       text: text,
@@ -294,7 +294,7 @@ export class MessageDisplay {
         fill: color,
         stroke: { 
           color: 0xFFFFFF, // White outline
-          width: 8 
+          width: isMobile ? 4 : 6  // Thinner stroke on mobile
         },
         align: 'center',
         dropShadow: {
