@@ -8,8 +8,9 @@ export interface SavedGame {
   score: number;
   wave: number;
   timestamp: number;
-  // Pragmatic wave state - like starting a fresh wave
+  // Mid-wave state - continue exactly where left off
   birdsRemaining: number;  // How many birds left to spawn in this wave
+  activeBirds: number;     // How many birds are currently on screen
   stolenDots: number[];    // Which dot indices are stolen (0-based)
   dotsLost: number;        // Total dots lost this wave
 }

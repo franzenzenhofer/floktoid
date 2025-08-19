@@ -59,10 +59,19 @@ export class WaveManager {
     this.wave = Math.max(1, wave);
     // Recalculate speed multiplier for this wave
     this.speedMultiplier = 1 + (wave - 1) * GameConfig.SPEED_GROWTH;
-    // Trigger update callback
-    if (this.onWaveUpdate) {
-      this.onWaveUpdate(this.wave);
-    }
+    // DON'T trigger callback here - let the engine do it after full restore
+  }
+  
+  /**
+   * Get total birds for a given wave
+   */
+  getTotalBirdsForWave(wave: number): number {
+    const waveIndex = wave - 1;
+    const count = waveIndex < GameConfig.BIRDS_PER_WAVE.length 
+      ? GameConfig.BIRDS_PER_WAVE[waveIndex]
+      : GameConfig.BIRDS_PER_WAVE[GameConfig.BIRDS_PER_WAVE.length - 1] + 
+        (waveIndex - GameConfig.BIRDS_PER_WAVE.length + 1) * 10;
+    return count;
   }
   
   /**

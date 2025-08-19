@@ -45,6 +45,7 @@ describe('SavedGameState', () => {
         wave: 7,
         timestamp: Date.now(),
         birdsRemaining: 3,
+        activeBirds: 2,
         stolenDots: [0, 2, 4],
         dotsLost: 2
       };
@@ -62,6 +63,7 @@ describe('SavedGameState', () => {
       expect(restoredState?.wave).toBe(originalState.wave);
       expect(restoredState?.timestamp).toBe(originalState.timestamp);
       expect(restoredState?.birdsRemaining).toBe(originalState.birdsRemaining);
+      expect(restoredState?.activeBirds).toBe(originalState.activeBirds);
       expect(restoredState?.stolenDots).toEqual(originalState.stolenDots);
       expect(restoredState?.dotsLost).toBe(originalState.dotsLost);
     });
@@ -73,6 +75,7 @@ describe('SavedGameState', () => {
         wave: 1,
         timestamp: Date.now(),
         birdsRemaining: 2,
+        activeBirds: 0,
         stolenDots: [],
         dotsLost: 0
       };
@@ -92,6 +95,7 @@ describe('SavedGameState', () => {
         wave: 42,
         timestamp: Date.now(),
         birdsRemaining: 15,
+        activeBirds: 5,
         stolenDots: [0, 1, 2, 3, 4, 5, 6, 7, 8],
         dotsLost: 9
       };
@@ -114,6 +118,7 @@ describe('SavedGameState', () => {
         wave: 3,
         timestamp: Date.now(),
         birdsRemaining: 4,
+        activeBirds: 1,
         stolenDots: [1],
         dotsLost: 1
       };
@@ -135,6 +140,7 @@ describe('SavedGameState', () => {
         wave: 5,
         timestamp: Date.now() - (8 * 24 * 60 * 60 * 1000), // 8 days ago
         birdsRemaining: 2,
+        activeBirds: 1,
         stolenDots: [3],
         dotsLost: 1
       };
@@ -154,6 +160,7 @@ describe('SavedGameState', () => {
         wave: 6,
         timestamp: Date.now() - (6 * 24 * 60 * 60 * 1000), // 6 days ago
         birdsRemaining: 3,
+        activeBirds: 2,
         stolenDots: [2, 4],
         dotsLost: 2
       };
@@ -202,6 +209,7 @@ describe('SavedGameState', () => {
         wave: 2, // Currently in wave 2
         timestamp: Date.now(),
         birdsRemaining: 3, // 3 birds left to spawn in wave 2
+        activeBirds: 1, // 1 bird currently on screen
         stolenDots: [1], // One dot stolen
         dotsLost: 1
       };
@@ -223,6 +231,7 @@ describe('SavedGameState', () => {
         wave: 4, // Just started wave 4
         timestamp: Date.now(),
         birdsRemaining: 6, // Full birds for wave 4
+        activeBirds: 0, // No birds on screen yet
         stolenDots: [], // Fresh wave, no stolen dots
         dotsLost: 0
       };

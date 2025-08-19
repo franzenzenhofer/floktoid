@@ -1669,10 +1669,11 @@ export class NeonFlockEngine {
   }
   
   /**
-   * Get pragmatic game state for saving (like wave start, not exact positions)
+   * Get current game state for saving (mid-wave progress)
    */
   public getGameStateForSave(): { 
     birdsRemaining: number;
+    activeBirds: number;
     stolenDots: number[];
     dotsLost: number;
   } {
@@ -1686,28 +1687,33 @@ export class NeonFlockEngine {
     
     return {
       birdsRemaining: this.waveManager.getBirdsToSpawn(),
+      activeBirds: this.boids.length,  // Current birds on screen
       stolenDots,
       dotsLost: this.waveManager.getWaveDotsLost()
     };
   }
   
   /**
-   * Restore game from saved state (pragmatic - like starting a fresh wave)
+   * Restore game from saved state (continue exactly where left off)
    */
   public restoreGameState(
     score: number,
     wave: number,
     birdsRemaining: number,
+    activeBirds: number,
     stolenDots: number[],
     dotsLost: number
   ): void {
     // Restore score
     scoringSystem.setScore(score);
     
-    // Restore wave and trigger callback
+    // Restore wave WITHOUT calling startWave (which would reset everything)
     this.waveManager.setWave(wave);
     this.waveManager.setBirdsToSpawn(birdsRemaining);
     this.waveManager.setWaveDotsLost(dotsLost);
+    
+    // IMPORTANT: Set next spawn time to continue spawning birds
+    this.waveManager.setNextSpawnTime(performance.now() + 1000); // Spawn next bird in 1 second
     
     if (this.onWaveUpdate) {
       this.onWaveUpdate(wave);
@@ -1722,7 +1728,7 @@ export class NeonFlockEngine {
     this.energyDots.forEach(d => d.destroy());
     this.energyDots = [];
     
-    // Place energy dots in PROPER FORMATION (like wave start)
+    // Restore energy dots in proper formation
     const spacing = this.app.screen.width / (GameConfig.ENERGY_COUNT + 1);
     for (let i = 0; i < GameConfig.ENERGY_COUNT; i++) {
       const hue = (360 / GameConfig.ENERGY_COUNT) * i;
@@ -1741,8 +1747,20 @@ export class NeonFlockEngine {
       this.energyDots.push(dot);
     }
     
-    // Don't spawn birds immediately - let the wave manager handle it
-    console.log(`[ENGINE] Restored game state - Wave ${wave}, Score ${score}, Birds to spawn: ${birdsRemaining}, Stolen dots: ${stolenDots.length}`);
+    // Restore active birds that were on screen when saved
+    if (activeBirds > 0) {
+      const speedMultiplier = this.waveManager.getSpeedMultiplier();
+      for (let i = 0; i < activeBirds; i++) {
+        // Spawn birds in reasonable positions (spread across screen)
+        const x = Math.random() * this.app.screen.width;
+        const y = Math.random() * this.app.screen.height * 0.6; // Upper 60% of screen
+        const boid = new Boid(this.app, x, y, speedMultiplier);
+        this.boids.push(boid);
+      }
+    }
+    
+    const totalBirdsForWave = this.waveManager.getTotalBirdsForWave(wave);
+    console.log(`[ENGINE] Restored mid-wave state - Wave ${wave}, Score ${score}, Birds remaining: ${birdsRemaining}/${totalBirdsForWave}, Active birds: ${this.boids.length}`);
   }
   
   public destroy() {

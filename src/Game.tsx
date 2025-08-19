@@ -37,11 +37,12 @@ export function Game() {
           // Create or restore game session
           if (savedGame) {
             gameSessionRef.current = new GameSession(savedGame.gameId, savedGame.score, savedGame.wave);
-            // Restore engine state with pragmatic wave data
+            // Restore engine state with mid-wave progress
             engine.restoreGameState(
               savedGame.score, 
               savedGame.wave, 
               savedGame.birdsRemaining,
+              savedGame.activeBirds || 0,  // Fallback for old saves
               savedGame.stolenDots,
               savedGame.dotsLost
             );
@@ -93,6 +94,7 @@ export function Game() {
                   wave: engine.getWave(), // Use actual current wave from engine
                   timestamp: Date.now(),
                   birdsRemaining: engineState.birdsRemaining,
+                  activeBirds: engineState.activeBirds,
                   stolenDots: engineState.stolenDots,
                   dotsLost: engineState.dotsLost
                 };
@@ -137,6 +139,7 @@ export function Game() {
                 wave: engine.getWave(),
                 timestamp: Date.now(),
                 birdsRemaining: engineState.birdsRemaining,
+                activeBirds: engineState.activeBirds,
                 stolenDots: engineState.stolenDots,
                 dotsLost: engineState.dotsLost
               };
@@ -226,8 +229,9 @@ export function Game() {
           score: engine.getScore(),
           wave: engine.getWave(),
           timestamp: Date.now(),
-          // Pragmatic wave state
+          // Mid-wave state
           birdsRemaining: engineState.birdsRemaining,
+          activeBirds: engineState.activeBirds,
           stolenDots: engineState.stolenDots,
           dotsLost: engineState.dotsLost
         };
