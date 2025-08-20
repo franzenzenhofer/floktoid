@@ -54,20 +54,50 @@ export class MessageDisplay {
         particles: 80,
         screenEffect: true
       };
+    } else if (combo >= 9) {
+      return {
+        threshold: 9,
+        name: "RAMPAGE",
+        color: 0xFF1493, // Deep Pink
+        secondaryColor: 0xFF00FF,
+        scale: 2.2,
+        particles: 70,
+        screenEffect: true
+      };
+    } else if (combo >= 8) {
+      return {
+        threshold: 8,
+        name: "BRUTAL",
+        color: 0x8B008B, // Dark Magenta
+        secondaryColor: 0xFF00FF,
+        scale: 2.1,
+        particles: 65,
+        screenEffect: true
+      };
     } else if (combo >= 7) {
       return {
         threshold: 7,
-        name: "EPIC",
+        name: "MONSTER",
         color: 0x9400D3, // Purple
         secondaryColor: 0xFF00FF,
         scale: 2.0,
         particles: 60,
         screenEffect: true
       };
+    } else if (combo >= 6) {
+      return {
+        threshold: 6,
+        name: "HEXA",
+        color: 0xFFA500, // Orange
+        secondaryColor: 0xFF0000,
+        scale: 1.9,
+        particles: 50,
+        screenEffect: false
+      };
     } else if (combo >= 5) {
       return {
         threshold: 5,
-        name: "MEGA",
+        name: "PENTA",
         color: 0xFF0000, // Red
         secondaryColor: 0xFFA500,
         scale: 1.8,
@@ -134,8 +164,9 @@ export class MessageDisplay {
     }
     
     const tier = this.getComboTier(combo);
-    // SIMPLE COMBO TEXT - Just the number, no MEGA/ULTRA/GODLIKE labels!
-    const comboTextString = `${combo}x`;
+    // COOL COMBO NAMES - Show the number AND the cool name!
+    // Like "2x DOUBLE", "3x TRIPLE", "4x QUAD", "5x PENTA", etc.
+    const comboTextString = `${combo}x ${tier.name}`;
     
     // OLD STYLE - use tier color, position at kill location, scale by tier!
     this.displayOldStyleMessage(comboTextString, tier.color, x, y, tier.scale);
