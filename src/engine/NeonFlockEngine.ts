@@ -1227,6 +1227,9 @@ export class NeonFlockEngine {
               event = ScoringEvent.SHOOTER_HIT;
             } else if (bird.isSuperNavigator) {
               event = ScoringEvent.SUPER_NAVIGATOR_HIT;
+            } else if (bird.isMiner) {
+              // MINER BIRDS GET SAME POINTS AS SHOOTER - they're special too!
+              event = ScoringEvent.SHOOTER_HIT;
             } else {
               event = ScoringEvent.BIRD_HIT;
             }

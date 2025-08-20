@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { scoringSystem, ScoringEvent } from '../ScoringSystem';
 
 describe('ScoringSystem - CRITICAL BUSINESS LOGIC TESTS', () => {
@@ -323,6 +323,262 @@ describe('ScoringSystem - CRITICAL BUSINESS LOGIC TESTS', () => {
       expect(Number.isFinite(scoringSystem.getScore())).toBe(true);
       
       console.log('✅ CRITICAL: NaN/Infinity inputs handled');
+    });
+  });
+});
+
+describe('ScoringSystem - Combo Calculation for ALL Enemy Types', () => {
+  beforeEach(() => {
+    scoringSystem.reset();
+    vi.clearAllTimers();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe('CRITICAL: Combo includes ALL enemy types', () => {
+    it('should increment combo for regular birds', () => {
+      scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      console.log('✅ Regular birds increment combo');
+    });
+
+    it('should increment combo for birds with energy dots', () => {
+      scoringSystem.addEvent(ScoringEvent.BIRD_WITH_ENERGY_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      scoringSystem.addEvent(ScoringEvent.BIRD_WITH_ENERGY_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      console.log('✅ Birds with dots increment combo');
+    });
+
+    it('should increment combo for shooter birds', () => {
+      scoringSystem.addEvent(ScoringEvent.SHOOTER_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      scoringSystem.addEvent(ScoringEvent.SHOOTER_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      console.log('✅ Shooter birds increment combo');
+    });
+
+    it('should increment combo for super navigator birds', () => {
+      scoringSystem.addEvent(ScoringEvent.SUPER_NAVIGATOR_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      scoringSystem.addEvent(ScoringEvent.SUPER_NAVIGATOR_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      console.log('✅ Super navigator birds increment combo');
+    });
+
+    it('should increment combo for miner birds (use SHOOTER_HIT)', () => {
+      // Miner birds use SHOOTER_HIT scoring event
+      scoringSystem.addEvent(ScoringEvent.SHOOTER_HIT); // Miner
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      scoringSystem.addEvent(ScoringEvent.SHOOTER_HIT); // Another miner
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      console.log('✅ Miner birds increment combo (using SHOOTER_HIT)');
+    });
+
+    it('should increment combo for boss bird hits', () => {
+      scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      console.log('✅ Boss hits increment combo');
+    });
+
+    it('should increment combo for boss defeated', () => {
+      scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      console.log('✅ Boss defeated increments combo');
+    });
+
+    it('should increment combo for shredder destroyed', () => {
+      scoringSystem.addEvent(ScoringEvent.SHREDDER_DESTROYED);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      scoringSystem.addEvent(ScoringEvent.SHREDDER_DESTROYED);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      console.log('✅ Shredder destroyed increments combo');
+    });
+
+    it('should handle mixed enemy type combo chain', () => {
+      // Simulate realistic combat with ALL enemy types
+      const combatSequence = [
+        { event: ScoringEvent.BIRD_HIT, type: 'Regular bird' },
+        { event: ScoringEvent.SHOOTER_HIT, type: 'Shooter bird' },
+        { event: ScoringEvent.SUPER_NAVIGATOR_HIT, type: 'Navigator bird' },
+        { event: ScoringEvent.SHOOTER_HIT, type: 'Miner bird (as SHOOTER_HIT)' },
+        { event: ScoringEvent.BOSS_HIT, type: 'Boss hit' },
+        { event: ScoringEvent.BOSS_HIT, type: 'Boss hit' },
+        { event: ScoringEvent.BOSS_DEFEATED, type: 'Boss defeated' },
+        { event: ScoringEvent.SHREDDER_DESTROYED, type: 'Shredder' },
+        { event: ScoringEvent.BIRD_WITH_ENERGY_HIT, type: 'Bird with dot' },
+        { event: ScoringEvent.MULTI_KILL, type: 'Multi-kill' },
+      ];
+      
+      combatSequence.forEach((action, index) => {
+        scoringSystem.addEvent(action.event);
+        expect(scoringSystem.getScoreBreakdown().combo).toBe(index + 1);
+        console.log(`  ${index + 1}x: ${action.type}`);
+      });
+      
+      console.log('✅ Mixed enemy combo chain works perfectly!');
+    });
+
+    it('should NOT increment combo for non-enemy events', () => {
+      // These should NOT increment combo
+      const nonComboEvents = [
+        ScoringEvent.ASTEROID_LAUNCH,
+        ScoringEvent.ENERGY_DOT_LOST,
+        ScoringEvent.ASTEROID_SPLIT,
+        ScoringEvent.WAVE_COMPLETE,
+        ScoringEvent.PERFECT_WAVE,
+      ];
+      
+      nonComboEvents.forEach(event => {
+        scoringSystem.reset();
+        scoringSystem.addEvent(event);
+        expect(scoringSystem.getScoreBreakdown().combo).toBe(0);
+      });
+      
+      console.log('✅ Non-enemy events do NOT increment combo');
+    });
+
+    it('should reset combo after timeout (2 seconds)', () => {
+      scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      scoringSystem.addEvent(ScoringEvent.SHOOTER_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      // Advance time just under timeout
+      vi.advanceTimersByTime(1900);
+      scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(3);
+      
+      // Advance time beyond timeout
+      vi.advanceTimersByTime(2100);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(0);
+      
+      // New kill starts fresh combo
+      scoringSystem.addEvent(ScoringEvent.SHREDDER_DESTROYED);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(1);
+      
+      console.log('✅ Combo resets after 2 second timeout');
+    });
+
+    it('should handle rapid multi-kill scenarios', () => {
+      // Simulate asteroid hitting multiple enemies at once
+      const rapidKills = [
+        ScoringEvent.BIRD_HIT,
+        ScoringEvent.BIRD_HIT,
+        ScoringEvent.SHOOTER_HIT,     // Could be shooter or miner
+        ScoringEvent.SUPER_NAVIGATOR_HIT,
+        ScoringEvent.BIRD_WITH_ENERGY_HIT,
+      ];
+      
+      rapidKills.forEach(event => {
+        scoringSystem.addEvent(event);
+      });
+      
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(5);
+      console.log('✅ Rapid multi-kill combo working');
+    });
+
+    it('should give correct points for each enemy type', () => {
+      const enemyPoints = [
+        { event: ScoringEvent.BIRD_HIT, points: 40, name: 'Regular bird' },
+        { event: ScoringEvent.BIRD_WITH_ENERGY_HIT, points: 120, name: 'Bird with dot' },
+        { event: ScoringEvent.SHOOTER_HIT, points: 80, name: 'Shooter/Miner' },
+        { event: ScoringEvent.SUPER_NAVIGATOR_HIT, points: 80, name: 'Navigator' },
+        { event: ScoringEvent.BOSS_HIT, points: 50, name: 'Boss hit' },
+        { event: ScoringEvent.BOSS_DEFEATED, points: 400, name: 'Boss defeated' },
+        { event: ScoringEvent.SHREDDER_DESTROYED, points: 50, name: 'Shredder' },
+      ];
+      
+      enemyPoints.forEach(enemy => {
+        scoringSystem.reset();
+        const initialScore = scoringSystem.getScore();
+        scoringSystem.addEvent(enemy.event);
+        const newScore = scoringSystem.getScore();
+        const pointsEarned = newScore - initialScore;
+        expect(pointsEarned).toBe(enemy.points);
+        console.log(`  ${enemy.name}: ${enemy.points} points ✓`);
+      });
+      
+      console.log('✅ All enemy point values correct');
+    });
+
+    it('should track maximum combo achieved', () => {
+      // Build up a big combo
+      for (let i = 0; i < 20; i++) {
+        if (i % 3 === 0) scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
+        else if (i % 3 === 1) scoringSystem.addEvent(ScoringEvent.SHOOTER_HIT);
+        else scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+      }
+      
+      const finalCombo = scoringSystem.getScoreBreakdown().combo;
+      expect(finalCombo).toBe(20);
+      
+      const stats = scoringSystem.getStatistics();
+      expect(stats.highestCombo).toBeGreaterThanOrEqual(20);
+      
+      console.log('✅ Maximum combo tracking works');
+    });
+  });
+
+  describe('INTEGRATION: Complete combo system test', () => {
+    it('should handle a complete game scenario', () => {
+      // Wave 1: Few regular birds
+      scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
+      scoringSystem.addEvent(ScoringEvent.BIRD_HIT);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(2);
+      
+      // Timeout - combo resets
+      vi.advanceTimersByTime(2100);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(0);
+      
+      // Wave 5: Special birds appear
+      scoringSystem.addEvent(ScoringEvent.SHOOTER_HIT);
+      scoringSystem.addEvent(ScoringEvent.SUPER_NAVIGATOR_HIT);
+      scoringSystem.addEvent(ScoringEvent.SHOOTER_HIT); // Miner
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(3);
+      
+      // Boss wave
+      scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+      scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+      scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+      scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(7);
+      
+      // Multi-kill with asteroid
+      scoringSystem.addEvent(ScoringEvent.MULTI_KILL);
+      expect(scoringSystem.getScoreBreakdown().combo).toBe(8);
+      
+      console.log('✅ COMPLETE INTEGRATION TEST PASSED!');
+      console.log('   All enemy types properly contribute to combos');
+      console.log('   Miner birds correctly use SHOOTER_HIT event');
+      console.log('   Boss birds have both hit and defeated events');
+      console.log('   Shredders properly increment combo');
     });
   });
 });
