@@ -34,28 +34,29 @@ export class UsernameGenerator {
   }
   
   /**
-   * Generate or retrieve username from session storage
-   * Ensures consistent username for the session
+   * Generate or retrieve username from localStorage
+   * Ensures consistent username FOREVER (across sessions)
    */
   static getSessionUsername(): string {
-    const SESSION_KEY = 'floktoid_username';
+    const STORAGE_KEY = 'floktoid_username';
     
-    // Check if username already exists in session
-    let username = sessionStorage.getItem(SESSION_KEY);
+    // Check if username already exists in localStorage (persists FOREVER!)
+    let username = localStorage.getItem(STORAGE_KEY);
     
     if (!username) {
-      // Generate new username and store it
+      // Generate new username and store it PERMANENTLY
       username = this.generate();
-      sessionStorage.setItem(SESSION_KEY, username);
+      localStorage.setItem(STORAGE_KEY, username);
+      console.log('[USERNAME] Generated new permanent username:', username);
     }
     
     return username;
   }
   
   /**
-   * Clear the session username (for testing or new game)
+   * Clear the username (for testing or if user wants new identity)
    */
   static clearSessionUsername(): void {
-    sessionStorage.removeItem('floktoid_username');
+    localStorage.removeItem('floktoid_username');
   }
 }

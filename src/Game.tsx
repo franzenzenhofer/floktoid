@@ -177,10 +177,21 @@ export function Game() {
   }, [gameState, devMode]); // Include devMode to reinitialize engine with debug mode
 
   const handleStart = (isDevMode = false) => {
+    // CRITICAL: Destroy any existing engine before starting fresh
+    if (engineRef.current) {
+      engineRef.current.destroy();
+      engineRef.current = null;
+    }
+    if (gameSessionRef.current) {
+      gameSessionRef.current.endGame();
+      gameSessionRef.current = null;
+    }
+    
     // Clear any saved game when starting fresh
     SavedGameState.clear();
     setScore(0);
     setWave(1);
+    setEnergyCritical(false);
     setDevMode(isDevMode);
     if (isDevMode) {
       console.log('[DEV MODE] Starting game in development mode');
@@ -199,16 +210,40 @@ export function Game() {
   };
 
   const handleRestart = () => {
+    // CRITICAL: Destroy the old engine first!
+    if (engineRef.current) {
+      engineRef.current.destroy();
+      engineRef.current = null;
+    }
+    if (gameSessionRef.current) {
+      gameSessionRef.current.endGame();
+      gameSessionRef.current = null;
+    }
+    
     // DON'T clear saved game - user should be able to continue their saved game!
-    // Only clear the current game over state and start fresh
+    // Reset all game state for fresh start
     setScore(0);
     setWave(1);
+    setEnergyCritical(false);
     setGameState('playing');
   };
 
   const handleMenu = () => {
+    // If coming from game over, destroy the engine to ensure clean state
+    if (gameState === 'gameover' && engineRef.current) {
+      engineRef.current.destroy();
+      engineRef.current = null;
+      if (gameSessionRef.current) {
+        gameSessionRef.current.endGame();
+        gameSessionRef.current = null;
+      }
+      // Reset UI state when returning to menu from game over
+      setScore(0);
+      setWave(1);
+      setEnergyCritical(false);
+    }
     // Save game state ONLY if game is active (not game over)
-    if (gameState === 'playing' && engineRef.current && gameSessionRef.current) {
+    else if (gameState === 'playing' && engineRef.current && gameSessionRef.current) {
       const engine = engineRef.current;
       const session = gameSessionRef.current;
       
