@@ -126,9 +126,6 @@ export class MessageDisplay {
    * Display combo text on screen - OLD STYLE WITH TIER COLORS!
    */
   displayCombo(combo: number, x: number, y: number): void {
-    // DISABLED - User doesn't like combo text!
-    return;
-    
     // Check if combo meets wave threshold
     const minThreshold = this.getMinComboThreshold(this.currentWave);
     if (combo < minThreshold) {
@@ -137,7 +134,8 @@ export class MessageDisplay {
     }
     
     const tier = this.getComboTier(combo);
-    const comboTextString = combo >= 20 ? `${tier.name}!\n${combo}x COMBO!` : `${combo}x ${tier.name}!`;
+    // SIMPLE COMBO TEXT - Just the number, no MEGA/ULTRA/GODLIKE labels!
+    const comboTextString = `${combo}x`;
     
     // OLD STYLE - use tier color, position at kill location, scale by tier!
     this.displayOldStyleMessage(comboTextString, tier.color, x, y, tier.scale);
