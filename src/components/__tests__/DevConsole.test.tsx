@@ -55,11 +55,11 @@ describe('DevConsole', () => {
 
     it('should show all spawn buttons', () => {
       render(<DevConsole />);
-      expect(screen.getByText('🐦 Bird')).toBeInTheDocument();
-      expect(screen.getByText('👹 Boss')).toBeInTheDocument();
-      expect(screen.getByText('⚡ Shredder')).toBeInTheDocument();
-      expect(screen.getByText('🛸 StarBase')).toBeInTheDocument();
-      expect(screen.getByText('🤖 Auto OFF')).toBeInTheDocument();
+      expect(screen.getByText('BIRD')).toBeInTheDocument();
+      expect(screen.getByText('BOSS')).toBeInTheDocument();
+      expect(screen.getByText('SHREDDER')).toBeInTheDocument();
+      expect(screen.getByText('STARBASE')).toBeInTheDocument();
+      expect(screen.getByText('AUTO OFF')).toBeInTheDocument();
     });
 
     it('should toggle spawn panel visibility', () => {
@@ -103,7 +103,7 @@ describe('DevConsole', () => {
     it('should spawn regular bird when clicking Bird button', () => {
       render(<DevConsole />);
       
-      const birdButton = screen.getByText('🐦 Bird');
+      const birdButton = screen.getByText('BIRD');
       fireEvent.click(birdButton);
       
       expect(window.gameEngine?.spawnBoid).toHaveBeenCalledTimes(1);
@@ -112,7 +112,7 @@ describe('DevConsole', () => {
     it('should spawn boss when clicking Boss button', () => {
       render(<DevConsole />);
       
-      const bossButton = screen.getByText('👹 Boss');
+      const bossButton = screen.getByText('BOSS');
       fireEvent.click(bossButton);
       
       expect(window.gameEngine?.spawnBoss).toHaveBeenCalledTimes(1);
@@ -121,7 +121,7 @@ describe('DevConsole', () => {
     it('should spawn shredder when clicking Shredder button', () => {
       render(<DevConsole />);
       
-      const shredderButton = screen.getByText('⚡ Shredder');
+      const shredderButton = screen.getByText('SHREDDER');
       fireEvent.click(shredderButton);
       
       expect(window.gameEngine?.spawnShredder).toHaveBeenCalledTimes(1);
@@ -130,7 +130,7 @@ describe('DevConsole', () => {
     it('should spawn StarBase when clicking StarBase button', () => {
       render(<DevConsole />);
       
-      const starbaseButton = screen.getByText('🛸 StarBase');
+      const starbaseButton = screen.getByText('STARBASE');
       fireEvent.click(starbaseButton);
       
       expect(window.gameEngine?.spawnStarBase).toHaveBeenCalledTimes(1);
@@ -139,7 +139,7 @@ describe('DevConsole', () => {
     it('should toggle autopilot', () => {
       render(<DevConsole />);
       
-      const autopilotButton = screen.getByText('🤖 Auto OFF');
+      const autopilotButton = screen.getByText('AUTO OFF');
       fireEvent.click(autopilotButton);
       
       expect(window.gameEngine?.enableAutopilot).toHaveBeenCalledTimes(1);
@@ -149,7 +149,7 @@ describe('DevConsole', () => {
       delete window.gameEngine;
       render(<DevConsole />);
       
-      const birdButton = screen.getByText('🐦 Bird');
+      const birdButton = screen.getByText('BIRD');
       
       // Should not throw when clicking
       expect(() => fireEvent.click(birdButton)).not.toThrow();
@@ -357,11 +357,11 @@ describe('DevConsole', () => {
       
       render(<DevConsole />);
       
-      expect(screen.getByText('🤖 Auto OFF')).toBeInTheDocument();
+      expect(screen.getByText('AUTO OFF')).toBeInTheDocument();
       
       // Wait for interval to check autopilot status
       await waitFor(() => {
-        expect(screen.getByText('🤖 Auto ON')).toBeInTheDocument();
+        expect(screen.getByText('AUTO ON')).toBeInTheDocument();
       }, { timeout: 1000 });
     });
 
@@ -370,7 +370,7 @@ describe('DevConsole', () => {
       
       render(<DevConsole />);
       
-      const autopilotButton = screen.getByText('🤖 Auto OFF');
+      const autopilotButton = screen.getByText('AUTO OFF');
       fireEvent.click(autopilotButton);
       
       expect(window.gameEngine?.enableAutopilot).toHaveBeenCalledTimes(1);

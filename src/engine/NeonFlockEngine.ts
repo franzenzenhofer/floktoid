@@ -251,6 +251,44 @@ export class NeonFlockEngine {
     }
   }
   
+  private createFallingDotToPosition(x: number, y: number, originalDot: EnergyDot, targetX: number, targetY: number) {
+    // Create sprites for falling dot - same structure as original!
+    const glowSprite = new PIXI.Graphics();
+    const sprite = new PIXI.Graphics();
+    const pulsePhase = Math.random() * Math.PI * 2;
+    
+    // Calculate initial velocity toward target with some randomness
+    const dx = targetX - x;
+    const angle = Math.atan2(targetY - y, dx);
+    
+    // Add sprites to stage
+    this.app.stage.addChild(glowSprite);
+    this.app.stage.addChild(sprite);
+    
+    // 75% of bird speed as requested!
+    const birdSpeed = GameConfig.BASE_SPEED * this.waveManager.getSpeedMultiplier();
+    const fallSpeed = birdSpeed * 0.75; // 75% of bird speed
+    
+    const targetSlot = this.energyDots.indexOf(originalDot);
+    
+    const fallingDot = {
+      x,
+      y,
+      vx: Math.cos(angle) * fallSpeed * 0.8 + (Math.random() - 0.5) * 20,
+      vy: Math.sin(angle) * fallSpeed,
+      targetSlot,
+      originalDot,
+      glowSprite,
+      sprite,
+      pulsePhase,
+      trail: [] as PIXI.Graphics[],
+      trailPositions: [] as { x: number; y: number; alpha: number }[]
+    };
+    
+    this.fallingDots.push(fallingDot);
+    console.log(`[DOT] Falling dot created at (${x}, ${y}) returning to (${targetX}, ${targetY})`);
+  }
+  
   private createFallingDot(x: number, y: number, originalDot: EnergyDot) {
     // Create sprites for falling dot - same structure as original!
     const glowSprite = new PIXI.Graphics();
@@ -451,11 +489,13 @@ export class NeonFlockEngine {
       const stolenDots = this.energyDots.filter(d => d.stolen);
       
       if (stolenDots.length > 0) {
-        // Get the hue of the first stolen dot for the StarBase core
-        const dotHue = stolenDots[0].hue;
+        // Get the first stolen dot for the StarBase core
+        const stolenDot = stolenDots[0];
+        const dotHue = stolenDot.hue;
+        const dotPosition = { x: stolenDot.x, y: stolenDot.y };
         
         console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: ${stolenDots.length} dots missing, spawning StarBase!`);
-        this.starBase = new StarBase(this.app, this.waveManager.getWave(), dotHue);
+        this.starBase = new StarBase(this.app, this.waveManager.getWave(), dotHue, dotPosition);
         
         // NO ANNOUNCEMENT for StarBase - it's not a boss!
       } else {
@@ -850,22 +890,60 @@ export class NeonFlockEngine {
       if (!this.starBase.alive) {
         // If destroyed (not just left), drop an energy dot
         if (this.starBase.health <= 0) {
-          // Find a stolen dot to restore
+          // HUGE EXPLOSION when destroyed!
+          this.particleSystem.createExplosion(this.starBase.x, this.starBase.y, 0xFFFF00, 100);
+          this.particleSystem.createExplosion(this.starBase.x, this.starBase.y, 0xFF00FF, 80);
+          this.particleSystem.createExplosion(this.starBase.x, this.starBase.y, 0x00FFFF, 60);
+          
+          // Find the stolen dot to restore to its original position
           const stolenDot = this.energyDots.find(d => d.stolen);
           if (stolenDot) {
-            // Create falling dot at StarBase position
-            this.createFallingDot(this.starBase.x, this.starBase.y, stolenDot);
-            console.log('[STARBASE] Destroyed! Energy dot recovered!');
+            // Get original position from StarBase
+            const originalPos = this.starBase.getOriginalDotPosition();
             
-            // Big explosion!
-            this.particleSystem.createExplosion(this.starBase.x, this.starBase.y, 0xFFFF00, 50);
+            // Create falling dot that returns to original position
+            this.createFallingDotToPosition(
+              this.starBase.x, 
+              this.starBase.y, 
+              stolenDot,
+              originalPos.x,
+              originalPos.y
+            );
+            console.log(`[STARBASE] Destroyed! Energy dot returning to ${originalPos.x}, ${originalPos.y}`);
           }
         } else {
-          console.log('[STARBASE] Left without being destroyed');
+          // StarBase is leaving (time expired) - no explosion
+          console.log('[STARBASE] Time expired, leaving...');
         }
         
         this.starBase.destroy();
         this.starBase = null;
+      }
+      
+      // Handle StarBase leaving animation (moving off screen)
+      if (this.starBase && this.starBase.isLeaving) {
+        // StarBase moves up, left or right when leaving
+        const direction = this.starBase.leavingDirection;
+        const leaveSpeed = 200; // pixels per second
+        
+        if (direction === 'up') {
+          this.starBase.y -= leaveSpeed * dt;
+          if (this.starBase.y < -100) {
+            this.starBase.alive = false;
+          }
+        } else if (direction === 'left') {
+          this.starBase.x -= leaveSpeed * dt;
+          this.starBase.y -= leaveSpeed * dt * 0.5; // Also move up slightly
+          if (this.starBase.x < -100) {
+            this.starBase.alive = false;
+          }
+        } else if (direction === 'right') {
+          this.starBase.x += leaveSpeed * dt;
+          this.starBase.y -= leaveSpeed * dt * 0.5; // Also move up slightly
+          if (this.starBase.x > this.app.screen.width + 100) {
+            this.starBase.alive = false;
+          }
+        }
       }
     }
     
@@ -1043,11 +1121,15 @@ export class NeonFlockEngine {
           if (this.starBase.containsPoint(asteroid.x, asteroid.y)) {
             // Check if StarBase has shield
             if (this.starBase.hasActiveShield()) {
-              // Shield hit - split asteroid and push fragments away
+              // Shield hit - split asteroid and push fragments away (EXACTLY like boss!)
               const fragments = this.asteroidSplitter.split(asteroid, this.asteroids.length, {
                 x: this.starBase.x,
                 y: this.starBase.y
               });
+              
+              // CRITICAL: Remove the original asteroid immediately (DRY - same as boss!)
+              asteroid.destroy();
+              this.asteroids.splice(i, 1);
               
               // Add fragments
               if (fragments && fragments.length > 0) {

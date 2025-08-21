@@ -174,40 +174,40 @@ export function DevConsole() {
               <div className="space-y-2">
                 <button
                   onClick={() => spawnEnemy('bird')}
-                  className="block w-full bg-gradient-to-r from-cyan-900/50 to-cyan-800/50 hover:from-cyan-800/50 hover:to-cyan-700/50 text-cyan-300 text-xs px-3 py-2 rounded border border-cyan-500/50 transition-all hover:scale-105 hover:border-cyan-400"
+                  className="block w-full bg-gradient-to-r from-cyan-900 to-cyan-700 hover:from-cyan-700 hover:to-cyan-500 text-white text-xs font-bold px-3 py-2 rounded border-2 border-cyan-400 transition-all hover:scale-105 hover:border-cyan-300 shadow-lg"
                 >
-                  🐦 Bird
+                  BIRD
                 </button>
                 <button
                   onClick={() => spawnEnemy('boss')}
-                  className="block w-full bg-gradient-to-r from-magenta-900/50 to-magenta-800/50 hover:from-magenta-800/50 hover:to-magenta-700/50 text-magenta-300 text-xs px-3 py-2 rounded border border-magenta-500/50 transition-all hover:scale-105 hover:border-magenta-400"
+                  className="block w-full bg-gradient-to-r from-magenta-900 to-magenta-700 hover:from-magenta-700 hover:to-magenta-500 text-white text-xs font-bold px-3 py-2 rounded border-2 border-magenta-400 transition-all hover:scale-105 hover:border-magenta-300 shadow-lg"
                 >
-                  👹 Boss
+                  BOSS
                 </button>
                 <button
                   onClick={() => spawnEnemy('shredder')}
-                  className="block w-full bg-gradient-to-r from-red-900/50 to-red-800/50 hover:from-red-800/50 hover:to-red-700/50 text-red-300 text-xs px-3 py-2 rounded border border-red-500/50 transition-all hover:scale-105 hover:border-red-400"
+                  className="block w-full bg-gradient-to-r from-red-900 to-red-700 hover:from-red-700 hover:to-red-500 text-white text-xs font-bold px-3 py-2 rounded border-2 border-red-400 transition-all hover:scale-105 hover:border-red-300 shadow-lg"
                 >
-                  ⚡ Shredder
+                  SHREDDER
                 </button>
                 <button
                   onClick={() => spawnEnemy('starbase')}
-                  className="block w-full bg-gradient-to-r from-yellow-900/50 to-yellow-800/50 hover:from-yellow-800/50 hover:to-yellow-700/50 text-yellow-300 text-xs px-3 py-2 rounded border border-yellow-500/50 transition-all hover:scale-105 hover:border-yellow-400"
+                  className="block w-full bg-gradient-to-r from-yellow-900 to-yellow-700 hover:from-yellow-700 hover:to-yellow-500 text-white text-xs font-bold px-3 py-2 rounded border-2 border-yellow-400 transition-all hover:scale-105 hover:border-yellow-300 shadow-lg"
                 >
-                  🛸 StarBase
+                  STARBASE
                 </button>
                 
                 <div className="border-t border-cyan-500/30 my-2" />
                 
                 <button
                   onClick={() => spawnEnemy('autopilot')}
-                  className={`block w-full text-xs px-3 py-2 rounded border transition-all hover:scale-105 ${
+                  className={`block w-full text-xs font-bold px-3 py-2 rounded border-2 transition-all hover:scale-105 shadow-lg ${
                     autopilotEnabled 
-                      ? 'bg-gradient-to-r from-green-700/50 to-green-600/50 hover:from-green-600/50 hover:to-green-500/50 text-green-200 border-green-400/50 animate-pulse'
-                      : 'bg-gradient-to-r from-gray-900/50 to-gray-800/50 hover:from-gray-800/50 hover:to-gray-700/50 text-gray-300 border-gray-500/50'
+                      ? 'bg-gradient-to-r from-green-700 to-green-500 hover:from-green-600 hover:to-green-400 text-white border-green-300 animate-pulse'
+                      : 'bg-gradient-to-r from-gray-700 to-gray-500 hover:from-gray-600 hover:to-gray-400 text-white border-gray-400'
                   }`}
                 >
-                  {autopilotEnabled ? '🤖 Auto ON' : '🤖 Auto OFF'}
+                  {autopilotEnabled ? 'AUTO ON' : 'AUTO OFF'}
                 </button>
               </div>
             </div>

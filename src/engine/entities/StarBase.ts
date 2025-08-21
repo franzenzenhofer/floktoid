@@ -28,40 +28,43 @@ export class StarBase {
   public timeAlive = 0;
   public maxTimeAlive: number; // Time before leaving (30s initially)
   public dotHue: number; // Color of the energy dot inside
+  public originalDotPosition: { x: number; y: number }; // Where the dot should return to
+  public isLeaving = false; // Whether StarBase is leaving
+  public leavingDirection: 'up' | 'left' | 'right' = 'up'; // Direction to leave
   private movementSpeed = 100; // pixels per second for descent
   
   // Visual components
   private sprite: PIXI.Graphics;
   private shieldSprite: PIXI.Graphics;
-  private healthBarSprite: PIXI.Graphics;
   private app: PIXI.Application;
   
   // Combat properties
-  private shootCooldown = 0;
-  private readonly SHOOT_INTERVAL = 2; // Seconds between shot bursts
   private rotationTarget = 0;
   private isRotating = false;
-  private shotsFired = 0;
+  private actionPhase: 'rotate' | 'pause1' | 'shoot' | 'pause2' = 'rotate';
+  private phaseTimer = 0;
   
   // Lasers
   public lasers: Laser[] = [];
-  private readonly LASER_SPEED = 300; // Pixels per second
+  private readonly LASER_SPEED = 350; // Pixels per second (faster)
   private readonly LASER_LIFETIME = 3; // Seconds
   
   constructor(
     app: PIXI.Application,
     wave: number,
-    dotHue: number = 60 // Yellow by default
+    dotHue: number = 60, // Yellow by default
+    dotPosition?: { x: number; y: number }
   ) {
     this.app = app;
     this.dotHue = dotHue;
+    this.originalDotPosition = dotPosition || { x: app.screen.width / 2, y: app.screen.height - 100 };
     
     // Start at top, will descend to center
     this.x = app.screen.width / 2;
     this.y = -this.size * 2; // Start above screen
     this.targetY = app.screen.height / 2; // Target: center of screen
     
-    // Health scales with wave
+    // Health scales with wave (5 shots for first StarBase on wave 7)
     this.health = this.calculateHealth(wave);
     this.maxHealth = this.health;
     
@@ -71,38 +74,35 @@ export class StarBase {
     // Create visual components
     this.sprite = new PIXI.Graphics();
     this.shieldSprite = new PIXI.Graphics();
-    this.healthBarSprite = new PIXI.Graphics();
     
     // Add to stage with proper z-ordering
     this.sprite.zIndex = 500;
     this.shieldSprite.zIndex = 499;
-    this.healthBarSprite.zIndex = 501;
     
     app.stage.addChild(this.sprite);
     app.stage.addChild(this.shieldSprite);
-    app.stage.addChild(this.healthBarSprite);
     
     // Initial draw
     this.draw();
     
-    console.log(`[STARBASE] Created with ${this.health} HP, ${this.maxTimeAlive}s timer`);
+    console.log(`[STARBASE] Created with ${this.health} HP (${this.health - 1} shield + 1 core), ${this.maxTimeAlive}s timer`);
   }
   
   private calculateHealth(wave: number): number {
-    // Like boss: health is for shield, +1 for core
-    // Wave 7: 3 shield + 1 core = 4 total
-    // Wave 17: 5 shield + 1 core = 6 total
-    // Wave 27: 7 shield + 1 core = 8 total
-    if (wave <= 7) return 4;
-    if (wave <= 17) return 6;
-    if (wave <= 27) return 8;
-    return 8 + Math.floor((wave - 27) / 10) * 2; // +2 health every 10 waves after 27
+    // Wave 7: 5 shield + 1 core = 6 total
+    // Wave 17: 7 shield + 1 core = 8 total  
+    // Wave 27: 9 shield + 1 core = 10 total
+    // Scales up gradually
+    if (wave <= 7) return 6;  // 5 + 1
+    if (wave <= 17) return 8;  // 7 + 1
+    if (wave <= 27) return 10; // 9 + 1
+    return 10 + Math.floor((wave - 27) / 10) * 2; // +2 health every 10 waves after 27
   }
   
   private draw() {
     this.sprite.clear();
     
-    // Main hexagon body
+    // Main hexagon body with cooler look
     const vertices: number[] = [];
     for (let i = 0; i < 6; i++) {
       const angle = (i * Math.PI * 2) / 6 + this.rotation;
@@ -112,19 +112,49 @@ export class StarBase {
       );
     }
     
-    // Dark metallic body
+    // Dark metallic body with gradient effect
     this.sprite.poly(vertices);
-    this.sprite.fill({ color: 0x2A2A3E, alpha: 1 });
-    this.sprite.stroke({ width: 3, color: 0x00FFFF, alpha: 0.8 });
+    this.sprite.fill({ color: 0x1A1A2E, alpha: 1 });
+    this.sprite.stroke({ width: 2, color: 0x00FFFF, alpha: 1 });
+    
+    // Inner hexagon for depth
+    const innerVertices: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI * 2) / 6 + this.rotation;
+      innerVertices.push(
+        Math.cos(angle) * this.size * 0.7,
+        Math.sin(angle) * this.size * 0.7
+      );
+    }
+    this.sprite.poly(innerVertices);
+    this.sprite.stroke({ width: 1, color: 0x00AAAA, alpha: 0.5 });
+    
+    // Tech lines connecting vertices for cooler look
+    for (let i = 0; i < 6; i++) {
+      const angle1 = (i * Math.PI * 2) / 6 + this.rotation;
+      const angle2 = ((i + 3) % 6 * Math.PI * 2) / 6 + this.rotation; // Connect to opposite vertex
+      
+      this.sprite.moveTo(
+        Math.cos(angle1) * this.size * 0.3,
+        Math.sin(angle1) * this.size * 0.3
+      );
+      this.sprite.lineTo(
+        Math.cos(angle2) * this.size * 0.3,
+        Math.sin(angle2) * this.size * 0.3
+      );
+      this.sprite.stroke({ width: 1, color: 0x006666, alpha: 0.3 });
+    }
     
     // Inner core - draw like actual energy dot with matching color!
     const dotColor = hueToRGB(this.dotHue);
     const pulse = Math.sin(this.timeAlive * 5) * 0.2 + 1;
     const coreRadius = 8 * pulse; // Energy dot size
     
-    // Glow like energy dot
-    this.sprite.circle(0, 0, coreRadius * 2);
-    this.sprite.fill({ color: dotColor, alpha: 0.3 * pulse });
+    // Multiple glow layers for better effect
+    for (let i = 3; i > 0; i--) {
+      this.sprite.circle(0, 0, coreRadius * i);
+      this.sprite.fill({ color: dotColor, alpha: 0.1 * pulse });
+    }
     
     // Main dot
     this.sprite.circle(0, 0, coreRadius);
@@ -134,14 +164,32 @@ export class StarBase {
     this.sprite.circle(0, 0, coreRadius * 0.3);
     this.sprite.fill({ color: 0xFFFFFF, alpha: 1 });
     
-    // Laser cannons on 3 sides (visual indicators)
+    // Enhanced red triangular laser cannons on 3 sides
     for (let i = 0; i < 6; i += 2) { // Every other side has a cannon
       const angle = (i * Math.PI * 2) / 6 + this.rotation;
-      const cannonX = Math.cos(angle) * (this.size * 0.8);
-      const cannonY = Math.sin(angle) * (this.size * 0.8);
+      const cannonX = Math.cos(angle) * (this.size * 0.85);
+      const cannonY = Math.sin(angle) * (this.size * 0.85);
       
-      this.sprite.circle(cannonX, cannonY, 5);
-      this.sprite.fill({ color: 0xFF0000, alpha: 0.8 });
+      // Draw larger, cooler red triangle pointing outward
+      const triangleSize = 10;
+      const tipX = cannonX + Math.cos(angle) * triangleSize;
+      const tipY = cannonY + Math.sin(angle) * triangleSize;
+      const base1X = cannonX + Math.cos(angle + Math.PI * 2/3) * triangleSize * 0.7;
+      const base1Y = cannonY + Math.sin(angle + Math.PI * 2/3) * triangleSize * 0.7;
+      const base2X = cannonX + Math.cos(angle - Math.PI * 2/3) * triangleSize * 0.7;
+      const base2Y = cannonY + Math.sin(angle - Math.PI * 2/3) * triangleSize * 0.7;
+      
+      // Glow effect for cannons
+      this.sprite.circle(cannonX, cannonY, triangleSize * 0.8);
+      this.sprite.fill({ color: 0xFF0000, alpha: 0.2 });
+      
+      this.sprite.poly([tipX, tipY, base1X, base1Y, base2X, base2Y]);
+      this.sprite.fill({ color: 0xFF0000, alpha: 1 });
+      this.sprite.stroke({ width: 1, color: 0xFFAAAA });
+      
+      // Inner detail
+      this.sprite.circle(cannonX, cannonY, 3);
+      this.sprite.fill({ color: 0xFF6666, alpha: 0.8 });
     }
     
     // Update position
@@ -155,97 +203,96 @@ export class StarBase {
     // Shield only visible when health > 1 (last HP is core without shield)
     if (this.health <= 1 || !this.alive) return;
     
-    // Shield hexagon - like boss shield
-    const shieldRadius = this.size * 1.8;
-    const vertices: number[] = [];
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5; // Rotate slower
-      vertices.push(
-        Math.cos(angle) * shieldRadius,
-        Math.sin(angle) * shieldRadius
-      );
-    }
+    // Shield hexagons - CLOSER TOGETHER (1.5 and 1.2 instead of 1.8 and 1.4)
+    const outerShieldRadius = this.size * 1.5;
+    const innerShieldRadius = this.size * 1.2;
     
-    // Shield color based on shield health (not including core)
+    // Calculate shield health percentage (not including core)
     const shieldHealth = this.health - 1; // -1 for core
     const maxShieldHealth = this.maxHealth - 1;
     const healthPercent = shieldHealth / maxShieldHealth;
-    let shieldColor: number;
     
-    if (healthPercent > 0.5) {
-      // Green to yellow
-      const t = (healthPercent - 0.5) * 2;
-      shieldColor = (Math.floor(255 * (1 - t)) << 16) | (255 << 8) | 0;
+    // Color transitions: Green -> Yellow -> Orange -> Red
+    let shieldColor: number;
+    if (healthPercent > 0.75) {
+      // Green
+      shieldColor = 0x00FF00;
+    } else if (healthPercent > 0.5) {
+      // Green to Yellow
+      const t = (healthPercent - 0.5) * 4;
+      const r = Math.floor(255 * (1 - t));
+      const g = 255;
+      shieldColor = (r << 16) | (g << 8) | 0;
+    } else if (healthPercent > 0.25) {
+      // Yellow to Orange
+      const t = (healthPercent - 0.25) * 4;
+      const r = 255;
+      const g = Math.floor(255 * t);
+      shieldColor = (r << 16) | (g << 8) | 0;
     } else {
-      // Yellow to red
-      const t = healthPercent * 2;
-      shieldColor = (255 << 16) | (Math.floor(255 * t) << 8) | 0;
+      // Orange to Red
+      const t = healthPercent * 4;
+      const r = 255;
+      const g = Math.floor(128 * t);
+      shieldColor = (r << 16) | (g << 8) | 0;
     }
     
-    this.shieldSprite.poly(vertices);
+    // Outer shield hexagon
+    const outerVertices: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5; // Rotate slower
+      outerVertices.push(
+        Math.cos(angle) * outerShieldRadius,
+        Math.sin(angle) * outerShieldRadius
+      );
+    }
+    
+    this.shieldSprite.poly(outerVertices);
     this.shieldSprite.stroke({ 
-      width: 2, 
+      width: 3, 
       color: shieldColor, 
-      alpha: 0.4 + healthPercent * 0.3 
+      alpha: 0.7 + healthPercent * 0.3 
     });
     
-    // Inner shield layer
+    // Inner shield layer (closer to outer)
     const innerVertices: number[] = [];
-    const innerRadius = shieldRadius * 0.7;
     for (let i = 0; i < 6; i++) {
       const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
       innerVertices.push(
-        Math.cos(angle) * innerRadius,
-        Math.sin(angle) * innerRadius
+        Math.cos(angle) * innerShieldRadius,
+        Math.sin(angle) * innerShieldRadius
       );
     }
     
     this.shieldSprite.poly(innerVertices);
     this.shieldSprite.stroke({ 
-      width: 1, 
+      width: 2, 
       color: shieldColor, 
-      alpha: 0.2 + healthPercent * 0.2 
+      alpha: 0.5 + healthPercent * 0.3 
     });
+    
+    // Energy effect lines between vertices (enhanced)
+    for (let i = 0; i < 6; i++) {
+      const angle1 = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
+      const angle2 = ((i + 1) * Math.PI * 2) / 6 + this.rotation * 0.5;
+      
+      const x1 = Math.cos(angle1) * innerShieldRadius;
+      const y1 = Math.sin(angle1) * innerShieldRadius;
+      const x2 = Math.cos(angle2) * outerShieldRadius;
+      const y2 = Math.sin(angle2) * outerShieldRadius;
+      
+      this.shieldSprite.moveTo(x1, y1);
+      this.shieldSprite.lineTo(x2, y2);
+      this.shieldSprite.stroke({ width: 1, color: shieldColor, alpha: 0.3 });
+    }
+    
+    // Add pulsing effect
+    const pulseAlpha = Math.sin(this.timeAlive * 3) * 0.1 + 0.1;
+    this.shieldSprite.circle(0, 0, outerShieldRadius);
+    this.shieldSprite.fill({ color: shieldColor, alpha: pulseAlpha });
     
     this.shieldSprite.x = this.x;
     this.shieldSprite.y = this.y;
-  }
-  
-  private updateHealthBar() {
-    this.healthBarSprite.clear();
-    
-    if (!this.alive || this.health <= 0) return;
-    
-    // Health bar above StarBase
-    const barWidth = 80;
-    const barHeight = 8;
-    const barY = -this.size - 20;
-    
-    // Background
-    this.healthBarSprite.rect(-barWidth/2, barY, barWidth, barHeight);
-    this.healthBarSprite.fill({ color: 0x333333, alpha: 0.8 });
-    
-    // Health fill
-    const healthPercent = this.health / this.maxHealth;
-    const fillWidth = barWidth * healthPercent;
-    
-    // Color based on health
-    let fillColor: number;
-    if (healthPercent > 0.5) {
-      fillColor = 0x00FF00; // Green
-    } else if (healthPercent > 0.25) {
-      fillColor = 0xFFFF00; // Yellow
-    } else {
-      fillColor = 0xFF0000; // Red
-    }
-    
-    this.healthBarSprite.rect(-barWidth/2, barY, fillWidth, barHeight);
-    this.healthBarSprite.fill({ color: fillColor, alpha: 1 });
-    
-    // Health numbers shown in bar visually (no text needed)
-    
-    this.healthBarSprite.x = this.x;
-    this.healthBarSprite.y = this.y;
   }
   
   update(dt: number) {
@@ -267,28 +314,56 @@ export class StarBase {
       }
     }
     
-    // Rotation animation
-    if (this.isRotating) {
-      const rotationDiff = this.rotationTarget - this.rotation;
-      if (Math.abs(rotationDiff) > 0.01) {
-        this.rotation += rotationDiff * dt * 5; // Smooth rotation
-      } else {
-        this.rotation = this.rotationTarget;
-        this.isRotating = false;
-      }
-    }
-    
-    // Combat logic - only shoot when in position
+    // Combat logic - only when in position
     if (this.y >= this.targetY) {
-      this.shootCooldown -= dt;
+      this.phaseTimer -= dt;
       
-      if (this.shootCooldown <= 0 && !this.isRotating) {
-      this.fireVolley();
-      this.shootCooldown = this.SHOOT_INTERVAL;
-      
-        // Rotate after shooting
-        this.rotationTarget = this.rotation + (Math.PI * 2) / 6; // Rotate 60 degrees
-        this.isRotating = true;
+      // Handle action phases: rotate -> pause -> shoot -> pause -> rotate...
+      switch (this.actionPhase) {
+        case 'rotate':
+          if (this.phaseTimer <= 0) {
+            // Random rotation between 10 and 360 degrees
+            const minRotation = Math.PI / 18; // 10 degrees
+            const maxRotation = Math.PI * 2; // 360 degrees
+            const randomRotation = minRotation + Math.random() * (maxRotation - minRotation);
+            
+            this.rotationTarget = this.rotation + randomRotation;
+            this.isRotating = true;
+            this.actionPhase = 'pause1';
+            this.phaseTimer = 0.7; // Pause for 0.7 seconds after rotation
+          }
+          break;
+          
+        case 'pause1':
+          // Do rotation animation
+          if (this.isRotating) {
+            const rotationDiff = this.rotationTarget - this.rotation;
+            if (Math.abs(rotationDiff) > 0.01) {
+              this.rotation += rotationDiff * dt * 4; // Smooth rotation
+            } else {
+              this.rotation = this.rotationTarget;
+              this.isRotating = false;
+            }
+          }
+          
+          if (this.phaseTimer <= 0 && !this.isRotating) {
+            this.actionPhase = 'shoot';
+            this.phaseTimer = 0;
+          }
+          break;
+          
+        case 'shoot':
+          this.fireVolley();
+          this.actionPhase = 'pause2';
+          this.phaseTimer = 1.2; // Pause after shooting
+          break;
+          
+        case 'pause2':
+          if (this.phaseTimer <= 0) {
+            this.actionPhase = 'rotate';
+            this.phaseTimer = 0;
+          }
+          break;
       }
     }
     
@@ -298,28 +373,22 @@ export class StarBase {
     // Update visuals
     this.draw();
     this.updateShield();
-    this.updateHealthBar();
   }
   
   private fireVolley() {
-    // Fire from 3 random sides
-    const sides = [0, 1, 2, 3, 4, 5];
-    const selectedSides: number[] = [];
-    
-    // Pick 3 random sides
-    for (let i = 0; i < 3; i++) {
-      const randomIndex = Math.floor(Math.random() * sides.length);
-      selectedSides.push(sides.splice(randomIndex, 1)[0]);
-    }
-    
-    // Create lasers from selected sides
-    for (const side of selectedSides) {
-      const angle = (side * Math.PI * 2) / 6 + this.rotation;
-      const startX = this.x + Math.cos(angle) * this.size;
-      const startY = this.y + Math.sin(angle) * this.size;
+    // Fire from ALL 3 cannons at once!
+    for (let cannonIndex = 0; cannonIndex < 3; cannonIndex++) {
+      const hexSide = cannonIndex * 2; // Convert to hexagon side (0, 2, 4)
+      const angle = (hexSide * Math.PI * 2) / 6 + this.rotation;
       
-      // Random spread for lasers
-      const spread = (Math.random() - 0.5) * 0.3;
+      // Start from triangle tip (further out than cannon base)
+      const cannonBaseDistance = this.size * 0.85;
+      const triangleTipDistance = cannonBaseDistance + 10; // Triangle extends 10 pixels
+      const startX = this.x + Math.cos(angle) * triangleTipDistance;
+      const startY = this.y + Math.sin(angle) * triangleTipDistance;
+      
+      // Small random spread for each laser
+      const spread = (Math.random() - 0.5) * 0.15;
       const laserAngle = angle + spread;
       
       const laser: Laser = {
@@ -336,8 +405,7 @@ export class StarBase {
       this.lasers.push(laser);
     }
     
-    this.shotsFired++;
-    console.log(`[STARBASE] Fired volley #${this.shotsFired} from 3 sides`);
+    console.log(`[STARBASE] Fired from all 3 cannons!`);
   }
   
   private updateLasers(dt: number) {
@@ -349,18 +417,28 @@ export class StarBase {
       laser.y += laser.vy * dt;
       laser.lifetime -= dt;
       
-      // Draw laser
+      // Draw enhanced laser
       laser.sprite.clear();
+      
+      // Laser trail
+      laser.sprite.moveTo(laser.x, laser.y);
+      laser.sprite.lineTo(
+        laser.x - laser.vx * 0.15, 
+        laser.y - laser.vy * 0.15
+      );
+      laser.sprite.stroke({ width: 4, color: 0xFF0000, alpha: 0.9 });
+      
+      // Inner bright line
       laser.sprite.moveTo(laser.x, laser.y);
       laser.sprite.lineTo(
         laser.x - laser.vx * 0.1, 
         laser.y - laser.vy * 0.1
       );
-      laser.sprite.stroke({ width: 3, color: 0xFF0000, alpha: 0.9 });
+      laser.sprite.stroke({ width: 2, color: 0xFFAAAA, alpha: 1 });
       
-      // Add glow
-      laser.sprite.circle(laser.x, laser.y, 4);
-      laser.sprite.fill({ color: 0xFF0000, alpha: 0.3 });
+      // Glow at tip
+      laser.sprite.circle(laser.x, laser.y, 5);
+      laser.sprite.fill({ color: 0xFF0000, alpha: 0.4 });
       
       // Remove expired or off-screen lasers
       if (laser.lifetime <= 0 || 
@@ -396,9 +474,19 @@ export class StarBase {
   
   private startLeaving() {
     console.log(`[STARBASE] Time expired, leaving...`);
-    this.alive = false;
-    // Animate leaving (move up)
-    // This will be handled in update()
+    this.isLeaving = true;
+    
+    // Randomly choose direction to leave
+    const rand = Math.random();
+    if (rand < 0.33) {
+      this.leavingDirection = 'left';
+    } else if (rand < 0.66) {
+      this.leavingDirection = 'right';
+    } else {
+      this.leavingDirection = 'up';
+    }
+    
+    console.log(`[STARBASE] Leaving via ${this.leavingDirection}`);
   }
   
   destroy() {
@@ -407,11 +495,9 @@ export class StarBase {
     // Clean up sprites
     this.app.stage.removeChild(this.sprite);
     this.app.stage.removeChild(this.shieldSprite);
-    this.app.stage.removeChild(this.healthBarSprite);
     
     this.sprite.destroy();
     this.shieldSprite.destroy();
-    this.healthBarSprite.destroy();
     
     // Clean up lasers
     for (const laser of this.lasers) {
@@ -420,11 +506,12 @@ export class StarBase {
     }
     this.lasers = [];
     
-    console.log(`[STARBASE] Destroyed!`);
+    console.log(`[STARBASE] Destroyed! Energy dot should return to position: ${this.originalDotPosition.x}, ${this.originalDotPosition.y}`);
   }
   
   /**
    * Check if a point collides with the StarBase
+   * Uses same logic as BossBird for consistency (DRY)
    */
   containsPoint(x: number, y: number): boolean {
     if (!this.alive) return false;
@@ -433,9 +520,17 @@ export class StarBase {
     const dy = y - this.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    // Collision with shield or core
-    const collisionRadius = this.health > 1 ? this.size * 1.5 : this.size;
+    // Use shield radius if shield is active, otherwise use base size
+    const collisionRadius = this.hasActiveShield() ? this.getShieldRadius() : this.size;
     return distance <= collisionRadius;
+  }
+  
+  /**
+   * Get shield radius (like BossBird for DRY consistency)
+   */
+  getShieldRadius(): number {
+    if (!this.hasActiveShield()) return this.size;
+    return this.size * 1.5; // Shield at 1.5x size (closer than before)
   }
   
   /**
@@ -443,5 +538,12 @@ export class StarBase {
    */
   hasActiveShield(): boolean {
     return this.health > 1 && this.alive;
+  }
+  
+  /**
+   * Get the original position where the energy dot should return
+   */
+  getOriginalDotPosition(): { x: number; y: number } {
+    return this.originalDotPosition;
   }
 }
