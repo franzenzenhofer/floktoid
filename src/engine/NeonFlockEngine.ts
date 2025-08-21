@@ -504,18 +504,14 @@ export class NeonFlockEngine {
         const stolenDot = stolenDots[0];
         const dotHue = stolenDot.hue;
         
-        // Calculate the ORIGINAL spawn position based on the dot's COLOR!
-        // Each dot's position is determined by its hue: hue = (i * 360 / ENERGY_COUNT)
-        // So we reverse this to get the original index from the hue
-        const originalIndex = Math.round((dotHue * GameConfig.ENERGY_COUNT) / 360);
-        const spacing = this.app.screen.width / (GameConfig.ENERGY_COUNT + 1);
+        // Use the STORED initial position - no calculation needed!
         const dotPosition = {
-          x: spacing * (originalIndex + 1),
-          y: this.app.screen.height * GameConfig.BASE_Y
+          x: stolenDot.initialX,
+          y: stolenDot.initialY
         };
         
         console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: ${stolenDots.length} dots missing, spawning StarBase!`);
-        console.log(`[STARBASE] Dot hue=${dotHue}, calculated index=${originalIndex}, will return to (${dotPosition.x}, ${dotPosition.y})`);
+        console.log(`[STARBASE] Dot hue=${dotHue}, will return to stored position (${dotPosition.x}, ${dotPosition.y})`);
         this.starBase = new StarBase(this.app, this.waveManager.getWave(), dotHue, dotPosition);
         
         // NO ANNOUNCEMENT for StarBase - it's not a boss!
@@ -1945,14 +1941,16 @@ export class NeonFlockEngine {
     // Find a stolen dot or steal one for testing
     let stolenDots = this.energyDots.filter(d => d.stolen);
     
-    // If no dots are stolen, steal one for testing
+    // If no dots are stolen, steal a RANDOM one for testing
     if (stolenDots.length === 0) {
       const availableDots = this.energyDots.filter(d => !d.stolen);
       if (availableDots.length > 0) {
-        const dotToSteal = availableDots[Math.floor(Math.random() * availableDots.length)];
+        // RANDOMLY choose which dot to steal for testing variety
+        const randomIndex = Math.floor(Math.random() * availableDots.length);
+        const dotToSteal = availableDots[randomIndex];
         dotToSteal.steal();
         stolenDots = [dotToSteal];
-        console.log('[DEV] Stole a dot for StarBase testing');
+        console.log(`[DEV] Randomly stole dot #${this.energyDots.indexOf(dotToSteal)} (hue=${dotToSteal.hue}) for StarBase testing`);
       }
     }
     
@@ -1961,17 +1959,12 @@ export class NeonFlockEngine {
       ? stolenDots[0].hue 
       : 60; // Yellow default
     
-    // Calculate the ORIGINAL spawn position based on the dot's COLOR!
+    // Use the STORED initial position - no calculation needed!
     let dotPosition: { x: number; y: number };
     if (stolenDots.length > 0) {
-      // Each dot's position is determined by its hue: hue = (i * 360 / ENERGY_COUNT)
-      // So we reverse this to get the original index from the hue
-      const originalIndex = Math.round((dotHue * GameConfig.ENERGY_COUNT) / 360);
-      // Calculate its ORIGINAL spawn position
-      const spacing = this.app.screen.width / (GameConfig.ENERGY_COUNT + 1);
       dotPosition = {
-        x: spacing * (originalIndex + 1),
-        y: this.app.screen.height * GameConfig.BASE_Y
+        x: stolenDots[0].initialX,
+        y: stolenDots[0].initialY
       };
     } else {
       dotPosition = { x: this.app.screen.width / 2, y: this.app.screen.height - 100 };
@@ -1983,8 +1976,7 @@ export class NeonFlockEngine {
       dotHue,
       dotPosition
     );
-    const calcIndex = stolenDots.length > 0 ? Math.round((dotHue * GameConfig.ENERGY_COUNT) / 360) : -1;
-    console.log(`[DEV] Spawned StarBase with dot hue=${dotHue}, index=${calcIndex}, returning to (${dotPosition.x}, ${dotPosition.y})`);
+    console.log(`[DEV] Spawned StarBase with dot hue=${dotHue}, returning to stored position (${dotPosition.x}, ${dotPosition.y})`);
   }
   
   private runAutopilot(_dt: number) {

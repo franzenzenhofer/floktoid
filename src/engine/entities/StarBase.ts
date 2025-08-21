@@ -35,7 +35,8 @@ export class StarBase {
   
   // Visual components
   private sprite: PIXI.Graphics;
-  private shieldSprite: PIXI.Graphics;
+  private outerShieldSprite: PIXI.Graphics; // Separate sprite for outer shield
+  private innerShieldSprite: PIXI.Graphics; // Separate sprite for inner shield
   private app: PIXI.Application;
   
   // Combat properties
@@ -73,14 +74,17 @@ export class StarBase {
     
     // Create visual components
     this.sprite = new PIXI.Graphics();
-    this.shieldSprite = new PIXI.Graphics();
+    this.outerShieldSprite = new PIXI.Graphics();
+    this.innerShieldSprite = new PIXI.Graphics();
     
     // Add to stage with proper z-ordering
     this.sprite.zIndex = 500;
-    this.shieldSprite.zIndex = 499;
+    this.innerShieldSprite.zIndex = 499;
+    this.outerShieldSprite.zIndex = 498;
     
+    app.stage.addChild(this.outerShieldSprite);
+    app.stage.addChild(this.innerShieldSprite);
     app.stage.addChild(this.sprite);
-    app.stage.addChild(this.shieldSprite);
     
     // Initial draw
     this.draw();
@@ -201,10 +205,19 @@ export class StarBase {
   }
   
   private updateShield() {
-    this.shieldSprite.clear();
+    // Clear both shield sprites
+    this.outerShieldSprite.clear();
+    this.innerShieldSprite.clear();
     
     // Shield only visible when health > 1 (last HP is core without shield)
-    if (this.health <= 1 || !this.alive) return;
+    if (this.health <= 1 || !this.alive) {
+      // Position sprites even when cleared
+      this.outerShieldSprite.x = this.x;
+      this.outerShieldSprite.y = this.y;
+      this.innerShieldSprite.x = this.x;
+      this.innerShieldSprite.y = this.y;
+      return;
+    }
     
     // Calculate how many shield hits have been taken
     const shieldHitsTaken = this.maxHealth - this.health;

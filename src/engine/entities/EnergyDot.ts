@@ -11,6 +11,8 @@ export class EnergyDot {
   public y: number;
   public stolen = false;
   public hue: number;
+  public readonly initialX: number; // Store initial spawn position
+  public readonly initialY: number; // Store initial spawn position
   
   private sprite: PIXI.Graphics;
   private glowSprite: PIXI.Graphics;
@@ -28,6 +30,8 @@ export class EnergyDot {
     this.app = app;
     this.x = x;
     this.y = y;
+    this.initialX = x; // Store initial position
+    this.initialY = y; // Store initial position
     this.hue = hue;
     this.pulsePhase = Math.random() * Math.PI * 2;
     
