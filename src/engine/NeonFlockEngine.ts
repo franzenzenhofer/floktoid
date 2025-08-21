@@ -447,14 +447,17 @@ export class NeonFlockEngine {
     // Check if this is a StarBase wave and no StarBase exists
     if (this.waveManager.isStarBaseWave() && !this.starBase) {
       // Check if any energy dots are missing
-      const missingDots = this.energyDots.filter(d => d.stolen).length;
+      const stolenDots = this.energyDots.filter(d => d.stolen);
       
-      if (missingDots > 0) {
-        console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: ${missingDots} dots missing, spawning StarBase!`);
-        this.starBase = new StarBase(this.app, this.waveManager.getWave());
+      if (stolenDots.length > 0) {
+        // Get the hue of the first stolen dot for the StarBase core
+        const dotHue = stolenDots[0].hue;
         
-        // Announce StarBase arrival using MessageDisplay
-        this.comboEffects.createBossAnnouncement(); // Reuse boss announcement for now
+        console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: ${stolenDots.length} dots missing, spawning StarBase!`);
+        this.starBase = new StarBase(this.app, this.waveManager.getWave(), dotHue);
+        
+        // Announce StarBase arrival (reuse boss announcement style)
+        this.comboEffects.createBossAnnouncement();
       } else {
         console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: All dots present, no StarBase needed`);
       }
@@ -1033,24 +1036,51 @@ export class NeonFlockEngine {
         console.log(`[COLLISION] Frame ${this.frameCount}: ${this.asteroids.length} asteroids, ${this.boids.length} boids`);
       }
       
-      // Check StarBase-asteroid collisions
+      // Check StarBase-asteroid collisions (like boss collision)
       if (this.starBase && this.starBase.alive) {
         for (let i = this.asteroids.length - 1; i >= 0; i--) {
           const asteroid = this.asteroids[i];
           if (this.starBase.containsPoint(asteroid.x, asteroid.y)) {
-            // Asteroid hit StarBase!
-            const destroyed = this.starBase.takeDamage();
-            
-            // Destroy the asteroid
-            asteroid.destroy();
-            this.asteroids.splice(i, 1);
-            
-            // Visual feedback
-            this.particleSystem.createExplosion(asteroid.x, asteroid.y, asteroid.hue, 20);
-            
-            if (destroyed) {
-              // StarBase destroyed - handled in update loop
-              scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED); // Use boss defeated scoring
+            // Check if StarBase has shield
+            if (this.starBase.hasActiveShield()) {
+              // Shield hit - split asteroid and push fragments away
+              const fragments = this.asteroidSplitter.split(asteroid, this.asteroids.length, {
+                x: this.starBase.x,
+                y: this.starBase.y
+              });
+              
+              // Add fragments
+              if (fragments && fragments.length > 0) {
+                this.asteroids.push(...fragments);
+              }
+              
+              // Visual effect for shield hit
+              this.particleSystem.createExplosion(asteroid.x, asteroid.y, 0x00FFFF, 20);
+              
+              // Take damage
+              const destroyed = this.starBase.takeDamage();
+              if (destroyed) {
+                // StarBase destroyed - handled in update loop
+                scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
+                this.updateScoreDisplay();
+              } else {
+                // Just shield hit
+                scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+                this.updateScoreDisplay();
+              }
+            } else {
+              // No shield - direct hit destroys StarBase
+              this.starBase.takeDamage(); // Final hit
+              
+              // Destroy the asteroid
+              asteroid.destroy();
+              this.asteroids.splice(i, 1);
+              
+              // Visual feedback
+              this.particleSystem.createExplosion(asteroid.x, asteroid.y, asteroid.hue, 30);
+              
+              // StarBase destroyed
+              scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
               this.updateScoreDisplay();
             }
           }

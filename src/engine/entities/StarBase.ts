@@ -5,6 +5,7 @@
  */
 
 import * as PIXI from 'pixi.js';
+import { hueToRGB } from '../utils/ColorUtils';
 
 export interface Laser {
   x: number;
@@ -18,14 +19,14 @@ export interface Laser {
 export class StarBase {
   public x: number;
   public y: number;
-  public targetY: number; // Target Y position (center of screen)
   public rotation = 0;
   public health: number;
   public maxHealth: number;
-  public size = 60; // Radius of hexagon
+  public size = 40; // Smaller radius like boss
   public alive = true;
   public timeAlive = 0;
   public maxTimeAlive: number; // Time before leaving (30s initially)
+  public dotHue: number; // Color of the energy dot inside
   
   // Visual components
   private sprite: PIXI.Graphics;
@@ -47,14 +48,15 @@ export class StarBase {
   
   constructor(
     app: PIXI.Application,
-    wave: number
+    wave: number,
+    dotHue: number = 60 // Yellow by default
   ) {
     this.app = app;
+    this.dotHue = dotHue;
     
-    // Position at top center, will move to screen center
+    // Position at center of screen immediately (no movement)
     this.x = app.screen.width / 2;
-    this.y = -this.size * 2; // Start above screen
-    this.targetY = app.screen.height / 2;
+    this.y = app.screen.height / 2;
     
     // Health scales with wave
     this.health = this.calculateHealth(wave);
@@ -84,11 +86,14 @@ export class StarBase {
   }
   
   private calculateHealth(wave: number): number {
-    // Wave 7: 5 hits, Wave 17: 7 hits, Wave 27: 10 hits
-    if (wave <= 7) return 5;
-    if (wave <= 17) return 7;
-    if (wave <= 27) return 10;
-    return 10 + Math.floor((wave - 27) / 10) * 2; // +2 health every 10 waves after 27
+    // Like boss: health is for shield, +1 for core
+    // Wave 7: 3 shield + 1 core = 4 total
+    // Wave 17: 5 shield + 1 core = 6 total
+    // Wave 27: 7 shield + 1 core = 8 total
+    if (wave <= 7) return 4;
+    if (wave <= 17) return 6;
+    if (wave <= 27) return 8;
+    return 8 + Math.floor((wave - 27) / 10) * 2; // +2 health every 10 waves after 27
   }
   
   private draw() {
@@ -109,15 +114,22 @@ export class StarBase {
     this.sprite.fill({ color: 0x2A2A3E, alpha: 1 });
     this.sprite.stroke({ width: 3, color: 0x00FFFF, alpha: 0.8 });
     
-    // Inner core (glowing energy dot indicator)
-    const coreRadius = this.size * 0.3;
-    this.sprite.circle(0, 0, coreRadius);
-    this.sprite.fill({ color: 0xFFFF00, alpha: 0.9 });
+    // Inner core - draw like actual energy dot with matching color!
+    const dotColor = hueToRGB(this.dotHue);
+    const pulse = Math.sin(this.timeAlive * 5) * 0.2 + 1;
+    const coreRadius = 8 * pulse; // Energy dot size
     
-    // Pulsing core glow
-    const glowRadius = coreRadius * (1 + Math.sin(this.timeAlive * 3) * 0.2);
-    this.sprite.circle(0, 0, glowRadius);
-    this.sprite.fill({ color: 0xFFFF00, alpha: 0.3 });
+    // Glow like energy dot
+    this.sprite.circle(0, 0, coreRadius * 2);
+    this.sprite.fill({ color: dotColor, alpha: 0.3 * pulse });
+    
+    // Main dot
+    this.sprite.circle(0, 0, coreRadius);
+    this.sprite.fill({ color: dotColor, alpha: 0.9 });
+    
+    // White core center
+    this.sprite.circle(0, 0, coreRadius * 0.3);
+    this.sprite.fill({ color: 0xFFFFFF, alpha: 1 });
     
     // Laser cannons on 3 sides (visual indicators)
     for (let i = 0; i < 6; i += 2) { // Every other side has a cannon
@@ -137,10 +149,11 @@ export class StarBase {
   private updateShield() {
     this.shieldSprite.clear();
     
-    if (this.health <= 0 || !this.alive) return;
+    // Shield only visible when health > 1 (last HP is core without shield)
+    if (this.health <= 1 || !this.alive) return;
     
-    // Shield hexagon
-    const shieldRadius = this.size * 1.5;
+    // Shield hexagon - like boss shield
+    const shieldRadius = this.size * 1.8;
     const vertices: number[] = [];
     for (let i = 0; i < 6; i++) {
       const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5; // Rotate slower
@@ -150,8 +163,10 @@ export class StarBase {
       );
     }
     
-    // Shield color based on health
-    const healthPercent = this.health / this.maxHealth;
+    // Shield color based on shield health (not including core)
+    const shieldHealth = this.health - 1; // -1 for core
+    const maxShieldHealth = this.maxHealth - 1;
+    const healthPercent = shieldHealth / maxShieldHealth;
     let shieldColor: number;
     
     if (healthPercent > 0.5) {
@@ -241,13 +256,7 @@ export class StarBase {
       return;
     }
     
-    // Move to center position
-    if (this.y < this.targetY) {
-      this.y += 100 * dt; // Move down at 100 px/s
-      if (this.y > this.targetY) {
-        this.y = this.targetY;
-      }
-    }
+    // Stay centered on screen (no movement needed)
     
     // Rotation animation
     if (this.isRotating) {
@@ -260,18 +269,16 @@ export class StarBase {
       }
     }
     
-    // Combat logic
-    if (this.y >= this.targetY - 10) { // Only shoot when in position
-      this.shootCooldown -= dt;
+    // Combat logic - always shoot since we're always centered
+    this.shootCooldown -= dt;
+    
+    if (this.shootCooldown <= 0 && !this.isRotating) {
+      this.fireVolley();
+      this.shootCooldown = this.SHOOT_INTERVAL;
       
-      if (this.shootCooldown <= 0 && !this.isRotating) {
-        this.fireVolley();
-        this.shootCooldown = this.SHOOT_INTERVAL;
-        
-        // Rotate after shooting
-        this.rotationTarget = this.rotation + (Math.PI * 2) / 6; // Rotate 60 degrees
-        this.isRotating = true;
-      }
+      // Rotate after shooting
+      this.rotationTarget = this.rotation + (Math.PI * 2) / 6; // Rotate 60 degrees
+      this.isRotating = true;
     }
     
     // Update lasers
@@ -415,6 +422,15 @@ export class StarBase {
     const dy = y - this.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    return distance <= this.size;
+    // Collision with shield or core
+    const collisionRadius = this.health > 1 ? this.size * 1.5 : this.size;
+    return distance <= collisionRadius;
+  }
+  
+  /**
+   * Check if StarBase has active shield (like boss)
+   */
+  hasActiveShield(): boolean {
+    return this.health > 1 && this.alive;
   }
 }
