@@ -53,6 +53,9 @@ export class NeonFlockEngine {
     trail: PIXI.Graphics[];
     trailPositions: { x: number, y: number }[];
     toRemove?: boolean;
+    isReturningToPosition?: boolean; // Flag for straight-line return (from StarBase)
+    targetX?: number; // Target X position for straight-line movement
+    targetY?: number; // Target Y position for straight-line movement
   }> = [];
   private deferredBirdSpawns: Array<{ x: number; y: number; vx: number; vy: number }> = [];
   
@@ -257,9 +260,10 @@ export class NeonFlockEngine {
     const sprite = new PIXI.Graphics();
     const pulsePhase = Math.random() * Math.PI * 2;
     
-    // Calculate initial velocity toward target with some randomness
+    // Calculate STRAIGHT LINE velocity toward target (no gravity, no randomness!)
     const dx = targetX - x;
-    const angle = Math.atan2(targetY - y, dx);
+    const dy = targetY - y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
     
     // Add sprites to stage
     this.app.stage.addChild(glowSprite);
@@ -267,22 +271,29 @@ export class NeonFlockEngine {
     
     // 75% of bird speed as requested!
     const birdSpeed = GameConfig.BASE_SPEED * this.waveManager.getSpeedMultiplier();
-    const fallSpeed = birdSpeed * 0.75; // 75% of bird speed
+    const returnSpeed = birdSpeed * 0.75; // 75% of bird speed
+    
+    // Calculate velocity for STRAIGHT LINE movement (diagonal/direct path)
+    const vx = distance > 0 ? (dx / distance) * returnSpeed : 0;
+    const vy = distance > 0 ? (dy / distance) * returnSpeed : 0;
     
     const targetSlot = this.energyDots.indexOf(originalDot);
     
     const fallingDot = {
       x,
       y,
-      vx: Math.cos(angle) * fallSpeed * 0.8 + (Math.random() - 0.5) * 20,
-      vy: Math.sin(angle) * fallSpeed,
+      vx,
+      vy,
       targetSlot,
       originalDot,
       glowSprite,
       sprite,
       pulsePhase,
       trail: [] as PIXI.Graphics[],
-      trailPositions: [] as { x: number; y: number; alpha: number }[]
+      trailPositions: [] as { x: number; y: number; alpha: number }[],
+      isReturningToPosition: true, // Flag to indicate straight-line return (no gravity!)
+      targetX,
+      targetY
     };
     
     this.fallingDots.push(fallingDot);
@@ -1480,17 +1491,38 @@ export class NeonFlockEngine {
         fallingDotsToRemove.push(i);
         continue;
       }
-      // Apply physics - 75% of bird speed
-      const birdSpeed = GameConfig.BASE_SPEED * this.waveManager.getSpeedMultiplier();
-      const maxFallSpeed = birdSpeed * 0.75; // Cap at 75% of bird speed
-      
-      dot.vy += PHYSICS.GRAVITY.BASE * dt; // Very gentle gravity
-      if (dot.vy > maxFallSpeed) {
-        dot.vy = maxFallSpeed; // Cap fall speed
+      // Check if this is a returning dot (from StarBase) or a normal falling dot
+      if (dot.isReturningToPosition) {
+        // STRAIGHT LINE movement - no gravity, no air resistance!
+        dot.x += dot.vx * dt;
+        dot.y += dot.vy * dt;
+        
+        // Check if reached target
+        if (dot.targetX !== undefined && dot.targetY !== undefined) {
+          const distToTarget = Math.sqrt(
+            (dot.x - dot.targetX) * (dot.x - dot.targetX) + 
+            (dot.y - dot.targetY) * (dot.y - dot.targetY)
+          );
+          
+          // If very close to target, snap to position
+          if (distToTarget < 10) {
+            dot.x = dot.targetX;
+            dot.y = dot.targetY;
+          }
+        }
+      } else {
+        // Normal falling dot physics (from destroyed birds)
+        const birdSpeed = GameConfig.BASE_SPEED * this.waveManager.getSpeedMultiplier();
+        const maxFallSpeed = birdSpeed * 0.75; // Cap at 75% of bird speed
+        
+        dot.vy += PHYSICS.GRAVITY.BASE * dt; // Very gentle gravity
+        if (dot.vy > maxFallSpeed) {
+          dot.vy = maxFallSpeed; // Cap fall speed
+        }
+        dot.vx *= PHYSICS.FRICTION.AIR_RESISTANCE; // Air resistance
+        dot.x += dot.vx * dt;
+        dot.y += dot.vy * dt;
       }
-      dot.vx *= PHYSICS.FRICTION.AIR_RESISTANCE; // Air resistance
-      dot.x += dot.vx * dt;
-      dot.y += dot.vy * dt;
       
       // DRY: Draw falling dot EXACTLY like original energy dot!
       const color = hueToRGB(dot.originalDot.hue);
