@@ -503,9 +503,17 @@ export class NeonFlockEngine {
         // Get the first stolen dot for the StarBase core
         const stolenDot = stolenDots[0];
         const dotHue = stolenDot.hue;
-        const dotPosition = { x: stolenDot.x, y: stolenDot.y };
+        
+        // Calculate the ORIGINAL spawn position of the stolen dot!
+        const dotIndex = this.energyDots.indexOf(stolenDot);
+        const spacing = this.app.screen.width / (GameConfig.ENERGY_COUNT + 1);
+        const dotPosition = {
+          x: spacing * (dotIndex + 1),
+          y: this.app.screen.height * GameConfig.BASE_Y
+        };
         
         console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: ${stolenDots.length} dots missing, spawning StarBase!`);
+        console.log(`[STARBASE] Dot will return to ORIGINAL position: (${dotPosition.x}, ${dotPosition.y})`);
         this.starBase = new StarBase(this.app, this.waveManager.getWave(), dotHue, dotPosition);
         
         // NO ANNOUNCEMENT for StarBase - it's not a boss!
@@ -1946,14 +1954,25 @@ export class NeonFlockEngine {
       }
     }
     
-    // Use the stolen dot's color and position
+    // Use the stolen dot's color and ORIGINAL spawn position
     const dotHue = stolenDots.length > 0 
       ? stolenDots[0].hue 
       : 60; // Yellow default
     
-    const dotPosition = stolenDots.length > 0
-      ? { x: stolenDots[0].x, y: stolenDots[0].y }
-      : { x: this.app.screen.width / 2, y: this.app.screen.height - 100 };
+    // Calculate the ORIGINAL spawn position of the stolen dot!
+    let dotPosition: { x: number; y: number };
+    if (stolenDots.length > 0) {
+      // Find the index of the stolen dot
+      const dotIndex = this.energyDots.indexOf(stolenDots[0]);
+      // Calculate its ORIGINAL spawn position
+      const spacing = this.app.screen.width / (GameConfig.ENERGY_COUNT + 1);
+      dotPosition = {
+        x: spacing * (dotIndex + 1),
+        y: this.app.screen.height * GameConfig.BASE_Y
+      };
+    } else {
+      dotPosition = { x: this.app.screen.width / 2, y: this.app.screen.height - 100 };
+    }
     
     this.starBase = new StarBase(
       this.app,
@@ -1961,7 +1980,7 @@ export class NeonFlockEngine {
       dotHue,
       dotPosition
     );
-    console.log(`[DEV] Spawned StarBase with dot color ${dotHue} at position (${dotPosition.x}, ${dotPosition.y})`);
+    console.log(`[DEV] Spawned StarBase with dot color ${dotHue} returning to ORIGINAL position (${dotPosition.x}, ${dotPosition.y})`);
   }
   
   private runAutopilot(_dt: number) {
