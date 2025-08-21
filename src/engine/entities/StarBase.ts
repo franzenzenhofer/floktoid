@@ -89,13 +89,15 @@ export class StarBase {
   }
   
   private calculateHealth(wave: number): number {
+    // StarBase appears on waves 7, 17, 27, etc.
     // Wave 7: 5 shield + 1 core = 6 total
     // Wave 17: 7 shield + 1 core = 8 total  
     // Wave 27: 9 shield + 1 core = 10 total
-    // Scales up gradually
-    if (wave <= 7) return 6;  // 5 + 1
-    if (wave <= 17) return 8;  // 7 + 1
-    if (wave <= 27) return 10; // 9 + 1
+    // For dev mode testing on earlier waves, use minimum health
+    if (wave < 7) return 4;  // 3 + 1 for testing (dev mode)
+    if (wave >= 7 && wave < 17) return 6;  // 5 + 1
+    if (wave >= 17 && wave < 27) return 8;  // 7 + 1
+    if (wave >= 27 && wave < 37) return 10; // 9 + 1
     return 10 + Math.floor((wave - 27) / 10) * 2; // +2 health every 10 waves after 27
   }
   
@@ -300,13 +302,40 @@ export class StarBase {
     
     this.timeAlive += dt;
     
-    // Check if time expired
-    if (this.timeAlive >= this.maxTimeAlive) {
+    // Check if time expired and not already leaving
+    if (this.timeAlive >= this.maxTimeAlive && !this.isLeaving) {
       this.startLeaving();
-      return;
     }
     
-    // Move down to center position
+    // Handle leaving animation
+    if (this.isLeaving) {
+      const leaveSpeed = 200; // pixels per second
+      
+      if (this.leavingDirection === 'up') {
+        this.y -= leaveSpeed * dt;
+        if (this.y < -100) {
+          this.alive = false;
+        }
+      } else if (this.leavingDirection === 'left') {
+        this.x -= leaveSpeed * dt;
+        if (this.x < -100) {
+          this.alive = false;
+        }
+      } else if (this.leavingDirection === 'right') {
+        this.x += leaveSpeed * dt;
+        if (this.x > this.app.screen.width + 100) {
+          this.alive = false;
+        }
+      }
+      
+      // Continue updating visuals while leaving
+      this.updateLasers(dt);
+      this.draw();
+      this.updateShield();
+      return; // Don't do combat logic while leaving
+    }
+    
+    // Move down to center position (only when not leaving)
     if (this.y < this.targetY) {
       this.y += this.movementSpeed * dt;
       if (this.y > this.targetY) {
@@ -314,8 +343,8 @@ export class StarBase {
       }
     }
     
-    // Combat logic - only when in position
-    if (this.y >= this.targetY) {
+    // Combat logic - only when in position and not leaving
+    if (this.y >= this.targetY && !this.isLeaving) {
       this.phaseTimer -= dt;
       
       // Handle action phases: rotate -> pause -> shoot -> pause -> rotate...

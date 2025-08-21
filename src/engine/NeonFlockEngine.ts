@@ -920,31 +920,7 @@ export class NeonFlockEngine {
         this.starBase = null;
       }
       
-      // Handle StarBase leaving animation (moving off screen)
-      if (this.starBase && this.starBase.isLeaving) {
-        // StarBase moves up, left or right when leaving
-        const direction = this.starBase.leavingDirection;
-        const leaveSpeed = 200; // pixels per second
-        
-        if (direction === 'up') {
-          this.starBase.y -= leaveSpeed * dt;
-          if (this.starBase.y < -100) {
-            this.starBase.alive = false;
-          }
-        } else if (direction === 'left') {
-          this.starBase.x -= leaveSpeed * dt;
-          this.starBase.y -= leaveSpeed * dt * 0.5; // Also move up slightly
-          if (this.starBase.x < -100) {
-            this.starBase.alive = false;
-          }
-        } else if (direction === 'right') {
-          this.starBase.x += leaveSpeed * dt;
-          this.starBase.y -= leaveSpeed * dt * 0.5; // Also move up slightly
-          if (this.starBase.x > this.app.screen.width + 100) {
-            this.starBase.alive = false;
-          }
-        }
-      }
+      // StarBase leaving animation is now handled in StarBase.update() itself (DRY code)
     }
     
     // Update asteroids and detect zombies
