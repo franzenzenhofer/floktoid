@@ -75,6 +75,9 @@ describe('UsernameGenerator', () => {
   });
 
   it('should store username in localStorage', () => {
+    // Clear first to ensure we're starting fresh
+    localStorage.clear();
+    
     const username = UsernameGenerator.getSessionUsername();
     
     expect(username).toBeTruthy();
@@ -82,6 +85,9 @@ describe('UsernameGenerator', () => {
   });
 
   it('should return same username for the session', () => {
+    // Clear first to ensure we're starting fresh
+    localStorage.clear();
+    
     const username1 = UsernameGenerator.getSessionUsername();
     const username2 = UsernameGenerator.getSessionUsername();
     const username3 = UsernameGenerator.getSessionUsername();
@@ -91,6 +97,9 @@ describe('UsernameGenerator', () => {
   });
 
   it('should clear username', () => {
+    // Clear first to ensure we're starting fresh
+    localStorage.clear();
+    
     const username = UsernameGenerator.getSessionUsername();
     expect(localStorage.getItem('floktoid_username')).toBe(username);
     
@@ -99,6 +108,8 @@ describe('UsernameGenerator', () => {
     
     // Should generate new username after clearing
     const newUsername = UsernameGenerator.getSessionUsername();
+    expect(newUsername).toBeTruthy();
     expect(newUsername).not.toBe(username);
+    expect(localStorage.getItem('floktoid_username')).toBe(newUsername);
   });
 });

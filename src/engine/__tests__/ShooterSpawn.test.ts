@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Application } from 'pixi.js';
 import { Boid } from '../entities/Boid';
 
@@ -8,7 +8,23 @@ describe('SHOOTER SPAWN ROOT CAUSE ANALYSIS', () => {
   beforeEach(() => {
     app = new Application();
     // Mock screen property for tests
-    (app as any).screen = { width: 800, height: 600 };
+    Object.defineProperty(app, 'screen', {
+      value: { width: 800, height: 600 },
+      writable: false,
+      configurable: true
+    });
+    
+    // Mock ticker for Boid
+    app.ticker = {
+      add: vi.fn(),
+      remove: vi.fn()
+    } as any;
+    
+    // Mock stage for Boid
+    app.stage = {
+      addChild: vi.fn(),
+      removeChild: vi.fn()
+    } as any;
   });
   
   describe('7-WHY ANALYSIS: Shooters Not Spawning', () => {

@@ -15,6 +15,18 @@ describe('Combo Filter - Progressive Filtering', () => {
       configurable: true
     });
     
+    // Mock ticker
+    app.ticker = {
+      add: vi.fn(),
+      remove: vi.fn()
+    } as any;
+    
+    // Mock stage
+    app.stage = {
+      addChild: vi.fn(),
+      removeChild: vi.fn()
+    } as any;
+    
     messageDisplay = new MessageDisplay(app);
     // Spy on private method to check if combo is displayed
     displayOldStyleMessageSpy = vi.spyOn(messageDisplay as any, 'displayOldStyleMessage');
