@@ -1900,18 +1900,36 @@ export class NeonFlockEngine {
       this.starBase = null;
     }
     
-    // Use a random stolen dot color or default yellow
-    const stolenDots = this.energyDots.filter(d => d.stolen);
+    // Find a stolen dot or steal one for testing
+    let stolenDots = this.energyDots.filter(d => d.stolen);
+    
+    // If no dots are stolen, steal one for testing
+    if (stolenDots.length === 0) {
+      const availableDots = this.energyDots.filter(d => !d.stolen);
+      if (availableDots.length > 0) {
+        const dotToSteal = availableDots[Math.floor(Math.random() * availableDots.length)];
+        dotToSteal.steal();
+        stolenDots = [dotToSteal];
+        console.log('[DEV] Stole a dot for StarBase testing');
+      }
+    }
+    
+    // Use the stolen dot's color and position
     const dotHue = stolenDots.length > 0 
       ? stolenDots[0].hue 
       : 60; // Yellow default
     
+    const dotPosition = stolenDots.length > 0
+      ? { x: stolenDots[0].x, y: stolenDots[0].y }
+      : { x: this.app.screen.width / 2, y: this.app.screen.height - 100 };
+    
     this.starBase = new StarBase(
       this.app,
       this.waveManager.getWave(),
-      dotHue
+      dotHue,
+      dotPosition
     );
-    console.log('[DEV] Spawned StarBase');
+    console.log(`[DEV] Spawned StarBase with dot color ${dotHue} at position (${dotPosition.x}, ${dotPosition.y})`);
   }
   
   private runAutopilot(_dt: number) {

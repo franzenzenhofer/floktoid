@@ -90,11 +90,12 @@ export class StarBase {
   
   private calculateHealth(wave: number): number {
     // StarBase appears on waves 7, 17, 27, etc.
+    // ALWAYS require 5 shield + 1 core = 6 total for first appearance
     // Wave 7: 5 shield + 1 core = 6 total
     // Wave 17: 7 shield + 1 core = 8 total  
     // Wave 27: 9 shield + 1 core = 10 total
-    // For dev mode testing on earlier waves, use minimum health
-    if (wave < 7) return 4;  // 3 + 1 for testing (dev mode)
+    // Dev mode also gets 5+1 for consistency
+    if (wave < 7) return 6;  // 5 + 1 for dev mode testing
     if (wave >= 7 && wave < 17) return 6;  // 5 + 1
     if (wave >= 17 && wave < 27) return 8;  // 7 + 1
     if (wave >= 27 && wave < 37) return 10; // 9 + 1
@@ -556,10 +557,11 @@ export class StarBase {
   
   /**
    * Get shield radius (like BossBird for DRY consistency)
+   * CRITICAL: Only outer shield ring should collide!
    */
   getShieldRadius(): number {
     if (!this.hasActiveShield()) return this.size;
-    return this.size * 1.5; // Shield at 1.5x size (closer than before)
+    return this.size * 1.5; // Outer shield ring at 1.5x size
   }
   
   /**
