@@ -504,16 +504,18 @@ export class NeonFlockEngine {
         const stolenDot = stolenDots[0];
         const dotHue = stolenDot.hue;
         
-        // Calculate the ORIGINAL spawn position of the stolen dot!
-        const dotIndex = this.energyDots.indexOf(stolenDot);
+        // Calculate the ORIGINAL spawn position based on the dot's COLOR!
+        // Each dot's position is determined by its hue: hue = (i * 360 / ENERGY_COUNT)
+        // So we reverse this to get the original index from the hue
+        const originalIndex = Math.round((dotHue * GameConfig.ENERGY_COUNT) / 360);
         const spacing = this.app.screen.width / (GameConfig.ENERGY_COUNT + 1);
         const dotPosition = {
-          x: spacing * (dotIndex + 1),
+          x: spacing * (originalIndex + 1),
           y: this.app.screen.height * GameConfig.BASE_Y
         };
         
         console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: ${stolenDots.length} dots missing, spawning StarBase!`);
-        console.log(`[STARBASE] Dot will return to ORIGINAL position: (${dotPosition.x}, ${dotPosition.y})`);
+        console.log(`[STARBASE] Dot hue=${dotHue}, calculated index=${originalIndex}, will return to (${dotPosition.x}, ${dotPosition.y})`);
         this.starBase = new StarBase(this.app, this.waveManager.getWave(), dotHue, dotPosition);
         
         // NO ANNOUNCEMENT for StarBase - it's not a boss!
@@ -1959,15 +1961,16 @@ export class NeonFlockEngine {
       ? stolenDots[0].hue 
       : 60; // Yellow default
     
-    // Calculate the ORIGINAL spawn position of the stolen dot!
+    // Calculate the ORIGINAL spawn position based on the dot's COLOR!
     let dotPosition: { x: number; y: number };
     if (stolenDots.length > 0) {
-      // Find the index of the stolen dot
-      const dotIndex = this.energyDots.indexOf(stolenDots[0]);
+      // Each dot's position is determined by its hue: hue = (i * 360 / ENERGY_COUNT)
+      // So we reverse this to get the original index from the hue
+      const originalIndex = Math.round((dotHue * GameConfig.ENERGY_COUNT) / 360);
       // Calculate its ORIGINAL spawn position
       const spacing = this.app.screen.width / (GameConfig.ENERGY_COUNT + 1);
       dotPosition = {
-        x: spacing * (dotIndex + 1),
+        x: spacing * (originalIndex + 1),
         y: this.app.screen.height * GameConfig.BASE_Y
       };
     } else {
@@ -1980,7 +1983,8 @@ export class NeonFlockEngine {
       dotHue,
       dotPosition
     );
-    console.log(`[DEV] Spawned StarBase with dot color ${dotHue} returning to ORIGINAL position (${dotPosition.x}, ${dotPosition.y})`);
+    const calcIndex = stolenDots.length > 0 ? Math.round((dotHue * GameConfig.ENERGY_COUNT) / 360) : -1;
+    console.log(`[DEV] Spawned StarBase with dot hue=${dotHue}, index=${calcIndex}, returning to (${dotPosition.x}, ${dotPosition.y})`);
   }
   
   private runAutopilot(_dt: number) {

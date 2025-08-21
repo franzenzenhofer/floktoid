@@ -549,11 +549,19 @@ export class StarBase {
     
     this.health--;
     
-    // Flash effect
-    this.sprite.tint = 0xFF0000;
-    setTimeout(() => {
-      this.sprite.tint = 0xFFFFFF;
-    }, 100);
+    // Flash effect - only flash the SHIELD, not the core!
+    if (this.hasActiveShield()) {
+      this.shieldSprite.tint = 0xFF0000;
+      setTimeout(() => {
+        this.shieldSprite.tint = 0xFFFFFF;
+      }, 100);
+    } else {
+      // Only flash the core if no shield left
+      this.sprite.tint = 0xFF0000;
+      setTimeout(() => {
+        this.sprite.tint = 0xFFFFFF;
+      }, 100);
+    }
     
     console.log(`[STARBASE] Hit! Health: ${this.health}/${this.maxHealth}`);
     
