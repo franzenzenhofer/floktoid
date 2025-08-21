@@ -244,6 +244,15 @@ export class WaveManager {
   }
   
   /**
+   * Check if this wave should spawn a StarBase
+   * StarBase appears on waves 7, 17, 27, 37, etc. (every 10 waves starting at 7)
+   */
+  isStarBaseWave(): boolean {
+    // Waves 7, 17, 27, 37... pattern: (wave - 7) % 10 === 0 && wave >= 7
+    return this.wave >= 7 && (this.wave - 7) % 10 === 0;
+  }
+  
+  /**
    * Complete current wave and advance to next
    */
   completeWave(): void {

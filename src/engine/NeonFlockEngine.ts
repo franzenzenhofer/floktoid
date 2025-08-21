@@ -4,6 +4,7 @@ import { BossBird } from './entities/BossBird';
 import type { BirdProjectile } from './entities/BirdProjectile';
 import { EnergyDot } from './entities/EnergyDot';
 import { Asteroid } from './entities/Asteroid';
+import { StarBase } from './entities/StarBase';
 import { Shredder, calculateShredderSpawnProbability } from './entities/Shredder';
 import { Mine } from './entities/Mine';
 import { AsteroidSplitter } from './systems/AsteroidSplitter';
@@ -37,6 +38,7 @@ export class NeonFlockEngine {
   private asteroids: Asteroid[] = [];
   private shredders: Shredder[] = [];
   private mines: Mine[] = [];
+  private starBase: StarBase | null = null;
   private recentLaunchPositions: { x: number; y: number }[] = []; // Track last 10 launch positions
   private fallingDots: Array<{
     x: number;
@@ -64,7 +66,7 @@ export class NeonFlockEngine {
   private collisionDebugger!: CollisionDebugger;
   private asteroidSplitter!: AsteroidSplitter;
   
-  private dotRespawnTimers: Map<number, number> = new Map(); // Track individual dot respawn timers
+  // Removed: dotRespawnTimers - no longer needed with StarBase system
   
   // Autopilot mode for testing
   private autopilotEnabled = false;
@@ -143,6 +145,10 @@ export class NeonFlockEngine {
       this.waveManager.onWaveUpdate = (wave: number) => {
         // CRITICAL FIX: Update ComboEffects with current wave for filter logic!
         this.comboEffects.setWave(wave);
+        
+        // Check for StarBase spawn
+        this.checkStarBaseSpawn();
+        
         this.onWaveUpdate?.(wave);
       };
       
@@ -437,6 +443,24 @@ export class NeonFlockEngine {
     }
   }
   
+  private checkStarBaseSpawn(): void {
+    // Check if this is a StarBase wave and no StarBase exists
+    if (this.waveManager.isStarBaseWave() && !this.starBase) {
+      // Check if any energy dots are missing
+      const missingDots = this.energyDots.filter(d => d.stolen).length;
+      
+      if (missingDots > 0) {
+        console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: ${missingDots} dots missing, spawning StarBase!`);
+        this.starBase = new StarBase(this.app, this.waveManager.getWave());
+        
+        // Announce StarBase arrival using MessageDisplay
+        this.comboEffects.createBossAnnouncement(); // Reuse boss announcement for now
+      } else {
+        console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: All dots present, no StarBase needed`);
+      }
+    }
+  }
+  
   private gameLoop = (delta: number) => {
     if (!this.initialized) return;
     
@@ -537,12 +561,11 @@ export class NeonFlockEngine {
           const burstCount = this.waveManager.getWave(); // Dynamic: wave 1 = 1 bird, wave 10 = 10 birds, etc.
           console.log(`[GAME] Bird reached top on wave ${this.waveManager.getWave()}! Spawning ${burstCount} birds...`);
           
-          // Start respawn timer for this dot
+          // STARBASE SYSTEM: No automatic respawn - track stolen dot
           if (boid.targetDot) {
             const dotIndex = this.energyDots.indexOf(boid.targetDot);
             if (dotIndex >= 0) {
-              this.dotRespawnTimers.set(dotIndex, 0);
-              console.log(`[GAME] Starting ${this.waveManager.getDotRespawnDelay() / 1000}s respawn timer for dot ${dotIndex} (wave ${this.waveManager.getWave()})`);
+              console.log(`[GAME] Dot ${dotIndex} transformed to birds - reclaim via StarBase on waves 7, 17, 27...`);
             }
             boid.targetDot = null;
           }
@@ -816,6 +839,33 @@ export class NeonFlockEngine {
       return true;
     });
     
+    // Update StarBase
+    if (this.starBase) {
+      this.starBase.update(dt);
+      
+      // Check if StarBase left or was destroyed
+      if (!this.starBase.alive) {
+        // If destroyed (not just left), drop an energy dot
+        if (this.starBase.health <= 0) {
+          // Find a stolen dot to restore
+          const stolenDot = this.energyDots.find(d => d.stolen);
+          if (stolenDot) {
+            // Create falling dot at StarBase position
+            this.createFallingDot(this.starBase.x, this.starBase.y, stolenDot);
+            console.log('[STARBASE] Destroyed! Energy dot recovered!');
+            
+            // Big explosion!
+            this.particleSystem.createExplosion(this.starBase.x, this.starBase.y, 0xFFFF00, 50);
+          }
+        } else {
+          console.log('[STARBASE] Left without being destroyed');
+        }
+        
+        this.starBase.destroy();
+        this.starBase = null;
+      }
+    }
+    
     // Update asteroids and detect zombies
     this.asteroids = this.asteroids.filter(asteroid => {
       // ZOMBIE CHECK: Detect asteroids that aren't moving or updating properly
@@ -981,6 +1031,54 @@ export class NeonFlockEngine {
         this.collisionDebugger.startFrame();
         this.collisionDebugger.logCollisionCheck('asteroid-boid', this.asteroids.length, this.boids.length);
         console.log(`[COLLISION] Frame ${this.frameCount}: ${this.asteroids.length} asteroids, ${this.boids.length} boids`);
+      }
+      
+      // Check StarBase-asteroid collisions
+      if (this.starBase && this.starBase.alive) {
+        for (let i = this.asteroids.length - 1; i >= 0; i--) {
+          const asteroid = this.asteroids[i];
+          if (this.starBase.containsPoint(asteroid.x, asteroid.y)) {
+            // Asteroid hit StarBase!
+            const destroyed = this.starBase.takeDamage();
+            
+            // Destroy the asteroid
+            asteroid.destroy();
+            this.asteroids.splice(i, 1);
+            
+            // Visual feedback
+            this.particleSystem.createExplosion(asteroid.x, asteroid.y, asteroid.hue, 20);
+            
+            if (destroyed) {
+              // StarBase destroyed - handled in update loop
+              scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED); // Use boss defeated scoring
+              this.updateScoreDisplay();
+            }
+          }
+        }
+        
+        // Check StarBase laser collisions with player (damage player score)
+        for (const laser of this.starBase.lasers) {
+          // Check if laser hits any asteroid (player's asteroids)
+          for (let i = this.asteroids.length - 1; i >= 0; i--) {
+            const asteroid = this.asteroids[i];
+            const dx = laser.x - asteroid.x;
+            const dy = laser.y - asteroid.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < asteroid.size) {
+              // Laser destroys player's asteroid!
+              asteroid.destroy();
+              this.asteroids.splice(i, 1);
+              this.particleSystem.createExplosion(asteroid.x, asteroid.y, 0xFF0000, 10);
+              
+              // Remove the laser
+              laser.lifetime = 0;
+              
+              console.log('[STARBASE] Laser destroyed player asteroid!');
+              break;
+            }
+          }
+        }
       }
       
       // Check mine-asteroid collisions (before other collisions)
@@ -1520,25 +1618,9 @@ export class NeonFlockEngine {
     const criticalState = allDotsStolen && this.fallingDots.length === 0 && birdsWithDots === 0;
     this.onEnergyStatus?.(criticalState);
     
-    // Only process respawn timers if not all dots are stolen
-    if (!allDotsStolen) {
-      // Process individual dot respawn timers
-      this.dotRespawnTimers.forEach((timer, dotIndex) => {
-        const newTimer = timer + dt * 1000;
-        if (newTimer >= this.waveManager.getDotRespawnDelay()) {
-          // Respawn this specific dot after 15 seconds
-          const dot = this.energyDots[dotIndex];
-          if (dot && dot.stolen) {
-            dot.restore();
-            console.log(`[GAME] Dot ${dotIndex} respawned after 15 seconds`);
-            this.particleSystem.createPickup(dot.x, dot.y, dot.hue);
-          }
-          this.dotRespawnTimers.delete(dotIndex);
-        } else {
-          this.dotRespawnTimers.set(dotIndex, newTimer);
-        }
-      });
-    }
+    // STARBASE SYSTEM: No automatic respawn - dots only return via StarBase destruction
+    // Respawn timers are now DISABLED - keeping the timer infrastructure for potential future use
+    // but not processing them. StarBase is the only way to reclaim lost dots!
     
     // PROPER GAME OVER CHECK: Game ends only when NO dots exist in any state
     // Energy dots can be in 4 states:
