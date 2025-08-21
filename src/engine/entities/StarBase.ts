@@ -39,6 +39,11 @@ export class StarBase {
   private innerShieldSprite: PIXI.Graphics; // Separate sprite for inner shield
   private app: PIXI.Application;
   
+  // Flash state tracking
+  private outerShieldFlashing = false;
+  private innerShieldFlashing = false;
+  private coreFlashing = false;
+  
   // Combat properties
   private rotationTarget = 0;
   private isRotating = false;
@@ -107,7 +112,15 @@ export class StarBase {
   }
   
   private draw() {
-    this.sprite.clear();
+    // Don't clear sprite while it's flashing to preserve red tint
+    if (!this.coreFlashing) {
+      this.sprite.clear();
+    } else {
+      // Skip drawing when flashing - just update position
+      this.sprite.x = this.x;
+      this.sprite.y = this.y;
+      return;
+    }
     
     // Main hexagon body with cooler look
     const vertices: number[] = [];
@@ -205,18 +218,28 @@ export class StarBase {
   }
   
   private updateShield() {
-    // Clear both shield sprites
-    this.outerShieldSprite.clear();
-    this.innerShieldSprite.clear();
+    // Don't clear shields while they're flashing to preserve the tint effect
+    if (!this.outerShieldFlashing) {
+      this.outerShieldSprite.clear();
+    }
+    if (!this.innerShieldFlashing) {
+      this.innerShieldSprite.clear();
+    }
+    
+    // Always position sprites
+    this.outerShieldSprite.x = this.x;
+    this.outerShieldSprite.y = this.y;
+    this.innerShieldSprite.x = this.x;
+    this.innerShieldSprite.y = this.y;
     
     // Shield only visible when health > 1 (last HP is core without shield)
     if (this.health <= 1 || !this.alive) {
-      // Position sprites even when cleared
-      this.outerShieldSprite.x = this.x;
-      this.outerShieldSprite.y = this.y;
-      this.innerShieldSprite.x = this.x;
-      this.innerShieldSprite.y = this.y;
       return;
+    }
+    
+    // Skip drawing if shields are flashing (to preserve the red tint)
+    if (this.outerShieldFlashing && this.innerShieldFlashing) {
+      return; // Both flashing, skip all drawing
     }
     
     // Calculate how many shield hits have been taken
@@ -275,8 +298,8 @@ export class StarBase {
       );
     }
     
-    if (outerShieldActive) {
-      // Draw active outer shield
+    if (outerShieldActive && !this.outerShieldFlashing) {
+      // Draw active outer shield (skip if flashing to preserve red tint)
       this.outerShieldSprite.poly(outerVertices);
       this.outerShieldSprite.stroke({ 
         width: 3, 
@@ -288,8 +311,8 @@ export class StarBase {
       const pulseAlpha = Math.sin(this.timeAlive * 3) * 0.1 + 0.1;
       this.outerShieldSprite.circle(0, 0, outerShieldRadius);
       this.outerShieldSprite.fill({ color: activeShieldColor, alpha: pulseAlpha });
-    } else {
-      // Draw destroyed outer shield (broken/damaged appearance)
+    } else if (!outerShieldActive && !this.outerShieldFlashing) {
+      // Draw destroyed outer shield (broken/damaged appearance) - skip if flashing
       // Draw as dashed/broken line segments
       for (let i = 0; i < 6; i++) {
         const angle1 = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
@@ -324,7 +347,7 @@ export class StarBase {
     }
     
     // Draw inner shield (always visible if shields exist)
-    if (innerShieldActive) {
+    if (innerShieldActive && !this.innerShieldFlashing) {
       const innerVertices: number[] = [];
       for (let i = 0; i < 6; i++) {
         const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
@@ -566,27 +589,34 @@ export class StarBase {
     
     // Flash effect - flash the ACTIVE shield layer that was hit!
     if (this.hasActiveShield()) {
-      const shieldHitsTaken = this.maxHealth - this.health - 1; // -1 because we just took damage
+      // Calculate which shield is active AFTER taking damage
+      const shieldHitsTaken = this.maxHealth - this.health;
       
-      if (shieldHitsTaken < 2) {
-        // First 2 hits - flash outer shield
+      if (shieldHitsTaken <= 2) {
+        // First 2 hits - flash outer shield (it's still the active collision zone)
+        this.outerShieldFlashing = true;
         this.outerShieldSprite.tint = 0xFF0000;
         setTimeout(() => {
           this.outerShieldSprite.tint = 0xFFFFFF;
-        }, 100);
+          this.outerShieldFlashing = false;
+        }, 200); // Longer flash for better visibility
       } else {
         // After outer shield destroyed - flash inner shield
+        this.innerShieldFlashing = true;
         this.innerShieldSprite.tint = 0xFF0000;
         setTimeout(() => {
           this.innerShieldSprite.tint = 0xFFFFFF;
-        }, 100);
+          this.innerShieldFlashing = false;
+        }, 200); // Longer flash for better visibility
       }
     } else {
       // Only flash the core if no shield left
+      this.coreFlashing = true;
       this.sprite.tint = 0xFF0000;
       setTimeout(() => {
         this.sprite.tint = 0xFFFFFF;
-      }, 100);
+        this.coreFlashing = false;
+      }, 200); // Longer flash for better visibility
     }
     
     console.log(`[STARBASE] Hit! Health: ${this.health}/${this.maxHealth}`);
