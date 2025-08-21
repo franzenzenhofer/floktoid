@@ -134,7 +134,8 @@ export class NeonFlockEngine {
       this.superNavigatorAI = new SuperNavigatorAI();
       this.collisionSystem = new SafeCollisionSystemExtended();
       this.comboEffects = new ComboEffects(this.app);
-      this.devModeDisplay = new DevModeDisplay(this.app, this.debug);
+      // DevModeDisplay disabled - using React DevConsole instead
+      this.devModeDisplay = new DevModeDisplay(this.app, false); // Always disabled
       this.collisionDebugger = new CollisionDebugger();
       this.asteroidSplitter = new AsteroidSplitter(this.app);
       this.inputManager = new InputManager(this.app, this);
