@@ -1129,12 +1129,12 @@ export class NeonFlockEngine {
               // Take damage
               const destroyed = this.starBase.takeDamage();
               if (destroyed) {
-                // StarBase destroyed - handled in update loop
-                scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
+                // StarBase destroyed - 350 points!
+                scoringSystem.addEvent(ScoringEvent.STARBASE_DEFEATED);
                 this.updateScoreDisplay();
               } else {
                 // Just shield hit
-                scoringSystem.addEvent(ScoringEvent.BOSS_HIT);
+                scoringSystem.addEvent(ScoringEvent.STARBASE_HIT);
                 this.updateScoreDisplay();
               }
             } else {
@@ -1148,8 +1148,8 @@ export class NeonFlockEngine {
               // Visual feedback
               this.particleSystem.createExplosion(asteroid.x, asteroid.y, asteroid.hue, 30);
               
-              // StarBase destroyed
-              scoringSystem.addEvent(ScoringEvent.BOSS_DEFEATED);
+              // StarBase destroyed - 350 points!
+              scoringSystem.addEvent(ScoringEvent.STARBASE_DEFEATED);
               this.updateScoreDisplay();
             }
           }

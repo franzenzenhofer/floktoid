@@ -51,6 +51,42 @@ describe('StarBase', () => {
     });
   });
 
+  describe('Progressive Shield Collision Zones', () => {
+    beforeEach(() => {
+      starBase = new StarBase(app, 7, 60);
+    });
+
+    it('should progress through shield layers as damage is taken', () => {
+      // Start with outer shield (1.5x)
+      expect(starBase.getShieldRadius()).toBe(starBase.size * 1.5);
+      
+      // After 1 hit - still outer
+      starBase.takeDamage();
+      expect(starBase.health).toBe(5);
+      expect(starBase.getShieldRadius()).toBe(starBase.size * 1.5);
+      
+      // After 2 hits - switch to inner shield
+      starBase.takeDamage();
+      expect(starBase.health).toBe(4);
+      expect(starBase.getShieldRadius()).toBe(starBase.size * 1.2);
+      
+      // Continue with inner shield
+      starBase.takeDamage();
+      expect(starBase.health).toBe(3);
+      expect(starBase.getShieldRadius()).toBe(starBase.size * 1.2);
+      
+      starBase.takeDamage();
+      expect(starBase.health).toBe(2);
+      expect(starBase.getShieldRadius()).toBe(starBase.size * 1.2);
+      
+      // Last shield layer
+      starBase.takeDamage();
+      expect(starBase.health).toBe(1);
+      expect(starBase.hasActiveShield()).toBe(false);
+      expect(starBase.getShieldRadius()).toBe(starBase.size);
+    });
+  });
+
   describe('Shield Mechanics', () => {
     beforeEach(() => {
       starBase = new StarBase(app, 7, 60);
@@ -67,15 +103,36 @@ describe('StarBase', () => {
       expect(starBase.hasActiveShield()).toBe(false);
     });
 
-    it('should use outer shield radius for collision when shield is active', () => {
+    it('should use outer shield (1.5x) for first 2 hits', () => {
+      // Initial state - no hits
       expect(starBase.getShieldRadius()).toBe(starBase.size * 1.5);
+      
+      // After 1 hit
+      starBase.takeDamage();
+      expect(starBase.getShieldRadius()).toBe(starBase.size * 1.5);
+      
+      // After 2 hits - should still be outer
+      starBase.takeDamage();
+      expect(starBase.getShieldRadius()).toBe(starBase.size * 1.2); // Now inner shield
     });
 
-    it('should use base size for collision when shield is down', () => {
+    it('should use inner shield (1.2x) after outer is destroyed', () => {
+      // Take 2 hits to destroy outer shield
+      starBase.takeDamage();
+      starBase.takeDamage();
+      expect(starBase.getShieldRadius()).toBe(starBase.size * 1.2);
+      
+      // Take more hits - should stay at inner shield
+      starBase.takeDamage();
+      expect(starBase.getShieldRadius()).toBe(starBase.size * 1.2);
+    });
+
+    it('should use base size for collision when shield is completely down', () => {
       // Take damage down to 1 health (no shield)
       for (let i = 0; i < 5; i++) {
         starBase.takeDamage();
       }
+      expect(starBase.health).toBe(1);
       expect(starBase.getShieldRadius()).toBe(starBase.size);
     });
 
@@ -240,11 +297,15 @@ describe('StarBase', () => {
     });
 
     it('should become not alive when fully off-screen', () => {
-      starBase.update(1.1); // Start leaving
-      starBase.leavingDirection = 'up';
-      starBase.y = -50; // Position off-screen
+      // Start leaving first
+      starBase.timeAlive = starBase.maxTimeAlive + 0.1;
+      starBase.update(0.01); // Trigger leaving
       
-      starBase.update(0.1);
+      // Force to up direction and position off-screen
+      starBase.leavingDirection = 'up';
+      starBase.y = -90; // Position almost off-screen
+      
+      starBase.update(0.1); // Should detect off-screen and set alive=false
       
       expect(starBase.alive).toBe(false);
     });

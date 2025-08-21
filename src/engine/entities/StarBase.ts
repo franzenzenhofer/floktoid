@@ -206,7 +206,14 @@ export class StarBase {
     // Shield only visible when health > 1 (last HP is core without shield)
     if (this.health <= 1 || !this.alive) return;
     
-    // Shield hexagons - CLOSER TOGETHER (1.5 and 1.2 instead of 1.8 and 1.4)
+    // Calculate how many shield hits have been taken
+    const shieldHitsTaken = this.maxHealth - this.health;
+    
+    // Determine shield states based on damage
+    const outerShieldActive = shieldHitsTaken < 2; // First 2 hits
+    const innerShieldActive = this.health > 1; // Always show inner if shields exist
+    
+    // Shield radii
     const outerShieldRadius = this.size * 1.5;
     const innerShieldRadius = this.size * 1.2;
     
@@ -215,84 +222,140 @@ export class StarBase {
     const maxShieldHealth = this.maxHealth - 1;
     const healthPercent = shieldHealth / maxShieldHealth;
     
-    // Color transitions: Green -> Yellow -> Orange -> Red
-    let shieldColor: number;
+    // Color transitions: Green -> Yellow -> Orange -> Red for ACTIVE shields
+    let activeShieldColor: number;
     if (healthPercent > 0.75) {
       // Green
-      shieldColor = 0x00FF00;
+      activeShieldColor = 0x00FF00;
     } else if (healthPercent > 0.5) {
       // Green to Yellow
       const t = (healthPercent - 0.5) * 4;
       const r = Math.floor(255 * (1 - t));
       const g = 255;
-      shieldColor = (r << 16) | (g << 8) | 0;
+      activeShieldColor = (r << 16) | (g << 8) | 0;
     } else if (healthPercent > 0.25) {
       // Yellow to Orange
       const t = (healthPercent - 0.25) * 4;
       const r = 255;
       const g = Math.floor(255 * t);
-      shieldColor = (r << 16) | (g << 8) | 0;
+      activeShieldColor = (r << 16) | (g << 8) | 0;
     } else {
       // Orange to Red
       const t = healthPercent * 4;
       const r = 255;
       const g = Math.floor(128 * t);
-      shieldColor = (r << 16) | (g << 8) | 0;
+      activeShieldColor = (r << 16) | (g << 8) | 0;
     }
     
-    // Outer shield hexagon
+    // Destroyed shield color (dark gray/damaged)
+    const destroyedShieldColor = 0x444444;
+    
+    // ALWAYS DRAW BOTH SHIELDS - just change appearance based on state
+    
+    // Draw outer shield (destroyed or active)
     const outerVertices: number[] = [];
     for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5; // Rotate slower
+      const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
       outerVertices.push(
         Math.cos(angle) * outerShieldRadius,
         Math.sin(angle) * outerShieldRadius
       );
     }
     
-    this.shieldSprite.poly(outerVertices);
-    this.shieldSprite.stroke({ 
-      width: 3, 
-      color: shieldColor, 
-      alpha: 0.7 + healthPercent * 0.3 
-    });
-    
-    // Inner shield layer (closer to outer)
-    const innerVertices: number[] = [];
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
-      innerVertices.push(
-        Math.cos(angle) * innerShieldRadius,
-        Math.sin(angle) * innerShieldRadius
-      );
+    if (outerShieldActive) {
+      // Draw active outer shield
+      this.shieldSprite.poly(outerVertices);
+      this.shieldSprite.stroke({ 
+        width: 3, 
+        color: activeShieldColor, 
+        alpha: 0.8 + healthPercent * 0.2 
+      });
+      
+      // Add glow effect for active shield
+      const pulseAlpha = Math.sin(this.timeAlive * 3) * 0.1 + 0.1;
+      this.shieldSprite.circle(0, 0, outerShieldRadius);
+      this.shieldSprite.fill({ color: activeShieldColor, alpha: pulseAlpha });
+    } else {
+      // Draw destroyed outer shield (broken/damaged appearance)
+      // Draw as dashed/broken line segments
+      for (let i = 0; i < 6; i++) {
+        const angle1 = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
+        const angle2 = ((i + 1) % 6 * Math.PI * 2) / 6 + this.rotation * 0.5;
+        
+        // Only draw some segments to show it's broken
+        if (i % 2 === 0 || Math.random() > 0.3) {
+          const x1 = Math.cos(angle1) * outerShieldRadius;
+          const y1 = Math.sin(angle1) * outerShieldRadius;
+          const x2 = Math.cos(angle2) * outerShieldRadius;
+          const y2 = Math.sin(angle2) * outerShieldRadius;
+          
+          // Draw partial segment
+          const segmentStart = 0.1 + Math.random() * 0.2;
+          const segmentEnd = 0.7 + Math.random() * 0.2;
+          
+          this.shieldSprite.moveTo(
+            x1 + (x2 - x1) * segmentStart,
+            y1 + (y2 - y1) * segmentStart
+          );
+          this.shieldSprite.lineTo(
+            x1 + (x2 - x1) * segmentEnd,
+            y1 + (y2 - y1) * segmentEnd
+          );
+          this.shieldSprite.stroke({ 
+            width: 1, 
+            color: destroyedShieldColor, 
+            alpha: 0.3 
+          });
+        }
+      }
     }
     
-    this.shieldSprite.poly(innerVertices);
-    this.shieldSprite.stroke({ 
-      width: 2, 
-      color: shieldColor, 
-      alpha: 0.5 + healthPercent * 0.3 
-    });
-    
-    // Energy effect lines between vertices (enhanced)
-    for (let i = 0; i < 6; i++) {
-      const angle1 = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
-      const angle2 = ((i + 1) * Math.PI * 2) / 6 + this.rotation * 0.5;
+    // Draw inner shield (always visible if shields exist)
+    if (innerShieldActive) {
+      const innerVertices: number[] = [];
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
+        innerVertices.push(
+          Math.cos(angle) * innerShieldRadius,
+          Math.sin(angle) * innerShieldRadius
+        );
+      }
       
-      const x1 = Math.cos(angle1) * innerShieldRadius;
-      const y1 = Math.sin(angle1) * innerShieldRadius;
-      const x2 = Math.cos(angle2) * outerShieldRadius;
-      const y2 = Math.sin(angle2) * outerShieldRadius;
+      // Inner shield uses active color when it's the active collision zone
+      const innerIsActiveCollisionZone = !outerShieldActive;
+      const innerColor = innerIsActiveCollisionZone ? activeShieldColor : activeShieldColor;
+      const innerAlpha = innerIsActiveCollisionZone ? 0.8 + healthPercent * 0.2 : 0.5;
       
-      this.shieldSprite.moveTo(x1, y1);
-      this.shieldSprite.lineTo(x2, y2);
-      this.shieldSprite.stroke({ width: 1, color: shieldColor, alpha: 0.3 });
+      this.shieldSprite.poly(innerVertices);
+      this.shieldSprite.stroke({ 
+        width: innerIsActiveCollisionZone ? 3 : 2, 
+        color: innerColor, 
+        alpha: innerAlpha 
+      });
+      
+      // Add detail lines
+      const detailVertices: number[] = [];
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
+        detailVertices.push(
+          Math.cos(angle) * innerShieldRadius * 0.9,
+          Math.sin(angle) * innerShieldRadius * 0.9
+        );
+      }
+      this.shieldSprite.poly(detailVertices);
+      this.shieldSprite.stroke({ 
+        width: 1, 
+        color: innerColor, 
+        alpha: 0.3 
+      });
+      
+      // Add pulsing effect if this is the active collision zone
+      if (innerIsActiveCollisionZone) {
+        const pulseAlpha = Math.sin(this.timeAlive * 3) * 0.1 + 0.1;
+        this.shieldSprite.circle(0, 0, innerShieldRadius);
+        this.shieldSprite.fill({ color: activeShieldColor, alpha: pulseAlpha });
+      }
     }
-    
-    // Add pulsing effect
-    const pulseAlpha = Math.sin(this.timeAlive * 3) * 0.1 + 0.1;
-    this.shieldSprite.circle(0, 0, outerShieldRadius);
-    this.shieldSprite.fill({ color: shieldColor, alpha: pulseAlpha });
     
     this.shieldSprite.x = this.x;
     this.shieldSprite.y = this.y;
@@ -556,12 +619,25 @@ export class StarBase {
   }
   
   /**
-   * Get shield radius (like BossBird for DRY consistency)
-   * CRITICAL: Only outer shield ring should collide!
+   * Get shield radius with PROGRESSIVE collision zones
+   * - First 2 hits: Outer shield (1.5x)
+   * - Middle hits: Inner shield (1.2x)  
+   * - Last hit: Core only (1.0x)
    */
   getShieldRadius(): number {
     if (!this.hasActiveShield()) return this.size;
-    return this.size * 1.5; // Outer shield ring at 1.5x size
+    
+    // Calculate how many shield hits have been taken
+    const shieldHitsTaken = this.maxHealth - this.health;
+    
+    // First 2 hits use outer shield (1.5x)
+    if (shieldHitsTaken < 2) {
+      return this.size * 1.5; // Outer shield collision zone
+    }
+    
+    // After outer shield is gone, use inner shield (1.2x)
+    // Until only core remains (health = 1)
+    return this.size * 1.2; // Inner shield collision zone
   }
   
   /**

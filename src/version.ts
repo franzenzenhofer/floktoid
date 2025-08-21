@@ -1,14 +1,14 @@
 // Auto-generated at build time - DO NOT EDIT
 export const VERSION_INFO = {
-  "version": "2.157.0",
-  "buildDate": "2025-08-21T14:27:12.663Z",
-  "buildTimestamp": 1755786432663,
-  "gitCommit": "10bc69a2a9642ff117fa9b5370d70392f8099726",
+  "version": "2.158.0",
+  "buildDate": "2025-08-21T14:44:12.455Z",
+  "buildTimestamp": 1755787452455,
+  "gitCommit": "26b4de0935c4018f5c0e4ac561a29b7fd1a95db2",
   "gitBranch": "master",
-  "environment": "production",
-  "displayVersion": "v2.157.0",
-  "displayDate": "8/21/2025 2:27:12 PM",
-  "displayCommit": "10bc69a"
+  "environment": "development",
+  "displayVersion": "v2.158.0",
+  "displayDate": "8/21/2025 2:44:12 PM",
+  "displayCommit": "26b4de0"
 } as const;
 
 export const {

@@ -24,6 +24,8 @@ export enum ScoringEvent {
   SUPER_NAVIGATOR_HIT = 'SUPER_NAVIGATOR_HIT', // New: Super navigator double points
   BOSS_HIT = 'BOSS_HIT',
   BOSS_DEFEATED = 'BOSS_DEFEATED',
+  STARBASE_HIT = 'STARBASE_HIT',           // Hitting StarBase shield
+  STARBASE_DEFEATED = 'STARBASE_DEFEATED', // Destroying StarBase (350 points!)
   ENERGY_DOT_RECLAIMED = 'ENERGY_DOT_RECLAIMED',
   ENERGY_DOT_CAUGHT_FALLING = 'ENERGY_DOT_CAUGHT_FALLING',
   ASTEROID_SPLIT = 'ASTEROID_SPLIT',
@@ -70,6 +72,8 @@ export const POINT_VALUES = {
     SUPER_NAVIGATOR_HIT: 80,      // Super navigator bird (DOUBLE points)
     BOSS_HIT: 50,                 // Hitting boss bird
     BOSS_DEFEATED: 400,           // Defeating boss (10x normal bird)
+    STARBASE_HIT: 30,             // Hitting StarBase shield
+    STARBASE_DEFEATED: 350,       // Defeating StarBase (350 points as requested!)
     ENERGY_DOT_RECLAIMED: 80,     // Getting stolen dot back
     ENERGY_DOT_CAUGHT_FALLING: 40, // Catching falling dot
     ASTEROID_SPLIT: 5,            // When asteroid splits
@@ -280,6 +284,17 @@ export class ScoringSystem {
       case ScoringEvent.BOSS_DEFEATED:
         points = POINT_VALUES.REWARDS.BOSS_DEFEATED;
         this.statistics.bossesDefeated++;
+        this.incrementCombo();
+        break;
+        
+      case ScoringEvent.STARBASE_HIT:
+        points = POINT_VALUES.REWARDS.STARBASE_HIT;
+        this.incrementCombo();
+        break;
+        
+      case ScoringEvent.STARBASE_DEFEATED:
+        points = POINT_VALUES.REWARDS.STARBASE_DEFEATED;
+        this.statistics.bossesDefeated++; // Count as boss for statistics
         this.incrementCombo();
         break;
         
