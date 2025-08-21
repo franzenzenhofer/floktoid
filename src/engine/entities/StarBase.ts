@@ -277,8 +277,8 @@ export class StarBase {
     
     if (outerShieldActive) {
       // Draw active outer shield
-      this.shieldSprite.poly(outerVertices);
-      this.shieldSprite.stroke({ 
+      this.outerShieldSprite.poly(outerVertices);
+      this.outerShieldSprite.stroke({ 
         width: 3, 
         color: activeShieldColor, 
         alpha: 0.8 + healthPercent * 0.2 
@@ -286,8 +286,8 @@ export class StarBase {
       
       // Add glow effect for active shield
       const pulseAlpha = Math.sin(this.timeAlive * 3) * 0.1 + 0.1;
-      this.shieldSprite.circle(0, 0, outerShieldRadius);
-      this.shieldSprite.fill({ color: activeShieldColor, alpha: pulseAlpha });
+      this.outerShieldSprite.circle(0, 0, outerShieldRadius);
+      this.outerShieldSprite.fill({ color: activeShieldColor, alpha: pulseAlpha });
     } else {
       // Draw destroyed outer shield (broken/damaged appearance)
       // Draw as dashed/broken line segments
@@ -306,15 +306,15 @@ export class StarBase {
           const segmentStart = 0.1 + Math.random() * 0.2;
           const segmentEnd = 0.7 + Math.random() * 0.2;
           
-          this.shieldSprite.moveTo(
+          this.outerShieldSprite.moveTo(
             x1 + (x2 - x1) * segmentStart,
             y1 + (y2 - y1) * segmentStart
           );
-          this.shieldSprite.lineTo(
+          this.outerShieldSprite.lineTo(
             x1 + (x2 - x1) * segmentEnd,
             y1 + (y2 - y1) * segmentEnd
           );
-          this.shieldSprite.stroke({ 
+          this.outerShieldSprite.stroke({ 
             width: 1, 
             color: destroyedShieldColor, 
             alpha: 0.3 
@@ -339,8 +339,8 @@ export class StarBase {
       const innerColor = innerIsActiveCollisionZone ? activeShieldColor : activeShieldColor;
       const innerAlpha = innerIsActiveCollisionZone ? 0.8 + healthPercent * 0.2 : 0.5;
       
-      this.shieldSprite.poly(innerVertices);
-      this.shieldSprite.stroke({ 
+      this.innerShieldSprite.poly(innerVertices);
+      this.innerShieldSprite.stroke({ 
         width: innerIsActiveCollisionZone ? 3 : 2, 
         color: innerColor, 
         alpha: innerAlpha 
@@ -355,8 +355,8 @@ export class StarBase {
           Math.sin(angle) * innerShieldRadius * 0.9
         );
       }
-      this.shieldSprite.poly(detailVertices);
-      this.shieldSprite.stroke({ 
+      this.innerShieldSprite.poly(detailVertices);
+      this.innerShieldSprite.stroke({ 
         width: 1, 
         color: innerColor, 
         alpha: 0.3 
@@ -365,13 +365,15 @@ export class StarBase {
       // Add pulsing effect if this is the active collision zone
       if (innerIsActiveCollisionZone) {
         const pulseAlpha = Math.sin(this.timeAlive * 3) * 0.1 + 0.1;
-        this.shieldSprite.circle(0, 0, innerShieldRadius);
-        this.shieldSprite.fill({ color: activeShieldColor, alpha: pulseAlpha });
+        this.innerShieldSprite.circle(0, 0, innerShieldRadius);
+        this.innerShieldSprite.fill({ color: activeShieldColor, alpha: pulseAlpha });
       }
     }
     
-    this.shieldSprite.x = this.x;
-    this.shieldSprite.y = this.y;
+    this.outerShieldSprite.x = this.x;
+    this.outerShieldSprite.y = this.y;
+    this.innerShieldSprite.x = this.x;
+    this.innerShieldSprite.y = this.y;
   }
   
   update(dt: number) {
@@ -562,12 +564,23 @@ export class StarBase {
     
     this.health--;
     
-    // Flash effect - only flash the SHIELD, not the core!
+    // Flash effect - flash the ACTIVE shield layer that was hit!
     if (this.hasActiveShield()) {
-      this.shieldSprite.tint = 0xFF0000;
-      setTimeout(() => {
-        this.shieldSprite.tint = 0xFFFFFF;
-      }, 100);
+      const shieldHitsTaken = this.maxHealth - this.health - 1; // -1 because we just took damage
+      
+      if (shieldHitsTaken < 2) {
+        // First 2 hits - flash outer shield
+        this.outerShieldSprite.tint = 0xFF0000;
+        setTimeout(() => {
+          this.outerShieldSprite.tint = 0xFFFFFF;
+        }, 100);
+      } else {
+        // After outer shield destroyed - flash inner shield
+        this.innerShieldSprite.tint = 0xFF0000;
+        setTimeout(() => {
+          this.innerShieldSprite.tint = 0xFFFFFF;
+        }, 100);
+      }
     } else {
       // Only flash the core if no shield left
       this.sprite.tint = 0xFF0000;
@@ -608,10 +621,12 @@ export class StarBase {
     
     // Clean up sprites
     this.app.stage.removeChild(this.sprite);
-    this.app.stage.removeChild(this.shieldSprite);
+    this.app.stage.removeChild(this.outerShieldSprite);
+    this.app.stage.removeChild(this.innerShieldSprite);
     
     this.sprite.destroy();
-    this.shieldSprite.destroy();
+    this.outerShieldSprite.destroy();
+    this.innerShieldSprite.destroy();
     
     // Clean up lasers
     for (const laser of this.lasers) {
