@@ -456,8 +456,7 @@ export class NeonFlockEngine {
         console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: ${stolenDots.length} dots missing, spawning StarBase!`);
         this.starBase = new StarBase(this.app, this.waveManager.getWave(), dotHue);
         
-        // Announce StarBase arrival (reuse boss announcement style)
-        this.comboEffects.createBossAnnouncement();
+        // NO ANNOUNCEMENT for StarBase - it's not a boss!
       } else {
         console.log(`[STARBASE] Wave ${this.waveManager.getWave()}: All dots present, no StarBase needed`);
       }
@@ -1795,6 +1794,65 @@ export class NeonFlockEngine {
   
   public isAutopilotEnabled(): boolean {
     return this.autopilotEnabled;
+  }
+  
+  /**
+   * Spawn a regular boid (alias for spawnBird)
+   */
+  public spawnBoid(x?: number, y?: number): void {
+    this.spawnBird(x, y);
+  }
+  
+  /**
+   * Spawn a boss bird directly
+   */
+  public spawnBoss(): void {
+    const boss = new BossBird(
+      this.app,
+      Math.random() * this.app.screen.width,
+      -20,
+      this.waveManager.getSpeedMultiplier(),
+      10, // Default 10 HP for dev spawning
+      Math.random() > 0.5 // 50% chance of shooting
+    );
+    this.boids.push(boss);
+    console.log('[DEV] Spawned boss bird with 10 HP');
+  }
+  
+  /**
+   * Spawn a shredder enemy
+   */
+  public spawnShredder(): void {
+    const shredder = new Shredder(this.app);
+    // Shredder spawns at random position at top of screen
+    shredder.x = Math.random() * this.app.screen.width;
+    shredder.y = -50;
+    this.shredders.push(shredder);
+    console.log('[DEV] Spawned shredder');
+  }
+  
+  /**
+   * Spawn a StarBase enemy
+   */
+  public spawnStarBase(): void {
+    if (this.starBase) {
+      console.warn('[DEV] StarBase already exists, destroying old one');
+      this.starBase.destroy();
+      this.starBase = null;
+    }
+    
+    // Use a random stolen dot color or default yellow
+    const stolenDots = this.energyDots.filter(d => d.stolen);
+    const dotHue = stolenDots.length > 0 
+      ? stolenDots[0].hue 
+      : 60; // Yellow default
+    
+    this.starBase = new StarBase(
+      this.app,
+      this.waveManager.getWave(),
+      dotHue
+    );
+    console.log('[DEV] Spawned StarBase');
   }
   
   private runAutopilot(_dt: number) {

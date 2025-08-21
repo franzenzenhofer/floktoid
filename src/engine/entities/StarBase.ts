@@ -19,6 +19,7 @@ export interface Laser {
 export class StarBase {
   public x: number;
   public y: number;
+  public targetY: number; // Target Y position (center of screen)
   public rotation = 0;
   public health: number;
   public maxHealth: number;
@@ -27,6 +28,7 @@ export class StarBase {
   public timeAlive = 0;
   public maxTimeAlive: number; // Time before leaving (30s initially)
   public dotHue: number; // Color of the energy dot inside
+  private movementSpeed = 100; // pixels per second for descent
   
   // Visual components
   private sprite: PIXI.Graphics;
@@ -54,9 +56,10 @@ export class StarBase {
     this.app = app;
     this.dotHue = dotHue;
     
-    // Position at center of screen immediately (no movement)
+    // Start at top, will descend to center
     this.x = app.screen.width / 2;
-    this.y = app.screen.height / 2;
+    this.y = -this.size * 2; // Start above screen
+    this.targetY = app.screen.height / 2; // Target: center of screen
     
     // Health scales with wave
     this.health = this.calculateHealth(wave);
@@ -256,7 +259,13 @@ export class StarBase {
       return;
     }
     
-    // Stay centered on screen (no movement needed)
+    // Move down to center position
+    if (this.y < this.targetY) {
+      this.y += this.movementSpeed * dt;
+      if (this.y > this.targetY) {
+        this.y = this.targetY;
+      }
+    }
     
     // Rotation animation
     if (this.isRotating) {
@@ -269,16 +278,18 @@ export class StarBase {
       }
     }
     
-    // Combat logic - always shoot since we're always centered
-    this.shootCooldown -= dt;
-    
-    if (this.shootCooldown <= 0 && !this.isRotating) {
+    // Combat logic - only shoot when in position
+    if (this.y >= this.targetY) {
+      this.shootCooldown -= dt;
+      
+      if (this.shootCooldown <= 0 && !this.isRotating) {
       this.fireVolley();
       this.shootCooldown = this.SHOOT_INTERVAL;
       
-      // Rotate after shooting
-      this.rotationTarget = this.rotation + (Math.PI * 2) / 6; // Rotate 60 degrees
-      this.isRotating = true;
+        // Rotate after shooting
+        this.rotationTarget = this.rotation + (Math.PI * 2) / 6; // Rotate 60 degrees
+        this.isRotating = true;
+      }
     }
     
     // Update lasers
