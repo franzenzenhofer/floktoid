@@ -98,6 +98,14 @@ describe('Bird Spawn Behavior', () => {
       moveToTop: vi.fn(),
       destroy: vi.fn(),
       update: vi.fn(),
+      applyForces: vi.fn(),
+      vx: 0,
+      vy: 0,
+      targetX: 400,
+      targetY: 0,
+      isShooter: false,
+      isSuperNavigator: false,
+      isMiner: false,
     };
     engineAny.boids = [testBoid];
 

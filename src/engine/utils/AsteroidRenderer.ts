@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { clearGraphics } from './SpriteFactory';
 
 // SUPER BRIGHT HIGH CONTRAST NEON COLORS!!!
 export const NEON_COLORS = [
@@ -37,7 +38,7 @@ export function renderAsteroid(
   y = 0,
   scale = 1
 ) {
-  graphics.clear();
+  clearGraphics(graphics);
   
   // Get the color based on hue
   const color = getNeonColorFromHue(hue);
