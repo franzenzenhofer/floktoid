@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Installation Diagnostic - FLOKTOID</title>
+    <style>
+        body {
+            background: #0a0a0f;
+            color: #00ffff;
+            font-family: 'Space Mono', monospace;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 { color: #ff00ff; text-shadow: 0 0 10px #ff00ff; }
+        h2 { color: #00ffff; margin-top: 30px; }
+        .check { padding: 10px; margin: 10px 0; border: 1px solid #333; }
+        .pass { background: #003300; border-color: #00ff00; }
+        .fail { background: #330000; border-color: #ff0000; }
+        .warn { background: #333300; border-color: #ffff00; }
+        .info { background: #003333; border-color: #00ffff; }
+        pre { background: #1a1a1a; padding: 10px; overflow-x: auto; }
+        a { color: #00ffff; }
+        .back-link { display: inline-block; margin: 20px 0; padding: 10px 20px; border: 2px solid #00ffff; text-decoration: none; }
+        .back-link:hover { background: #00ffff; color: #000; }
+    </style>
+</head>
+<body>
+    <h1>🔍 PWA Installation Diagnostic</h1>
+    <p>Deep analysis of why FLOKTOID can or cannot be installed as a Progressive Web App</p>
+    
+    <a href="/" class="back-link">← Back to Game</a>
+    
+    <div id="diagnostics">Loading diagnostics...</div>
+    
+    <script>
+        async function runDiagnostics() {
+            const results = [];
+            const container = document.getElementById('diagnostics');
+            container.innerHTML = '';
+            
+            // 1. HTTPS Check
+            const isHTTPS = location.protocol === 'https:';
+            addResult('HTTPS Protocol', isHTTPS, 
+                isHTTPS ? 'Site is served over HTTPS ✓' : 'Site MUST be served over HTTPS for PWA installation');
+            
+            // 2. Service Worker Support
+            const swSupport = 'serviceWorker' in navigator;
+            addResult('Service Worker Support', swSupport,
+                swSupport ? 'Browser supports Service Workers ✓' : 'Browser does NOT support Service Workers');
+            
+            // 3. Manifest Check
+            const manifestLink = document.querySelector('link[rel="manifest"]');
+            const hasManifest = !!manifestLink;
+            addResult('Manifest Link', hasManifest,
+                hasManifest ? `Manifest found: ${manifestLink?.href}` : 'No manifest link found in HTML');
+            
+            // 4. Fetch and Validate Manifest
+            if (hasManifest) {
+                try {
+                    const response = await fetch('/manifest.json');
+                    const manifest = await response.json();
+                    
+                    // Check required fields
+                    const requiredFields = ['name', 'short_name', 'icons', 'start_url', 'display'];
+                    for (const field of requiredFields) {
+                        addResult(`Manifest: ${field}`, !!manifest[field],
+                            manifest[field] ? `✓ ${field}: ${JSON.stringify(manifest[field]).substring(0, 100)}` : `✗ Missing required field: ${field}`);
+                    }
+                    
+                    // Check icons
+                    if (manifest.icons) {
+                        const has192 = manifest.icons.some(icon => icon.sizes?.includes('192'));
+                        const has512 = manifest.icons.some(icon => icon.sizes?.includes('512'));
+                        
+                        addResult('Icon 192x192', has192,
+                            has192 ? 'Has required 192x192 icon ✓' : 'Missing required 192x192 icon');
+                        addResult('Icon 512x512', has512,
+                            has512 ? 'Has required 512x512 icon ✓' : 'Missing required 512x512 icon');
+                    }
+                } catch (err) {
+                    addResult('Manifest Fetch', false, `Failed to fetch manifest: ${err.message}`);
+                }
+            }
+            
+            // 5. Check Install Prompt Capability
+            const canPrompt = window.matchMedia('(display-mode: browser)').matches;
+            addResult('Display Mode', canPrompt,
+                canPrompt ? 'Running in browser (can show install prompt)' : 'Already running as installed app');
+            
+            // 6. Check if already installed
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                                window.matchMedia('(display-mode: fullscreen)').matches ||
+                                window.navigator.standalone;
+            addResult('Installation Status', !isStandalone,
+                isStandalone ? 'App is ALREADY installed as PWA' : 'App is NOT installed yet ✓');
+            
+            // 7. Browser Detection
+            const ua = navigator.userAgent;
+            const browserInfo = detectBrowser(ua);
+            addResult('Browser', browserInfo.supportsPWA,
+                `${browserInfo.name} ${browserInfo.version} - ${browserInfo.message}`, 
+                browserInfo.supportsPWA ? 'pass' : 'warn');
+            
+            // 8. Check beforeinstallprompt support
+            addResult('BeforeInstallPrompt', true,
+                'This event fires when browser determines app is installable. May not fire if:\n' +
+                '• User already dismissed the prompt\n' +
+                '• Another PWA from same domain is installed\n' +
+                '• Browser has rate-limited install prompts\n' +
+                '• User engagement metrics not met', 'info');
+            
+            // 9. Check Service Worker Registration
+            if (swSupport) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    addResult('Service Workers', true,
+                        `Found ${registrations.length} service worker(s) registered:\n${registrations.map(r => r.scope).join('\n')}`,
+                        registrations.length > 0 ? 'warn' : 'info');
+                } catch (err) {
+                    addResult('Service Workers', false, `Error checking: ${err.message}`);
+                }
+            }
+            
+            // 10. Cache Storage Check
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    addResult('Cache Storage', true,
+                        `Found ${cacheNames.length} cache(s):\n${cacheNames.join('\n')}`,
+                        cacheNames.length > 0 ? 'warn' : 'info');
+                } catch (err) {
+                    addResult('Cache Storage', false, `Error checking: ${err.message}`);
+                }
+            }
+            
+            // 11. Permissions Check
+            if ('permissions' in navigator) {
+                const permissions = ['notifications', 'persistent-storage'];
+                for (const perm of permissions) {
+                    try {
+                        const result = await navigator.permissions.query({ name: perm });
+                        addResult(`Permission: ${perm}`, true,
+                            `Status: ${result.state}`, result.state === 'granted' ? 'pass' : 'info');
+                    } catch (err) {
+                        // Permission not supported
+                    }
+                }
+            }
+            
+            // Summary
+            addSummary();
+            
+            function addResult(title, pass, details, className = null) {
+                const div = document.createElement('div');
+                div.className = 'check ' + (className || (pass ? 'pass' : 'fail'));
+                div.innerHTML = `
+                    <strong>${pass ? '✓' : '✗'} ${title}</strong>
+                    <div style="margin-top: 5px; font-size: 0.9em; opacity: 0.9">${details}</div>
+                `;
+                container.appendChild(div);
+            }
+            
+            function detectBrowser(ua) {
+                if (/Edg\//.test(ua)) {
+                    return { name: 'Edge', version: ua.match(/Edg\/(\d+)/)?.[1], supportsPWA: true, 
+                            message: 'Full PWA support ✓' };
+                } else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) {
+                    const version = parseInt(ua.match(/Chrome\/(\d+)/)?.[1] || 0);
+                    return { name: 'Chrome', version, supportsPWA: version >= 73,
+                            message: version >= 73 ? 'Full PWA support ✓' : 'Update Chrome to v73+ for PWA support' };
+                } else if (/Firefox\//.test(ua)) {
+                    return { name: 'Firefox', version: ua.match(/Firefox\/(\d+)/)?.[1], supportsPWA: false,
+                            message: 'Limited PWA support - manual installation only' };
+                } else if (/Safari/.test(ua) && !/Chrome/.test(ua)) {
+                    return { name: 'Safari', version: ua.match(/Version\/(\d+)/)?.[1], supportsPWA: true,
+                            message: 'PWA support via "Add to Home Screen"' };
+                } else if (/Samsung/.test(ua)) {
+                    return { name: 'Samsung Internet', version: '', supportsPWA: true,
+                            message: 'Full PWA support ✓' };
+                } else {
+                    return { name: 'Unknown Browser', version: '', supportsPWA: false,
+                            message: 'PWA support unknown' };
+                }
+            }
+            
+            function addSummary() {
+                const div = document.createElement('div');
+                div.style.marginTop = '30px';
+                div.innerHTML = `
+                    <h2>📊 Summary & Solutions</h2>
+                    <div class="check info">
+                        <strong>Why Install Button May Show "Not Available":</strong>
+                        <ol>
+                            <li><strong>Browser doesn't support automatic prompts</strong> - Use manual installation method</li>
+                            <li><strong>User already dismissed prompt</strong> - Clear site data and try again</li>
+                            <li><strong>Another PWA installed from same domain</strong> - Uninstall other PWAs first</li>
+                            <li><strong>Browser rate-limiting</strong> - Wait 24 hours and try again</li>
+                            <li><strong>Engagement metrics not met</strong> - Use the site more before installing</li>
+                        </ol>
+                        <strong>Manual Installation Methods:</strong>
+                        <ul>
+                            <li><strong>Chrome/Edge:</strong> Menu (⋮) → Install FLOKTOID / Add to Home Screen</li>
+                            <li><strong>Safari iOS:</strong> Share button → Add to Home Screen</li>
+                            <li><strong>Samsung:</strong> Menu → Add page to → Home screen</li>
+                            <li><strong>Firefox:</strong> Not supported - use Chrome or Edge</li>
+                        </ul>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+        }
+        
+        // Run diagnostics on load
+        runDiagnostics();
+        
+        // Re-run every 2 seconds to catch changes
+        setInterval(runDiagnostics, 2000);
+    </script>
+</body>
+</html>

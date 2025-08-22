@@ -239,13 +239,18 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
                 📱 Install as App
               </button>
             ) : (
-              <button
-                onClick={handleInstallClick}
-                className="text-gray-500 hover:text-gray-400 text-sm underline transition-colors"
-                title="Install prompt will appear when available"
-              >
-                📱 Install (check browser support)
-              </button>
+              <div className="space-y-1">
+                <div className="text-yellow-400 text-xs">
+                  ⚠️ Install not available
+                </div>
+                <a
+                  href="/pwa-diagnostic.html"
+                  target="_blank"
+                  className="text-cyan-400 hover:text-cyan-300 text-sm underline font-bold transition-colors"
+                >
+                  🔍 See why & how to fix
+                </a>
+              </div>
             )}
           </div>
         </div>
