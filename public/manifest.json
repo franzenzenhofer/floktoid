@@ -1,0 +1,33 @@
+{
+  "name": "FLOKTOID - Neon Defense Game",
+  "short_name": "FLOKTOID",
+  "description": "Defend energy cores from evil flocking spaceships with asteroids",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0a0a0f",
+  "theme_color": "#00FFFF",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/game-screenshot.png",
+      "sizes": "1200x630",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["games", "arcade"],
+  "screenshots": [
+    {
+      "src": "/game-screenshot.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "Game in action"
+    }
+  ],
+  "prefer_related_applications": false
+}

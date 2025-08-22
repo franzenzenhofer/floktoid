@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { VERSION_INFO } from '../version';
 import { UsernameGenerator } from '../utils/UsernameGenerator';
 import { leaderboardService, type LeaderboardEntry } from '../services/LeaderboardService';
@@ -15,11 +15,75 @@ interface StartScreenProps {
 export function StartScreen({ onStart, onContinue, savedGame, highScore }: StartScreenProps) {
   const [username] = useState(() => UsernameGenerator.getSessionUsername());
   const [topPlayer, setTopPlayer] = useState<LeaderboardEntry | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
+  const deferredPromptRef = useRef<any>(null);
   
   useEffect(() => {
     // Fetch top player on mount
     leaderboardService.getTopPlayer().then(setTopPlayer);
+    
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registered'))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    }
+    
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches || 
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        (window.navigator as any).standalone) {
+      setIsInstalled(true);
+    }
+    
+    // Listen for install prompt
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      deferredPromptRef.current = e;
+      setCanInstall(true);
+    };
+    
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    
+    // Listen for app installed
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setCanInstall(false);
+      deferredPromptRef.current = null;
+    };
+    
+    window.addEventListener('appinstalled', handleAppInstalled);
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
+  
+  const handleInstallClick = async () => {
+    if (!deferredPromptRef.current) return;
+    
+    // Show install prompt
+    deferredPromptRef.current.prompt();
+    
+    // Wait for user response
+    const { outcome } = await deferredPromptRef.current.userChoice;
+    
+    if (outcome === 'accepted') {
+      console.log('PWA installed');
+    }
+    
+    deferredPromptRef.current = null;
+    setCanInstall(false);
+  };
+  
+  const handleUninstallClick = () => {
+    // PWAs can't be uninstalled programmatically, show instructions
+    alert('To uninstall:\n\n' +
+          'Desktop: Click the three dots menu → Uninstall FLOKTOID\n' +
+          'Mobile: Long press the app icon → Remove/Uninstall');
+  };
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-4">
       <div className="text-center space-y-4 md:space-y-8 max-w-lg">
@@ -99,6 +163,22 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
             >
               GitHub
             </a>
+            <span className="text-gray-700">|</span>
+            {isInstalled ? (
+              <button
+                onClick={handleUninstallClick}
+                className="text-gray-600 hover:text-red-400 text-xs underline transition-colors"
+              >
+                Uninstall
+              </button>
+            ) : canInstall ? (
+              <button
+                onClick={handleInstallClick}
+                className="text-gray-600 hover:text-green-400 text-xs underline transition-colors"
+              >
+                Install
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
