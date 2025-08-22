@@ -223,35 +223,34 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
               GitHub
             </a>
           </div>
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
             {isInstalled ? (
               <button
                 onClick={handleUninstallClick}
-                className="text-red-500 hover:text-red-300 text-sm underline font-bold transition-colors"
+                className="text-red-500 hover:text-red-300 text-sm underline font-bold transition-colors block mx-auto"
               >
                 Uninstall PWA
               </button>
             ) : canInstall ? (
               <button
                 onClick={handleInstallClick}
-                className="text-blue-500 hover:text-blue-300 text-sm underline font-bold transition-colors animate-pulse"
+                className="text-blue-400 hover:text-blue-200 text-base underline font-bold transition-colors animate-pulse block mx-auto bg-blue-900/30 px-4 py-1 rounded border border-blue-400"
+                style={{ textDecorationThickness: '2px' }}
               >
-                Install as App
+                INSTALL AS APP
               </button>
             ) : (
-              <div className="space-y-1">
-                <div className="text-yellow-400 text-xs">
-                  Install not available
-                </div>
-                <a
-                  href="/pwa-diagnostic.html"
-                  target="_blank"
-                  className="text-cyan-400 hover:text-cyan-300 text-sm underline font-bold transition-colors"
-                >
-                  See why & how to fix
-                </a>
+              <div className="text-yellow-400 text-xs">
+                Install not available
               </div>
             )}
+            <a
+              href="/pwa-diagnostic"
+              target="_blank"
+              className="text-cyan-400 hover:text-cyan-300 text-sm underline font-bold transition-colors block"
+            >
+              PWA Installation Analysis
+            </a>
           </div>
         </div>
       </div>

@@ -133,26 +133,46 @@ async function handleScoreSubmit(request, env, corsHeaders) {
 
 async function handleGetLeaderboard(env, corsHeaders) {
   try {
+    console.log('handleGetLeaderboard called');
+    
     // Return empty if no KV binding
     if (!env.LEADERBOARD) {
+      console.error('No LEADERBOARD KV binding found');
       return new Response(JSON.stringify({
         allTime: [],
         last24h: [],
-        topPlayer: null
+        topPlayer: null,
+        error: 'No KV binding'
       }), {
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
     }
     
-    // Get all-time scores
-    const list = await env.LEADERBOARD.list({ prefix: 'alltime:', limit: 100 });
+    console.log('KV binding exists, fetching list...');
     
-    const scores = await Promise.all(
-      list.keys.map(async (key) => {
-        const data = await env.LEADERBOARD.get(key.name);
-        return data ? JSON.parse(data) : null;
-      })
-    );
+    // Get all-time scores - limit to 20 to avoid API limits
+    const list = await env.LEADERBOARD.list({ prefix: 'alltime:', limit: 20 });
+    console.log('Found alltime entries:', list.keys.length);
+    
+    // Batch fetch using limited concurrent requests
+    const batchSize = 5;
+    const scores = [];
+    
+    for (let i = 0; i < list.keys.length; i += batchSize) {
+      const batch = list.keys.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map(async (key) => {
+          try {
+            const data = await env.LEADERBOARD.get(key.name);
+            return data ? JSON.parse(data) : null;
+          } catch (err) {
+            console.error(`Error fetching ${key.name}:`, err);
+            return null;
+          }
+        })
+      );
+      scores.push(...batchResults.filter(s => s !== null));
+    }
     
     // Filter null and sort by score descending
     const validScores = scores.filter(s => s !== null);
@@ -161,35 +181,52 @@ async function handleGetLeaderboard(env, corsHeaders) {
     // Get top 10 all-time
     const allTime = validScores.slice(0, 10);
     
-    // Get recent scores (last 24h)
+    // Get recent scores (last 24h) - limit to avoid API limits
     const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
-    const recentList = await env.LEADERBOARD.list({ prefix: 'score:', limit: 1000 });
+    const recentList = await env.LEADERBOARD.list({ prefix: 'score:', limit: 50 });
     
     // Map to track highest score per gameId (to prevent duplicates from same game)
     const gameHighScores = new Map();
     
-    for (const key of recentList.keys) {
-      const parts = key.name.split(':');
-      // Format is now: score:username:timestamp
-      if (parts.length >= 3) {
-        // FIX: timestamp in key is Unix seconds, but stored data has milliseconds
-        // Just get the data and check its timestamp instead
-        const data = await env.LEADERBOARD.get(key.name);
-        if (data) {
-          const scoreData = JSON.parse(data);
-          
-          // Check if score is within last 24 hours using actual timestamp from data
-          if (scoreData.timestamp && scoreData.timestamp > dayAgo) {
-            // Only keep highest score per gameId
-            if (scoreData.gameId) {
-              const existing = gameHighScores.get(scoreData.gameId);
-              if (!existing || scoreData.score > existing.score) {
-                gameHighScores.set(scoreData.gameId, scoreData);
+    // Batch fetch recent scores
+    for (let i = 0; i < recentList.keys.length; i += batchSize) {
+      const batch = recentList.keys.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map(async (key) => {
+          try {
+            const parts = key.name.split(':');
+            // Format is now: score:username:timestamp
+            if (parts.length >= 3) {
+              const data = await env.LEADERBOARD.get(key.name);
+              if (data) {
+                const scoreData = JSON.parse(data);
+                
+                // Check if score is within last 24 hours using actual timestamp from data
+                if (scoreData.timestamp && scoreData.timestamp > dayAgo) {
+                  return scoreData;
+                }
               }
-            } else {
-              // No gameId means old entry, include it
-              gameHighScores.set(`legacy_${key.name}`, scoreData);
             }
+            return null;
+          } catch (err) {
+            console.error(`Error fetching recent ${key.name}:`, err);
+            return null;
+          }
+        })
+      );
+      
+      // Process batch results
+      for (const scoreData of batchResults) {
+        if (scoreData) {
+          // Only keep highest score per gameId
+          if (scoreData.gameId) {
+            const existing = gameHighScores.get(scoreData.gameId);
+            if (!existing || scoreData.score > existing.score) {
+              gameHighScores.set(scoreData.gameId, scoreData);
+            }
+          } else {
+            // No gameId means old entry, include it
+            gameHighScores.set(`legacy_${Math.random()}`, scoreData);
           }
         }
       }
@@ -219,7 +256,8 @@ async function handleGetLeaderboard(env, corsHeaders) {
       allTime: [],
       last24h: [],
       topPlayer: null,
-      error: 'Server error' 
+      error: error.message || 'Server error',
+      errorStack: error.stack
     }), {
       status: 200, // Return 200 to not break the app
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
