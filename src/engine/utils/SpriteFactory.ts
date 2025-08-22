@@ -18,28 +18,28 @@ export function createGraphics(zIndex?: number): PIXI.Graphics {
   
   // TEST COMPATIBILITY: Ensure circle method exists for test environment
   if (typeof graphics.circle !== 'function') {
-    graphics.circle = function() { return this; } as any;
+    (graphics as unknown as Record<string, unknown>).circle = function() { return this; };
   }
   if (typeof graphics.fill !== 'function') {
-    graphics.fill = function() { return this; } as any;
+    (graphics as unknown as Record<string, unknown>).fill = function() { return this; };
   }
   if (typeof graphics.stroke !== 'function') {
-    graphics.stroke = function() { return this; } as any;
+    (graphics as unknown as Record<string, unknown>).stroke = function() { return this; };
   }
   if (typeof graphics.poly !== 'function') {
-    graphics.poly = function() { return this; } as any;
+    (graphics as unknown as Record<string, unknown>).poly = function() { return this; };
   }
   if (typeof graphics.moveTo !== 'function') {
-    graphics.moveTo = function() { return this; } as any;
+    (graphics as unknown as Record<string, unknown>).moveTo = function() { return this; };
   }
   if (typeof graphics.lineTo !== 'function') {
-    graphics.lineTo = function() { return this; } as any;
+    (graphics as unknown as Record<string, unknown>).lineTo = function() { return this; };
   }
   if (typeof graphics.clear !== 'function') {
-    graphics.clear = function() { return this; } as any;
+    (graphics as unknown as Record<string, unknown>).clear = function() { return this; };
   }
   if (!('visible' in graphics)) {
-    (graphics as any).visible = true;
+    (graphics as unknown as Record<string, unknown>).visible = true;
   }
   
   if (zIndex !== undefined) {
