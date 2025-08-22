@@ -172,12 +172,14 @@ async function handleGetLeaderboard(env, corsHeaders) {
       const parts = key.name.split(':');
       // Format is now: score:username:timestamp
       if (parts.length >= 3) {
-        const timestamp = parseInt(parts[2]);
-        if (timestamp > dayAgo) {
-          const data = await env.LEADERBOARD.get(key.name);
-          if (data) {
-            const scoreData = JSON.parse(data);
-            
+        // FIX: timestamp in key is Unix seconds, but stored data has milliseconds
+        // Just get the data and check its timestamp instead
+        const data = await env.LEADERBOARD.get(key.name);
+        if (data) {
+          const scoreData = JSON.parse(data);
+          
+          // Check if score is within last 24 hours using actual timestamp from data
+          if (scoreData.timestamp && scoreData.timestamp > dayAgo) {
             // Only keep highest score per gameId
             if (scoreData.gameId) {
               const existing = gameHighScores.get(scoreData.gameId);
