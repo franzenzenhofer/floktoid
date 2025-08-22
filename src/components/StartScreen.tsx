@@ -4,6 +4,12 @@ import { UsernameGenerator } from '../utils/UsernameGenerator';
 import { leaderboardService, type LeaderboardEntry } from '../services/LeaderboardService';
 import type { SavedGame } from '../utils/SavedGameState';
 
+// PWA install prompt event type
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 interface StartScreenProps {
   onStart: (devMode?: boolean) => void;
   onContinue?: () => void;
@@ -17,7 +23,7 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
   const [topPlayer, setTopPlayer] = useState<LeaderboardEntry | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
-  const deferredPromptRef = useRef<any>(null);
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   
   useEffect(() => {
     // Fetch top player on mount
@@ -26,21 +32,21 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('Service Worker registered'))
+        .then(() => console.log('Service Worker registered'))
         .catch(err => console.error('Service Worker registration failed:', err));
     }
     
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches || 
         window.matchMedia('(display-mode: fullscreen)').matches ||
-        (window.navigator as any).standalone) {
+        (window.navigator as unknown as Record<string, unknown>).standalone) {
       setIsInstalled(true);
     }
     
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      deferredPromptRef.current = e;
+      deferredPromptRef.current = e as BeforeInstallPromptEvent;
       setCanInstall(true);
     };
     
