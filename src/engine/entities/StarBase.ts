@@ -218,13 +218,9 @@ export class StarBase {
   }
   
   private updateShield() {
-    // Don't clear shields while they're flashing to preserve the tint effect
-    if (!this.outerShieldFlashing) {
-      this.outerShieldSprite.clear();
-    }
-    if (!this.innerShieldFlashing) {
-      this.innerShieldSprite.clear();
-    }
+    // Always clear and redraw shields - the tint will handle the red flash effect
+    this.outerShieldSprite.clear();
+    this.innerShieldSprite.clear();
     
     // Always position sprites
     this.outerShieldSprite.x = this.x;
@@ -235,11 +231,6 @@ export class StarBase {
     // Shield only visible when health > 1 (last HP is core without shield)
     if (this.health <= 1 || !this.alive) {
       return;
-    }
-    
-    // Skip drawing if shields are flashing (to preserve the red tint)
-    if (this.outerShieldFlashing && this.innerShieldFlashing) {
-      return; // Both flashing, skip all drawing
     }
     
     // Calculate how many shield hits have been taken
@@ -298,8 +289,8 @@ export class StarBase {
       );
     }
     
-    if (outerShieldActive && !this.outerShieldFlashing) {
-      // Draw active outer shield (skip if flashing to preserve red tint)
+    if (outerShieldActive) {
+      // Draw active outer shield (even when flashing - the tint will make it red)
       this.outerShieldSprite.poly(outerVertices);
       this.outerShieldSprite.stroke({ 
         width: 3, 
@@ -311,8 +302,8 @@ export class StarBase {
       const pulseAlpha = Math.sin(this.timeAlive * 3) * 0.1 + 0.1;
       this.outerShieldSprite.circle(0, 0, outerShieldRadius);
       this.outerShieldSprite.fill({ color: activeShieldColor, alpha: pulseAlpha });
-    } else if (!outerShieldActive && !this.outerShieldFlashing) {
-      // Draw destroyed outer shield (broken/damaged appearance) - skip if flashing
+    } else if (!outerShieldActive) {
+      // Draw destroyed outer shield (broken/damaged appearance)
       // Draw as dashed/broken line segments
       for (let i = 0; i < 6; i++) {
         const angle1 = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
@@ -347,7 +338,7 @@ export class StarBase {
     }
     
     // Draw inner shield (always visible if shields exist)
-    if (innerShieldActive && !this.innerShieldFlashing) {
+    if (innerShieldActive) {
       const innerVertices: number[] = [];
       for (let i = 0; i < 6; i++) {
         const angle = (i * Math.PI * 2) / 6 + this.rotation * 0.5;
