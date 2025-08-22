@@ -229,26 +229,26 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
                 onClick={handleUninstallClick}
                 className="text-red-500 hover:text-red-300 text-sm underline font-bold transition-colors"
               >
-                🗑️ Uninstall PWA
+                Uninstall PWA
               </button>
             ) : canInstall ? (
               <button
                 onClick={handleInstallClick}
                 className="text-blue-500 hover:text-blue-300 text-sm underline font-bold transition-colors animate-pulse"
               >
-                📱 Install as App
+                Install as App
               </button>
             ) : (
               <div className="space-y-1">
                 <div className="text-yellow-400 text-xs">
-                  ⚠️ Install not available
+                  Install not available
                 </div>
                 <a
                   href="/pwa-diagnostic.html"
                   target="_blank"
                   className="text-cyan-400 hover:text-cyan-300 text-sm underline font-bold transition-colors"
                 >
-                  🔍 See why & how to fix
+                  See why & how to fix
                 </a>
               </div>
             )}
