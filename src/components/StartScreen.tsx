@@ -21,13 +21,20 @@ interface StartScreenProps {
 export function StartScreen({ onStart, onContinue, savedGame, highScore }: StartScreenProps) {
   const [username] = useState(() => UsernameGenerator.getSessionUsername());
   const [topPlayer, setTopPlayer] = useState<LeaderboardEntry | null>(null);
+  const [allTimeTopPlayer, setAllTimeTopPlayer] = useState<LeaderboardEntry | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   
   useEffect(() => {
-    // Fetch top player on mount
-    leaderboardService.getTopPlayer().then(setTopPlayer);
+    // Fetch leaderboard data on mount
+    leaderboardService.getLeaderboard().then(data => {
+      setTopPlayer(data.topPlayer);
+      // If no 24h leader, use all-time top
+      if (!data.topPlayer && data.allTime.length > 0) {
+        setAllTimeTopPlayer(data.allTime[0]);
+      }
+    });
     
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
@@ -106,19 +113,23 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
           Defend the energy dots!
         </div>
         
-        {topPlayer && (
-          <div className="space-y-1">
+        <div className="space-y-1">
+          {topPlayer ? (
             <div className="text-sm sm:text-base text-yellow-400">
               24h Top Leader: {topPlayer.username} - {topPlayer.score.toLocaleString()}
             </div>
-            <a
-              href="/leaderboard"
-              className="text-xs sm:text-sm text-cyan-400 hover:text-cyan-300 underline"
-            >
-              View Full Leaderboard
-            </a>
-          </div>
-        )}
+          ) : allTimeTopPlayer ? (
+            <div className="text-sm sm:text-base text-yellow-400">
+              All-Time Leader: {allTimeTopPlayer.username} - {allTimeTopPlayer.score.toLocaleString()}
+            </div>
+          ) : null}
+          <a
+            href="/leaderboard"
+            className="text-xs sm:text-sm text-cyan-400 hover:text-cyan-300 underline"
+          >
+            View Full Leaderboard
+          </a>
+        </div>
         
         <div className="text-xs sm:text-sm text-gray-500">
           Your username: <span className="text-cyan-300">{username}</span>
@@ -173,18 +184,22 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
             {isInstalled ? (
               <button
                 onClick={handleUninstallClick}
-                className="text-gray-600 hover:text-red-400 text-xs underline transition-colors"
+                className="text-red-500 hover:text-red-300 text-xs underline font-bold transition-colors"
               >
                 Uninstall
               </button>
             ) : canInstall ? (
               <button
                 onClick={handleInstallClick}
-                className="text-gray-600 hover:text-green-400 text-xs underline transition-colors"
+                className="text-blue-500 hover:text-blue-300 text-xs underline font-bold transition-colors animate-pulse"
               >
                 Install
               </button>
-            ) : null}
+            ) : (
+              <span className="text-gray-700 text-xs">
+                Install (not available)
+              </span>
+            )}
           </div>
         </div>
       </div>

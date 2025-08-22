@@ -16,9 +16,12 @@ const { VISUALS } = CentralConfig;
 export function createGraphics(zIndex?: number): PIXI.Graphics {
   const graphics = new PIXI.Graphics();
   
-  // TEST COMPATIBILITY: Ensure circle method exists for test environment
+  // TEST COMPATIBILITY: Ensure all graphics methods exist for test environment
   if (typeof graphics.circle !== 'function') {
     (graphics as unknown as Record<string, unknown>).circle = function() { return this; };
+  }
+  if (typeof graphics.rect !== 'function') {
+    (graphics as unknown as Record<string, unknown>).rect = function() { return this; };
   }
   if (typeof graphics.fill !== 'function') {
     (graphics as unknown as Record<string, unknown>).fill = function() { return this; };
