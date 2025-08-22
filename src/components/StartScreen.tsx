@@ -140,8 +140,8 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
           'Mobile: Long press the app icon → Remove/Uninstall');
   };
   return (
-    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-4">
-      <div className="text-center space-y-4 md:space-y-8 max-w-lg">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 overflow-y-auto">
+      <div className="text-center space-y-4 md:space-y-8 max-w-lg my-auto py-8">
         <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-2">
           <span className="neon-text">FLOK</span>
           <span className="neon-pink">TOID</span>
@@ -223,33 +223,36 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
               GitHub
             </a>
           </div>
-          <div className="pt-2 space-y-2">
-            {isInstalled ? (
-              <button
-                onClick={handleUninstallClick}
-                className="text-red-500 hover:text-red-300 text-sm underline font-bold transition-colors block mx-auto"
-              >
-                Uninstall PWA
-              </button>
-            ) : canInstall ? (
-              <button
-                onClick={handleInstallClick}
-                className="text-blue-400 hover:text-blue-200 text-base underline font-bold transition-colors animate-pulse block mx-auto bg-blue-900/30 px-4 py-1 rounded border border-blue-400"
-                style={{ textDecorationThickness: '2px' }}
-              >
-                INSTALL AS APP
-              </button>
-            ) : (
-              <div className="text-yellow-400 text-xs">
-                Install not available
-              </div>
-            )}
+          <div className="pt-4 space-y-3 border-t border-gray-700 mt-4">
+            <div className="bg-blue-900/20 p-3 rounded border border-blue-400">
+              {isInstalled ? (
+                <button
+                  onClick={handleUninstallClick}
+                  className="text-red-400 hover:text-red-200 text-base underline font-bold transition-colors block mx-auto"
+                >
+                  UNINSTALL PWA
+                </button>
+              ) : canInstall ? (
+                <button
+                  onClick={handleInstallClick}
+                  className="text-blue-400 hover:text-white text-lg underline font-bold transition-colors animate-pulse block mx-auto bg-blue-600/30 px-6 py-2 rounded"
+                  style={{ textDecorationThickness: '2px', textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}
+                >
+                  INSTALL AS APP
+                </button>
+              ) : (
+                <div className="text-yellow-300 text-base font-bold">
+                  Install not available
+                </div>
+              )}
+            </div>
             <a
               href="/pwa-diagnostic"
               target="_blank"
-              className="text-cyan-400 hover:text-cyan-300 text-sm underline font-bold transition-colors block"
+              className="text-cyan-300 hover:text-white text-base underline font-bold transition-colors block bg-cyan-900/30 px-4 py-2 rounded border border-cyan-400"
+              style={{ textShadow: '0 0 10px rgba(6, 182, 212, 0.8)' }}
             >
-              PWA Installation Analysis
+              PWA INSTALLATION ANALYSIS
             </a>
           </div>
         </div>

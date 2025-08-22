@@ -181,9 +181,44 @@ async function handleGetLeaderboard(env, corsHeaders) {
     // Get top 10 all-time
     const allTime = validScores.slice(0, 10);
     
-    // Get recent scores (last 24h) - limit to avoid API limits
+    // Get recent scores (last 24h) - use a smarter approach
     const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
-    const recentList = await env.LEADERBOARD.list({ prefix: 'score:', limit: 50 });
+    
+    // Fetch ALL score keys (just keys, not values) to find recent ones
+    const allScoreKeys = [];
+    let cursor = undefined;
+    
+    // Fetch keys in batches to avoid timeout
+    for (let i = 0; i < 5; i++) {
+      const batch = await env.LEADERBOARD.list({ 
+        prefix: 'score:', 
+        limit: 1000,
+        cursor 
+      });
+      allScoreKeys.push(...batch.keys);
+      cursor = batch.cursor;
+      if (!cursor || batch.keys.length < 1000) break;
+    }
+    
+    console.log(`Found ${allScoreKeys.length} total score keys`);
+    
+    // Filter to recent scores based on timestamp in key name
+    // Keys are in format: score:username:timestamp
+    const recentKeys = allScoreKeys.filter(key => {
+      const parts = key.name.split(':');
+      if (parts.length >= 3) {
+        const timestamp = parseInt(parts[2]);
+        return !isNaN(timestamp) && timestamp > dayAgo;
+      }
+      return false;
+    });
+    
+    console.log(`Found ${recentKeys.length} recent score keys`);
+    
+    // Limit to 50 most recent to avoid API limits
+    const recentList = {
+      keys: recentKeys.slice(-50)
+    };
     
     // Map to track highest score per gameId (to prevent duplicates from same game)
     const gameHighScores = new Map();
