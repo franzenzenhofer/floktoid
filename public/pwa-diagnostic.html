@@ -5,40 +5,191 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PWA Installation Diagnostic - FLOKTOID</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            background: #0a0a0f;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a0a1f 100%);
             color: #00ffff;
             font-family: 'Space Mono', monospace;
             padding: 20px;
-            max-width: 800px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
             margin: 0 auto;
         }
-        h1 { color: #ff00ff; text-shadow: 0 0 10px #ff00ff; }
-        h2 { color: #00ffff; margin-top: 30px; }
-        .check { padding: 10px; margin: 10px 0; border: 1px solid #333; }
-        .pass { background: #003300; border-color: #00ff00; }
-        .fail { background: #330000; border-color: #ff0000; }
-        .warn { background: #333300; border-color: #ffff00; }
-        .info { background: #003333; border-color: #00ffff; }
-        pre { background: #1a1a1a; padding: 10px; overflow-x: auto; }
+        h1 { 
+            color: #ff00ff; 
+            text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff40;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            opacity: 0.8;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        h2 { 
+            color: #00ffff; 
+            margin-top: 40px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #00ffff40;
+            font-size: 1.5em;
+        }
+        .check { 
+            padding: 15px; 
+            margin: 12px 0; 
+            border-radius: 8px;
+            border: 1px solid;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .check:hover {
+            transform: translateX(5px);
+        }
+        .pass { 
+            background: linear-gradient(135deg, #00330020 0%, #00550020 100%);
+            border-color: #00ff00;
+            box-shadow: 0 0 10px #00ff0020;
+        }
+        .fail { 
+            background: linear-gradient(135deg, #33000020 0%, #55000020 100%);
+            border-color: #ff0000;
+            box-shadow: 0 0 10px #ff000020;
+        }
+        .warn { 
+            background: linear-gradient(135deg, #33330020 0%, #55550020 100%);
+            border-color: #ffff00;
+            box-shadow: 0 0 10px #ffff0020;
+        }
+        .info { 
+            background: linear-gradient(135deg, #00333320 0%, #00555520 100%);
+            border-color: #00ffff;
+            box-shadow: 0 0 10px #00ffff20;
+        }
+        pre { 
+            background: #1a1a1a; 
+            padding: 10px; 
+            overflow-x: auto;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
         a { color: #00ffff; }
-        .back-link { display: inline-block; margin: 20px 0; padding: 10px 20px; border: 2px solid #00ffff; text-decoration: none; }
-        .back-link:hover { background: #00ffff; color: #000; }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+            justify-content: center;
+        }
+        .button { 
+            padding: 12px 24px; 
+            border: 2px solid #00ffff; 
+            text-decoration: none;
+            cursor: pointer;
+            background: linear-gradient(135deg, #00ffff10 0%, #00ffff20 100%);
+            color: #00ffff;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+        .button:hover { 
+            background: linear-gradient(135deg, #00ffff40 0%, #00ffff60 100%);
+            box-shadow: 0 0 20px #00ffff40;
+            transform: translateY(-2px);
+        }
+        .button.copied {
+            border-color: #00ff00;
+            color: #00ff00;
+            background: linear-gradient(135deg, #00ff0010 0%, #00ff0020 100%);
+        }
+        .status-icon {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .details {
+            margin-top: 8px;
+            font-size: 0.9em;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        .loading {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 50px 0;
+        }
+        .loading::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        .refresh-note {
+            text-align: center;
+            opacity: 0.6;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+        ol, ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        li {
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+        strong {
+            color: #ffff00;
+        }
     </style>
 </head>
 <body>
-    <h1>🔍 PWA Installation Diagnostic</h1>
-    <p>Deep analysis of why FLOKTOID can or cannot be installed as a Progressive Web App</p>
-    
-    <a href="/" class="back-link">← Back to Game</a>
-    
-    <div id="diagnostics">Loading diagnostics...</div>
+    <div class="container">
+        <h1>PWA Installation Diagnostic</h1>
+        <p class="subtitle">Analyzing FLOKTOID Progressive Web App capabilities</p>
+        
+        <div class="button-group">
+            <a href="/" class="button">← Back to Game</a>
+            <button onclick="copyAllDiagnostics()" class="button" id="copyBtn">Copy Diagnostics</button>
+            <button onclick="refreshDiagnostics()" class="button">Refresh</button>
+        </div>
+        
+        <div id="diagnostics" class="loading">Running diagnostics</div>
+        
+        <p class="refresh-note" id="refreshNote" style="display: none;">Auto-refresh: <span id="countdown">30</span>s</p>
+    </div>
     
     <script>
-        async function runDiagnostics() {
+        let allDiagnosticText = '';
+        let autoRefreshInterval = null;
+        let countdownInterval = null;
+        let countdown = 30;
+        
+        async function runDiagnostics(preserveScroll = false) {
+            const scrollPos = preserveScroll ? window.scrollY : 0;
             const results = [];
             const container = document.getElementById('diagnostics');
             container.innerHTML = '';
+            container.className = '';
+            allDiagnosticText = 'PWA INSTALLATION DIAGNOSTIC - FLOKTOID\n';
+            allDiagnosticText += '=====================================\n\n';
+            allDiagnosticText += `Date: ${new Date().toISOString()}\n`;
+            allDiagnosticText += `URL: ${location.href}\n`;
+            allDiagnosticText += `User Agent: ${navigator.userAgent}\n\n`;
             
             // 1. HTTPS Check
             const isHTTPS = location.protocol === 'https:';
@@ -149,17 +300,38 @@
                 }
             }
             
+            // 12. Check Window Controls Overlay (for desktop PWAs)
+            if ('windowControlsOverlay' in navigator) {
+                addResult('Window Controls Overlay', true,
+                    'Desktop PWA window controls supported', 'info');
+            }
+            
+            // 13. Check Web App Manifest Display Override
+            const displayModes = ['fullscreen', 'standalone', 'minimal-ui', 'browser'];
+            for (const mode of displayModes) {
+                if (window.matchMedia(`(display-mode: ${mode})`).matches) {
+                    addResult('Current Display Mode', true, `Running in ${mode} mode`, 'info');
+                    break;
+                }
+            }
+            
             // Summary
             addSummary();
             
             function addResult(title, pass, details, className = null) {
                 const div = document.createElement('div');
                 div.className = 'check ' + (className || (pass ? 'pass' : 'fail'));
+                const statusIcon = pass ? '✓' : '✗';
+                const iconClass = pass ? 'status-icon' : 'status-icon';
                 div.innerHTML = `
-                    <strong>${pass ? '✓' : '✗'} ${title}</strong>
-                    <div style="margin-top: 5px; font-size: 0.9em; opacity: 0.9">${details}</div>
+                    <div><span class="${iconClass}">${statusIcon}</span><strong>${title}</strong></div>
+                    <div class="details">${details}</div>
                 `;
                 container.appendChild(div);
+                
+                // Add to copy text
+                allDiagnosticText += `${statusIcon} ${title}\n`;
+                allDiagnosticText += `   ${details.replace(/<br>/g, '\n   ')}\n\n`;
             }
             
             function detectBrowser(ua) {
@@ -187,36 +359,134 @@
             
             function addSummary() {
                 const div = document.createElement('div');
-                div.style.marginTop = '30px';
-                div.innerHTML = `
-                    <h2>📊 Summary & Solutions</h2>
+                div.style.marginTop = '40px';
+                const summaryHTML = `
+                    <h2>Installation Guide</h2>
                     <div class="check info">
-                        <strong>Why Install Button May Show "Not Available":</strong>
-                        <ol>
-                            <li><strong>Browser doesn't support automatic prompts</strong> - Use manual installation method</li>
-                            <li><strong>User already dismissed prompt</strong> - Clear site data and try again</li>
-                            <li><strong>Another PWA installed from same domain</strong> - Uninstall other PWAs first</li>
-                            <li><strong>Browser rate-limiting</strong> - Wait 24 hours and try again</li>
-                            <li><strong>Engagement metrics not met</strong> - Use the site more before installing</li>
-                        </ol>
-                        <strong>Manual Installation Methods:</strong>
-                        <ul>
-                            <li><strong>Chrome/Edge:</strong> Menu (⋮) → Install FLOKTOID / Add to Home Screen</li>
-                            <li><strong>Safari iOS:</strong> Share button → Add to Home Screen</li>
-                            <li><strong>Samsung:</strong> Menu → Add page to → Home screen</li>
-                            <li><strong>Firefox:</strong> Not supported - use Chrome or Edge</li>
-                        </ul>
+                        <div><span class="status-icon">ℹ</span><strong>Why Install Button May Show "Not Available"</strong></div>
+                        <div class="details">
+                            <ol>
+                                <li><strong>Browser doesn't support automatic prompts</strong> - Use manual installation method</li>
+                                <li><strong>User already dismissed prompt</strong> - Clear site data and try again</li>
+                                <li><strong>Another PWA installed from same domain</strong> - Uninstall other PWAs first</li>
+                                <li><strong>Browser rate-limiting</strong> - Wait 24 hours and try again</li>
+                                <li><strong>Engagement metrics not met</strong> - Use the site more before installing</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <div class="check info" style="margin-top: 20px;">
+                        <div><span class="status-icon">📱</span><strong>Manual Installation Methods</strong></div>
+                        <div class="details">
+                            <ul>
+                                <li><strong>Chrome/Edge:</strong> Menu (⋮) → Install FLOKTOID / Add to Home Screen</li>
+                                <li><strong>Safari iOS:</strong> Share button → Add to Home Screen</li>
+                                <li><strong>Samsung:</strong> Menu → Add page to → Home screen</li>
+                                <li><strong>Firefox:</strong> Not supported - use Chrome or Edge</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="check info" style="margin-top: 20px;">
+                        <div><span class="status-icon">🔧</span><strong>Troubleshooting Steps</strong></div>
+                        <div class="details">
+                            <ol>
+                                <li>Clear browser cache and cookies for this site</li>
+                                <li>Ensure you're using HTTPS (not HTTP)</li>
+                                <li>Check if another PWA from franzai.com is installed</li>
+                                <li>Try incognito/private mode</li>
+                                <li>Update your browser to the latest version</li>
+                            </ol>
+                        </div>
                     </div>
                 `;
+                div.innerHTML = summaryHTML;
                 container.appendChild(div);
+                
+                // Add summary to copy text
+                allDiagnosticText += '\nINSTALLATION GUIDE\n';
+                allDiagnosticText += '==================\n\n';
+                allDiagnosticText += 'Why Install Button May Show "Not Available":\n';
+                allDiagnosticText += '1. Browser doesn\'t support automatic prompts - Use manual installation\n';
+                allDiagnosticText += '2. User already dismissed prompt - Clear site data and try again\n';
+                allDiagnosticText += '3. Another PWA installed from same domain - Uninstall other PWAs first\n';
+                allDiagnosticText += '4. Browser rate-limiting - Wait 24 hours and try again\n';
+                allDiagnosticText += '5. Engagement metrics not met - Use the site more before installing\n\n';
+                allDiagnosticText += 'Manual Installation Methods:\n';
+                allDiagnosticText += '• Chrome/Edge: Menu (⋮) → Install FLOKTOID\n';
+                allDiagnosticText += '• Safari iOS: Share button → Add to Home Screen\n';
+                allDiagnosticText += '• Samsung: Menu → Add page to → Home screen\n';
+                allDiagnosticText += '• Firefox: Not supported - use Chrome or Edge\n';
+            }
+            
+            // Restore scroll position if preserving
+            if (preserveScroll) {
+                requestAnimationFrame(() => {
+                    window.scrollTo(0, scrollPos);
+                });
             }
         }
         
-        // Run diagnostics on load
-        runDiagnostics();
+        function copyAllDiagnostics() {
+            const textarea = document.createElement('textarea');
+            textarea.value = allDiagnosticText;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy Diagnostics';
+                    btn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                alert('Failed to copy. Please select text manually.');
+            }
+            
+            document.body.removeChild(textarea);
+        }
         
-        // Re-run every 2 seconds to catch changes
-        setInterval(runDiagnostics, 2000);
+        function refreshDiagnostics() {
+            // Reset countdown
+            countdown = 30;
+            updateCountdown();
+            runDiagnostics(true); // Preserve scroll position on manual refresh
+        }
+        
+        function startAutoRefresh() {
+            // Show refresh note
+            document.getElementById('refreshNote').style.display = 'block';
+            
+            // Clear any existing intervals
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            // Update countdown every second
+            countdownInterval = setInterval(() => {
+                countdown--;
+                updateCountdown();
+                if (countdown <= 0) {
+                    countdown = 30;
+                    runDiagnostics(true); // Preserve scroll on auto-refresh
+                }
+            }, 1000);
+        }
+        
+        function updateCountdown() {
+            const elem = document.getElementById('countdown');
+            if (elem) elem.textContent = countdown;
+        }
+        
+        // Run diagnostics on load
+        runDiagnostics().then(() => {
+            // Start auto-refresh after initial load
+            startAutoRefresh();
+        });
     </script>
 </body>
 </html>
