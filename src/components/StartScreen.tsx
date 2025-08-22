@@ -140,35 +140,35 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
           'Mobile: Long press the app icon → Remove/Uninstall');
   };
   return (
-    <div className="min-h-screen bg-black overflow-y-auto">
-      <div className="flex flex-col items-center p-4 pt-20">
-        <div className="text-center space-y-4 md:space-y-8 max-w-lg">
-        <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-2">
+    <div className="h-screen bg-black overflow-y-auto">
+      <div className="flex flex-col items-center justify-start min-h-full p-2 pt-2">
+        <div className="text-center space-y-1 md:space-y-2 max-w-lg">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-0">
           <span className="neon-text">FLOK</span>
           <span className="neon-pink">TOID</span>
         </h1>
         
-        <div className="text-sm sm:text-lg md:text-xl neon-yellow pulse-neon">
+        <div className="text-xs sm:text-sm md:text-base neon-yellow pulse-neon">
           Asteroids vs Evil Spaceships
         </div>
         
-        <div className="text-xs sm:text-sm md:text-base text-gray-300 max-w-md">
+        <div className="text-xs text-gray-300 max-w-md">
           Defend the energy dots!
         </div>
         
-        <div className="space-y-1">
+        <div className="space-y-0">
           {topPlayer ? (
-            <div className="text-sm sm:text-base text-yellow-400">
+            <div className="text-xs sm:text-sm text-yellow-400">
               24h Top Leader: {topPlayer.username} - {topPlayer.score.toLocaleString()}
             </div>
           ) : allTimeTopPlayer ? (
-            <div className="text-sm sm:text-base text-yellow-400">
+            <div className="text-xs sm:text-sm text-yellow-400">
               All-Time Leader: {allTimeTopPlayer.username} - {allTimeTopPlayer.score.toLocaleString()}
             </div>
           ) : null}
           <a
             href="/leaderboard"
-            className="text-xs sm:text-sm text-cyan-400 hover:text-cyan-300 underline"
+            className="text-xs text-cyan-400 hover:text-cyan-300 underline"
           >
             View Full Leaderboard
           </a>
@@ -178,12 +178,12 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
           Your username: <span className="text-cyan-300">{username}</span>
         </div>
         
-        <div className="text-sm sm:text-base text-gray-400">
-          Click and drag to launch asteroids. Stop the flock from stealing energy. Survive increasingly intense waves.
+        <div className="text-xs sm:text-sm text-gray-400">
+          Click and drag to launch asteroids. Stop the flock!
         </div>
         
         {highScore > 0 && (
-          <div className="text-lg sm:text-xl md:text-2xl neon-yellow">
+          <div className="text-sm sm:text-base md:text-lg neon-yellow">
             HIGH SCORE: {highScore.toString().padStart(6, '0')}
           </div>
         )}
@@ -191,7 +191,7 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
         {savedGame && onContinue && (
           <button
             onClick={onContinue}
-            className="px-6 sm:px-10 py-2 sm:py-3 text-base sm:text-lg md:text-xl font-bold bg-transparent border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,0,255,0.5)]"
+            className="px-4 sm:px-6 py-1 sm:py-2 text-sm sm:text-base md:text-lg font-bold bg-transparent border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,0,255,0.5)]"
           >
             CONTINUE GAME (W{savedGame.wave})
           </button>
@@ -199,13 +199,13 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
         
         <button
           onClick={() => onStart(false)}
-          className="px-8 sm:px-12 py-3 sm:py-4 text-lg sm:text-xl md:text-2xl font-bold bg-transparent border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)]"
+          className="px-6 sm:px-8 py-2 sm:py-3 text-base sm:text-lg md:text-xl font-bold bg-transparent border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)]"
         >
           START GAME
         </button>
         
         
-        <div className="text-xs sm:text-sm text-gray-600 mt-4 md:mt-8 space-y-2">
+        <div className="text-xs text-gray-600 mt-1 space-y-0">
           <div className="text-cyan-400 font-mono">{VERSION_INFO.displayVersion}</div>
           <div className="flex items-center justify-center gap-3">
             <button 
@@ -224,8 +224,8 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
               GitHub
             </a>
           </div>
-          <div className="pt-4 space-y-3 border-t border-gray-700 mt-4">
-            <div className="bg-blue-900/20 p-3 rounded border border-blue-400">
+          <div className="pt-2 space-y-2 border-t border-gray-700 mt-2">
+            <div className="bg-blue-900/20 p-2 rounded border border-blue-400">
               {isInstalled ? (
                 <button
                   onClick={handleUninstallClick}
@@ -236,13 +236,13 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
               ) : canInstall ? (
                 <button
                   onClick={handleInstallClick}
-                  className="text-blue-400 hover:text-white text-lg underline font-bold transition-colors animate-pulse block mx-auto bg-blue-600/30 px-6 py-2 rounded"
+                  className="text-blue-400 hover:text-white text-base underline font-bold transition-colors animate-pulse block mx-auto bg-blue-600/30 px-4 py-1 rounded"
                   style={{ textDecorationThickness: '2px', textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}
                 >
                   INSTALL AS APP
                 </button>
               ) : (
-                <div className="text-yellow-300 text-base font-bold">
+                <div className="text-yellow-300 text-sm font-bold">
                   Install not available
                 </div>
               )}
@@ -250,17 +250,14 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
             <a
               href="/pwa-diagnostic"
               target="_blank"
-              className="text-cyan-300 hover:text-white text-base underline font-bold transition-colors block bg-cyan-900/30 px-4 py-2 rounded border border-cyan-400"
+              className="text-cyan-300 hover:text-white text-sm underline font-bold transition-colors block bg-cyan-900/30 px-3 py-1 rounded border border-cyan-400"
               style={{ textShadow: '0 0 10px rgba(6, 182, 212, 0.8)' }}
             >
               PWA INSTALLATION ANALYSIS
             </a>
           </div>
-          
-          {/* Add bottom padding to ensure scrollability */}
-          <div className="h-20"></div>
         </div>
-      </div>
+        </div>
       </div>
     </div>
   );
