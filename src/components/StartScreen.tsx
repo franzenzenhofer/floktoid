@@ -98,7 +98,16 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
   }, []);
   
   const handleInstallClick = async () => {
-    if (!deferredPromptRef.current) return;
+    if (!deferredPromptRef.current) {
+      // No install prompt available yet, but inform user how to install
+      alert('To install FLOKTOID as an app:\n\n' +
+            'Chrome/Edge: Click the install icon in the address bar (⊕ or ⬇️)\n' +
+            'Firefox: Not supported yet\n' +
+            'Safari iOS: Tap Share → Add to Home Screen\n' +
+            'Samsung Internet: Menu → Add page to → Home screen\n\n' +
+            'Or try refreshing the page and clicking Install again.');
+      return;
+    }
     
     // Show install prompt
     deferredPromptRef.current.prompt();
@@ -195,7 +204,7 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
         </button>
         
         
-        <div className="text-xs sm:text-sm text-gray-600 mt-4 md:mt-8 space-y-1">
+        <div className="text-xs sm:text-sm text-gray-600 mt-4 md:mt-8 space-y-2">
           <div className="text-cyan-400 font-mono">{VERSION_INFO.displayVersion}</div>
           <div className="flex items-center justify-center gap-3">
             <button 
@@ -213,25 +222,30 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
             >
               GitHub
             </a>
-            <span className="text-gray-700">|</span>
+          </div>
+          <div className="pt-2">
             {isInstalled ? (
               <button
                 onClick={handleUninstallClick}
-                className="text-red-500 hover:text-red-300 text-xs underline font-bold transition-colors"
+                className="text-red-500 hover:text-red-300 text-sm underline font-bold transition-colors"
               >
-                Uninstall
+                🗑️ Uninstall PWA
               </button>
             ) : canInstall ? (
               <button
                 onClick={handleInstallClick}
-                className="text-blue-500 hover:text-blue-300 text-xs underline font-bold transition-colors animate-pulse"
+                className="text-blue-500 hover:text-blue-300 text-sm underline font-bold transition-colors animate-pulse"
               >
-                Install
+                📱 Install as App
               </button>
             ) : (
-              <span className="text-gray-700 text-xs">
-                Install (not available)
-              </span>
+              <button
+                onClick={handleInstallClick}
+                className="text-gray-500 hover:text-gray-400 text-sm underline transition-colors"
+                title="Install prompt will appear when available"
+              >
+                📱 Install (check browser support)
+              </button>
             )}
           </div>
         </div>
