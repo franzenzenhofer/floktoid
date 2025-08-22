@@ -140,8 +140,9 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
           'Mobile: Long press the app icon → Remove/Uninstall');
   };
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 overflow-y-auto">
-      <div className="text-center space-y-4 md:space-y-8 max-w-lg my-auto py-8">
+    <div className="min-h-screen bg-black overflow-y-auto">
+      <div className="flex flex-col items-center p-4 pt-20">
+        <div className="text-center space-y-4 md:space-y-8 max-w-lg">
         <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-2">
           <span className="neon-text">FLOK</span>
           <span className="neon-pink">TOID</span>
@@ -255,7 +256,11 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
               PWA INSTALLATION ANALYSIS
             </a>
           </div>
+          
+          {/* Add bottom padding to ensure scrollability */}
+          <div className="h-20"></div>
         </div>
+      </div>
       </div>
     </div>
   );
