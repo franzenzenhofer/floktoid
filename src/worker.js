@@ -26,6 +26,11 @@ export default {
     if (url.pathname === '/api/leaderboard/top' && request.method === 'GET') {
       return handleGetLeaderboard(env, corsHeaders);
     }
+
+    // Handle generic leaderboard API endpoint
+    if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
+      return handleGetLeaderboard(env, corsHeaders);
+    }
     
     // Handle leaderboard route
     if (url.pathname === '/leaderboard' || url.pathname === '/leaderboard/') {
