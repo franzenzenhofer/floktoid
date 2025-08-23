@@ -1,5 +1,6 @@
-// Service Worker for FLOKTOID PWA - ONLINE FIRST!
-const CACHE_VERSION = 'floktoid-v3-' + Date.now(); // Bust cache on every deploy
+// Service Worker for FLOKTOID PWA - AGGRESSIVE ONLINE FIRST!
+const CACHE_VERSION = 'floktoid-v4-online-first';
+let isOnline = true;
 const urlsToCache = [
   '/',
   '/index.html',
@@ -39,7 +40,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - ONLINE FIRST, cache as fallback only
+// Fetch event - AGGRESSIVE ONLINE FIRST with status updates
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
@@ -47,47 +48,71 @@ self.addEventListener('fetch', (event) => {
   }
   
   event.respondWith(
-    // Try network FIRST
-    fetch(event.request)
+    // ALWAYS try network FIRST with aggressive timeout
+    Promise.race([
+      fetch(event.request),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('timeout')), 3000)
+      )
+    ])
       .then((response) => {
-        // If network succeeds, cache it and return
+        // Network succeeded - we're ONLINE!
+        if (!isOnline) {
+          isOnline = true;
+          // Notify all clients we're back online
+          self.clients.matchAll().then(clients => {
+            clients.forEach(client => {
+              client.postMessage({ type: 'NETWORK_STATUS', online: true });
+            });
+          });
+        }
+        
+        // Aggressively update cache for next time
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
-          
-          caches.open(CACHE_VERSION)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+          caches.open(CACHE_VERSION).then((cache) => {
+            cache.put(event.request, responseToCache);
+            console.log('[SW] Cache aggressively updated:', event.request.url);
+          });
         }
         
         return response;
       })
       .catch(() => {
-        // Network failed - try cache as FALLBACK only
-        console.log('[SW] Network failed, trying cache for:', event.request.url);
+        // Network failed - we're OFFLINE!
+        if (isOnline) {
+          isOnline = false;
+          // Notify all clients we're offline
+          self.clients.matchAll().then(clients => {
+            clients.forEach(client => {
+              client.postMessage({ type: 'NETWORK_STATUS', online: false });
+            });
+          });
+        }
+        
+        console.log('[SW] OFFLINE - serving from cache:', event.request.url);
         return caches.match(event.request)
           .then((response) => {
             if (response) {
-              console.log('[SW] Found in cache:', event.request.url);
               return response;
             }
             
-            // If not in cache and it's a navigation request, return index.html
+            // Navigation requests get index
             if (event.request.mode === 'navigate') {
               return caches.match('/index.html');
             }
             
-            // Otherwise return a proper error
-            return new Response('Network error and no cache available', {
+            // Return offline message
+            return new Response('Offline - Resource not cached', {
               status: 503,
-              statusText: 'Service Unavailable'
+              statusText: 'Offline'
             });
           });
       })
   );
 });
 
-// Message event - handle updates
+// Message event - handle updates and status checks
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') {
     self.skipWaiting();
@@ -99,10 +124,12 @@ self.addEventListener('message', (event) => {
       names.forEach(name => caches.delete(name));
     });
   }
-});
-
-// Clear old caches on startup
-self.addEventListener('message', (event) => {
+  
+  // Handle status check
+  if (event.data === 'checkStatus') {
+    event.ports[0].postMessage({ online: isOnline });
+  }
+  
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }

@@ -248,11 +248,26 @@
             addResult('Installation Status', !isStandalone,
                 isStandalone ? 'App is ALREADY installed as PWA' : 'App is NOT installed yet ✓');
             
-            // 7. Browser Detection
+            // 7. Detailed Browser & Device Analysis
             const ua = navigator.userAgent;
             const browserInfo = detectBrowser(ua);
-            addResult('Browser', browserInfo.supportsPWA,
-                `${browserInfo.name} ${browserInfo.version} - ${browserInfo.message}`, 
+            const deviceInfo = detectDevice(ua);
+            
+            // Add detailed browser analysis
+            addResult('Browser Analysis', true, 
+                `Browser: ${browserInfo.name} ${browserInfo.version}\n` +
+                `Platform: ${deviceInfo.platform}\n` +
+                `Device: ${deviceInfo.device}\n` +
+                `OS: ${deviceInfo.os}\n` +
+                `Mobile: ${deviceInfo.isMobile ? 'Yes' : 'No'}\n` +
+                `iOS Device: ${deviceInfo.isIOS ? 'Yes' : 'No'}\n` +
+                `Android Device: ${deviceInfo.isAndroid ? 'Yes' : 'No'}`,
+                'info');
+            
+            // PWA Support assessment
+            addResult('PWA Support', browserInfo.supportsPWA,
+                `${browserInfo.message}\n` +
+                `${deviceInfo.pwaNote}`, 
                 browserInfo.supportsPWA ? 'pass' : 'warn');
             
             // 8. Check beforeinstallprompt support
@@ -336,26 +351,85 @@
             }
             
             function detectBrowser(ua) {
-                if (/Edg\//.test(ua)) {
-                    return { name: 'Edge', version: ua.match(/Edg\/(\d+)/)?.[1], supportsPWA: true, 
-                            message: 'Full PWA support ✓' };
+                // Check iOS browsers first (they all use WebKit)
+                if (/CriOS/.test(ua)) {
+                    const version = ua.match(/CriOS\/(\d+)/)?.[1];
+                    return { name: 'Chrome iOS', version, supportsPWA: false,
+                            message: 'Chrome on iOS cannot install PWAs - Use Safari instead' };
+                } else if (/FxiOS/.test(ua)) {
+                    const version = ua.match(/FxiOS\/(\d+)/)?.[1];
+                    return { name: 'Firefox iOS', version, supportsPWA: false,
+                            message: 'Firefox on iOS cannot install PWAs - Use Safari instead' };
+                } else if (/EdgiOS/.test(ua)) {
+                    const version = ua.match(/EdgiOS\/(\d+)/)?.[1];
+                    return { name: 'Edge iOS', version, supportsPWA: false,
+                            message: 'Edge on iOS cannot install PWAs - Use Safari instead' };
+                } else if (/Edg\//.test(ua)) {
+                    const version = ua.match(/Edg\/(\d+)/)?.[1];
+                    return { name: 'Microsoft Edge', version, supportsPWA: true, 
+                            message: 'Full PWA support with install prompts ✓' };
                 } else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) {
                     const version = parseInt(ua.match(/Chrome\/(\d+)/)?.[1] || 0);
-                    return { name: 'Chrome', version, supportsPWA: version >= 73,
-                            message: version >= 73 ? 'Full PWA support ✓' : 'Update Chrome to v73+ for PWA support' };
+                    return { name: 'Google Chrome', version, supportsPWA: version >= 73,
+                            message: version >= 73 ? 'Full PWA support with install prompts ✓' : 'Update Chrome to v73+ for PWA' };
                 } else if (/Firefox\//.test(ua)) {
-                    return { name: 'Firefox', version: ua.match(/Firefox\/(\d+)/)?.[1], supportsPWA: false,
-                            message: 'Limited PWA support - manual installation only' };
+                    const version = ua.match(/Firefox\/(\d+)/)?.[1];
+                    return { name: 'Mozilla Firefox', version, supportsPWA: false,
+                            message: 'Firefox has limited PWA support' };
                 } else if (/Safari/.test(ua) && !/Chrome/.test(ua)) {
-                    return { name: 'Safari', version: ua.match(/Version\/(\d+)/)?.[1], supportsPWA: true,
-                            message: 'PWA support via "Add to Home Screen"' };
+                    const version = ua.match(/Version\/(\d+)/)?.[1];
+                    return { name: 'Safari', version, supportsPWA: true,
+                            message: 'PWA support via Share → Add to Home Screen' };
                 } else if (/Samsung/.test(ua)) {
                     return { name: 'Samsung Internet', version: '', supportsPWA: true,
                             message: 'Full PWA support ✓' };
                 } else {
                     return { name: 'Unknown Browser', version: '', supportsPWA: false,
-                            message: 'PWA support unknown' };
+                            message: 'Try Chrome or Edge for PWA support' };
                 }
+            }
+            
+            function detectDevice(ua) {
+                const info = {
+                    platform: navigator.platform || 'Unknown',
+                    device: 'Unknown',
+                    os: 'Unknown',
+                    isMobile: /Mobile|Android|iPhone|iPad|iPod/.test(ua),
+                    isIOS: /iPhone|iPad|iPod/.test(ua),
+                    isAndroid: /Android/.test(ua),
+                    pwaNote: ''
+                };
+                
+                // Detailed device detection
+                if (/iPhone/.test(ua)) {
+                    info.device = 'iPhone';
+                    const iosVersion = (ua.match(/OS (\d+_\d+)/) || ['', ''])[1].replace('_', '.');
+                    info.os = 'iOS ' + iosVersion;
+                    info.pwaNote = '📱 iPhone: Open Safari → Tap Share → Add to Home Screen';
+                } else if (/iPad/.test(ua)) {
+                    info.device = 'iPad';
+                    const iosVersion = (ua.match(/OS (\d+_\d+)/) || ['', ''])[1].replace('_', '.');
+                    info.os = 'iPadOS ' + iosVersion;
+                    info.pwaNote = '📱 iPad: Open Safari → Tap Share → Add to Home Screen';
+                } else if (/Android/.test(ua)) {
+                    info.device = 'Android Device';
+                    info.os = 'Android ' + (ua.match(/Android (\d+\.?\d*)/) || ['', ''])[1];
+                    info.pwaNote = '🤖 Android: Chrome will show install prompt or use Menu → Install App';
+                } else if (/Mac/.test(ua)) {
+                    info.device = 'Mac';
+                    info.os = 'macOS';
+                    info.pwaNote = '💻 Mac: Chrome/Edge shows install icon in address bar';
+                } else if (/Windows/.test(ua)) {
+                    info.device = 'Windows PC';
+                    info.os = 'Windows ' + (ua.match(/Windows NT (\d+\.\d+)/) || ['', ''])[1];
+                    info.pwaNote = '💻 Windows: Chrome/Edge shows install icon in address bar';
+                } else if (/Linux/.test(ua)) {
+                    info.device = 'Linux PC';
+                    info.os = 'Linux';
+                    info.pwaNote = '🐧 Linux: Chrome/Edge shows install icon in address bar';
+                }
+                
+                return info;
             }
             
             function addSummary() {

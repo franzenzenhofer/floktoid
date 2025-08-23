@@ -24,6 +24,7 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
   const [allTimeTopPlayer, setAllTimeTopPlayer] = useState<LeaderboardEntry | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   
   useEffect(() => {
@@ -43,9 +44,22 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
         .then(registration => {
           console.log('Service Worker registered');
           registration.update();
+          
+          // Listen for messages from service worker
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data.type === 'NETWORK_STATUS') {
+              setIsOnline(event.data.online);
+            }
+          });
         })
         .catch(err => console.error('Service Worker registration failed:', err));
     }
+    
+    // Listen for online/offline events
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     
     // Check if already installed as PWA
     if (window.matchMedia('(display-mode: standalone)').matches || 
@@ -75,6 +89,8 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
   
@@ -223,8 +239,12 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
                   INSTALL AS APP
                 </button>
               ) : (
-                <div className="text-yellow-300 text-sm font-bold">
-                  Install not available
+                <div className="text-yellow-300 text-xs">
+                  {navigator.userAgent.includes('CriOS') || navigator.userAgent.includes('FxiOS') ? (
+                    <div>Use Safari → Share → Add to Home</div>
+                  ) : (
+                    <div>Menu (⋮) → Install App</div>
+                  )}
                 </div>
               )}
             </div>
@@ -238,6 +258,17 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
             </a>
           </div>
         </div>
+        </div>
+        
+        {/* Online/Offline Indicator */}
+        <div className="fixed bottom-2 left-2 px-3 py-1 rounded text-xs" 
+             style={{
+               backgroundColor: isOnline ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 165, 0, 0.2)',
+               border: `1px solid ${isOnline ? '#00ff0080' : '#ffa500'}`,
+               color: isOnline ? '#00ff00' : '#ffa500',
+               textShadow: isOnline ? '0 0 3px #00ff0040' : '0 0 5px #ffa50080'
+             }}>
+          {isOnline ? 'online' : 'OFFLINE MODE - Scores saved locally'}
         </div>
       </div>
     </div>
