@@ -24,6 +24,28 @@ export function Game() {
     return saved ? parseInt(saved) : 0;
   });
 
+  // Manage scroll prevention based on game state
+  useEffect(() => {
+    const preventScroll = (e: TouchEvent) => e.preventDefault();
+    const preventGesture = (e: Event) => e.preventDefault();
+    
+    if (gameState === 'playing') {
+      // Only prevent scrolling during gameplay
+      document.addEventListener('touchmove', preventScroll, { passive: false });
+      document.addEventListener('gesturestart', preventGesture);
+      document.addEventListener('gesturechange', preventGesture);
+      document.addEventListener('gestureend', preventGesture);
+    }
+    
+    return () => {
+      // Clean up when game state changes or component unmounts
+      document.removeEventListener('touchmove', preventScroll);
+      document.removeEventListener('gesturestart', preventGesture);
+      document.removeEventListener('gesturechange', preventGesture);
+      document.removeEventListener('gestureend', preventGesture);
+    };
+  }, [gameState]);
+
   useEffect(() => {
     if (gameState === 'playing' && canvasRef.current) {
       const initEngine = async () => {
