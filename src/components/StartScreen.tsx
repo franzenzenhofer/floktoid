@@ -133,8 +133,8 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
           'Mobile: Long press the app icon → Remove/Uninstall');
   };
   return (
-    <div className="h-screen bg-black overflow-y-auto">
-      <div className="flex flex-col items-center justify-center min-h-full px-4 py-6">
+    <div className="min-h-screen bg-black overflow-y-auto">
+      <div className="flex flex-col items-center px-4 py-6">
         <div className="text-center w-full max-w-sm sm:max-w-md md:max-w-lg space-y-3">
         {/* Title - Mobile first sizing */}
         <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold">
@@ -267,10 +267,9 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
             </a>
           </div>
         </div>
-        </div>
         
-        {/* Online/Offline Indicator - Mobile optimized */}
-        <div className="fixed bottom-2 left-2 right-2 sm:right-auto px-2 py-1 rounded text-xs sm:text-sm text-center sm:text-left" 
+        {/* Online/Offline Indicator - At the very bottom */}
+        <div className="mt-6 px-3 py-1 rounded text-xs sm:text-sm" 
              style={{
                backgroundColor: isOnline ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 165, 0, 0.2)',
                border: `1px solid ${isOnline ? '#00ff0080' : '#ffa500'}`,
@@ -278,11 +277,12 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
                textShadow: isOnline ? '0 0 3px #00ff0040' : '0 0 5px #ffa50080'
              }}>
           {isOnline ? 'online' : (
-            <span className="block sm:inline">
+            <span>
               <span className="sm:hidden">OFFLINE</span>
               <span className="hidden sm:inline">OFFLINE MODE - Scores saved locally</span>
             </span>
           )}
+        </div>
         </div>
       </div>
     </div>
