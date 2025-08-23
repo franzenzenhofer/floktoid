@@ -294,7 +294,7 @@ export function Game() {
   };
 
   return (
-    <div className={gameState === 'leaderboard' ? '' : 'game-container'}>
+    <div className={gameState === 'playing' || gameState === 'gameover' ? 'game-container' : ''}>
       {gameState === 'menu' && (
         <StartScreen 
           onStart={handleStart}
