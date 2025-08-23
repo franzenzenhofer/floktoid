@@ -147,7 +147,7 @@ export class FlockingSystem {
       }
     }
     
-    // Avoid asteroids
+    // Avoid asteroids with smooth gradient force to prevent jittering
     const avoid = { x: 0, y: 0 };
     for (const ast of asteroids) {
       const dx = ast.x - boid.x;
@@ -156,9 +156,18 @@ export class FlockingSystem {
       const r = ast.size + FLOCKING.RADIUS.AVOIDANCE;
       
       if (d2 < r * r && d2 > 0) {
-        const inv = 1 / Math.sqrt(d2);
-        avoid.x -= dx * inv * 500;
-        avoid.y -= dy * inv * 500;
+        const dist = Math.sqrt(d2);
+        // SMOOTH FORCE: Use quadratic falloff instead of 1/distance
+        // This prevents exponential force spike near collision boundary
+        // Force = max_force * (1 - distance/radius)^2
+        const normalizedDist = dist / r;
+        const forceMagnitude = 300 * Math.pow(1 - normalizedDist, 2);
+        
+        // Apply force in opposite direction of asteroid
+        const dirX = dx / dist;
+        const dirY = dy / dist;
+        avoid.x -= dirX * forceMagnitude;
+        avoid.y -= dirY * forceMagnitude;
       }
     }
     
