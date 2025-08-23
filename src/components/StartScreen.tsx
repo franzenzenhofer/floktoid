@@ -44,22 +44,18 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
         .then(registration => {
           console.log('Service Worker registered');
           registration.update();
-          
-          // Listen for messages from service worker
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data.type === 'NETWORK_STATUS') {
-              setIsOnline(event.data.online);
-            }
-          });
         })
         .catch(err => console.error('Service Worker registration failed:', err));
     }
     
-    // Listen for online/offline events
+    // Listen for online/offline events - use browser's built-in detection
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    
+    // Check current status
+    setIsOnline(navigator.onLine);
     
     // Check if already installed as PWA
     if (window.matchMedia('(display-mode: standalone)').matches || 
@@ -138,76 +134,88 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
   };
   return (
     <div className="h-screen bg-black overflow-y-auto">
-      <div className="flex flex-col items-center justify-start min-h-full p-2 pt-2">
-        <div className="text-center space-y-1 md:space-y-2 max-w-lg">
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-0">
+      <div className="flex flex-col items-center justify-center min-h-full px-4 py-6">
+        <div className="text-center w-full max-w-sm sm:max-w-md md:max-w-lg space-y-3">
+        {/* Title - Mobile first sizing */}
+        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold">
           <span className="neon-text">FLOK</span>
           <span className="neon-pink">TOID</span>
         </h1>
         
-        <div className="text-xs sm:text-sm md:text-base neon-yellow pulse-neon">
+        {/* Subtitle - Better mobile sizing */}
+        <div className="text-sm sm:text-base md:text-lg neon-yellow pulse-neon">
           Asteroids vs Evil Spaceships
         </div>
         
-        <div className="text-xs text-gray-300 max-w-md">
+        <div className="text-xs sm:text-sm text-gray-300">
           Defend the energy dots!
         </div>
         
-        <div className="space-y-0">
+        {/* Leaderboard - Mobile responsive */}
+        <div className="space-y-1">
           {topPlayer ? (
-            <div className="text-xs sm:text-sm text-yellow-400">
-              24h Top Leader: {topPlayer.username} - {topPlayer.score.toLocaleString()}
+            <div className="text-sm sm:text-base text-yellow-400">
+              <span className="block sm:inline">24h Leader:</span>
+              <span className="block sm:inline sm:ml-1">{topPlayer.username} - {topPlayer.score.toLocaleString()}</span>
             </div>
           ) : allTimeTopPlayer ? (
-            <div className="text-xs sm:text-sm text-yellow-400">
-              All-Time Leader: {allTimeTopPlayer.username} - {allTimeTopPlayer.score.toLocaleString()}
+            <div className="text-sm sm:text-base text-yellow-400">
+              <span className="block sm:inline">All-Time:</span>
+              <span className="block sm:inline sm:ml-1">{allTimeTopPlayer.username} - {allTimeTopPlayer.score.toLocaleString()}</span>
             </div>
           ) : null}
           <a
             href="/leaderboard"
-            className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+            className="text-sm sm:text-base text-cyan-400 hover:text-cyan-300 underline block"
           >
             View Full Leaderboard
           </a>
         </div>
         
-        <div className="text-xs sm:text-sm text-gray-500">
-          Your username: <span className="text-cyan-300">{username}</span>
+        {/* User info */}
+        <div className="text-sm sm:text-base text-gray-500">
+          Player: <span className="text-cyan-300">{username}</span>
         </div>
         
-        <div className="text-xs sm:text-sm text-gray-400">
+        {/* Instructions - Hidden on smallest screens */}
+        <div className="hidden sm:block text-sm text-gray-400">
           Click and drag to launch asteroids. Stop the flock!
         </div>
         
+        {/* High Score - Bigger on mobile */}
         {highScore > 0 && (
-          <div className="text-sm sm:text-base md:text-lg neon-yellow">
+          <div className="text-base sm:text-lg md:text-xl neon-yellow">
             HIGH SCORE: {highScore.toString().padStart(6, '0')}
           </div>
         )}
         
-        {savedGame && onContinue && (
+        {/* Game Buttons - Full width on mobile */}
+        <div className="space-y-3 w-full">
+          {savedGame && onContinue && (
+            <button
+              onClick={onContinue}
+              className="w-full px-6 py-3 text-base sm:text-lg font-bold bg-transparent border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,0,255,0.5)]"
+            >
+              CONTINUE WAVE {savedGame.wave}
+            </button>
+          )}
+          
           <button
-            onClick={onContinue}
-            className="px-4 sm:px-6 py-1 sm:py-2 text-sm sm:text-base md:text-lg font-bold bg-transparent border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,0,255,0.5)]"
+            onClick={() => onStart(false)}
+            className="w-full px-6 py-4 text-lg sm:text-xl font-bold bg-transparent border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)]"
           >
-            CONTINUE GAME (W{savedGame.wave})
+            START GAME
           </button>
-        )}
-        
-        <button
-          onClick={() => onStart(false)}
-          className="px-6 sm:px-8 py-2 sm:py-3 text-base sm:text-lg md:text-xl font-bold bg-transparent border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)]"
-        >
-          START GAME
-        </button>
+        </div>
         
         
-        <div className="text-xs text-gray-600 mt-1 space-y-0">
+        {/* Footer - Better spacing on mobile */}
+        <div className="text-xs sm:text-sm text-gray-600 mt-4 space-y-2">
           <div className="text-cyan-400 font-mono">{VERSION_INFO.displayVersion}</div>
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-4">
             <button 
               onClick={() => onStart(true)} 
-              className="text-gray-700 hover:text-gray-500 text-xs underline"
+              className="text-gray-700 hover:text-gray-500 text-xs sm:text-sm underline"
             >
               dev
             </button>
@@ -216,32 +224,33 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
               href="https://github.com/franzenzenhofer/floktoid" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-gray-600 hover:text-cyan-400 text-xs underline transition-colors"
+              className="text-gray-600 hover:text-cyan-400 text-xs sm:text-sm underline transition-colors"
             >
               GitHub
             </a>
           </div>
-          <div className="pt-2 space-y-2 border-t border-gray-700 mt-2">
-            <div className="bg-blue-900/20 p-2 rounded border border-blue-400">
+          {/* PWA Section - Better mobile spacing */}
+          <div className="pt-3 space-y-3 border-t border-gray-700 mt-3">
+            <div className="bg-blue-900/20 p-3 rounded border border-blue-400">
               {isInstalled ? (
                 <button
                   onClick={handleUninstallClick}
-                  className="text-red-400 hover:text-red-200 text-base underline font-bold transition-colors block mx-auto"
+                  className="text-red-400 hover:text-red-200 text-base sm:text-lg underline font-bold transition-colors block mx-auto px-4 py-2"
                 >
                   UNINSTALL PWA
                 </button>
               ) : canInstall ? (
                 <button
                   onClick={handleInstallClick}
-                  className="text-blue-400 hover:text-white text-base underline font-bold transition-colors animate-pulse block mx-auto bg-blue-600/30 px-4 py-1 rounded"
+                  className="text-blue-400 hover:text-white text-base sm:text-lg underline font-bold transition-colors animate-pulse block mx-auto bg-blue-600/30 px-6 py-2 rounded"
                   style={{ textDecorationThickness: '2px', textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}
                 >
                   INSTALL AS APP
                 </button>
               ) : (
-                <div className="text-yellow-300 text-xs">
+                <div className="text-yellow-300 text-sm sm:text-base px-2">
                   {navigator.userAgent.includes('CriOS') || navigator.userAgent.includes('FxiOS') ? (
-                    <div>Use Safari → Share → Add to Home</div>
+                    <div>Safari → Share → Add to Home</div>
                   ) : (
                     <div>Menu (⋮) → Install App</div>
                   )}
@@ -251,7 +260,7 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
             <a
               href="/pwa-diagnostic"
               target="_blank"
-              className="text-cyan-300 hover:text-white text-sm underline font-bold transition-colors block bg-cyan-900/30 px-3 py-1 rounded border border-cyan-400"
+              className="text-cyan-300 hover:text-white text-sm sm:text-base underline font-bold transition-colors block bg-cyan-900/30 px-4 py-2 rounded border border-cyan-400"
               style={{ textShadow: '0 0 10px rgba(6, 182, 212, 0.8)' }}
             >
               PWA INSTALLATION ANALYSIS
@@ -260,15 +269,20 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
         </div>
         </div>
         
-        {/* Online/Offline Indicator */}
-        <div className="fixed bottom-2 left-2 px-3 py-1 rounded text-xs" 
+        {/* Online/Offline Indicator - Mobile optimized */}
+        <div className="fixed bottom-2 left-2 right-2 sm:right-auto px-2 py-1 rounded text-xs sm:text-sm text-center sm:text-left" 
              style={{
                backgroundColor: isOnline ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 165, 0, 0.2)',
                border: `1px solid ${isOnline ? '#00ff0080' : '#ffa500'}`,
                color: isOnline ? '#00ff00' : '#ffa500',
                textShadow: isOnline ? '0 0 3px #00ff0040' : '0 0 5px #ffa50080'
              }}>
-          {isOnline ? 'online' : 'OFFLINE MODE - Scores saved locally'}
+          {isOnline ? 'online' : (
+            <span className="block sm:inline">
+              <span className="sm:hidden">OFFLINE</span>
+              <span className="hidden sm:inline">OFFLINE MODE - Scores saved locally</span>
+            </span>
+          )}
         </div>
       </div>
     </div>

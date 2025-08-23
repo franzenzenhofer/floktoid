@@ -1,6 +1,5 @@
-// Service Worker for FLOKTOID PWA - AGGRESSIVE ONLINE FIRST!
-const CACHE_VERSION = 'floktoid-v4-online-first';
-let isOnline = true;
+// Service Worker for FLOKTOID PWA - ONLINE FIRST!
+const CACHE_VERSION = 'floktoid-v5-online-first';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -40,7 +39,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - AGGRESSIVE ONLINE FIRST with status updates
+// Fetch event - ONLINE FIRST, cache as fallback
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
@@ -48,52 +47,30 @@ self.addEventListener('fetch', (event) => {
   }
   
   event.respondWith(
-    // ALWAYS try network FIRST with aggressive timeout
-    Promise.race([
-      fetch(event.request),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('timeout')), 3000)
-      )
-    ])
+    // Try network first
+    fetch(event.request)
       .then((response) => {
-        // Network succeeded - we're ONLINE!
-        if (!isOnline) {
-          isOnline = true;
-          // Notify all clients we're back online
-          self.clients.matchAll().then(clients => {
-            clients.forEach(client => {
-              client.postMessage({ type: 'NETWORK_STATUS', online: true });
-            });
-          });
-        }
-        
-        // Aggressively update cache for next time
+        // Network succeeded - update cache
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
           caches.open(CACHE_VERSION).then((cache) => {
             cache.put(event.request, responseToCache);
-            console.log('[SW] Cache aggressively updated:', event.request.url);
           });
         }
-        
         return response;
       })
       .catch(() => {
-        // Network failed - we're OFFLINE!
-        if (isOnline) {
-          isOnline = false;
-          // Notify all clients we're offline
-          self.clients.matchAll().then(clients => {
-            clients.forEach(client => {
-              client.postMessage({ type: 'NETWORK_STATUS', online: false });
-            });
-          });
-        }
-        
-        console.log('[SW] OFFLINE - serving from cache:', event.request.url);
+        // Network failed - use cache as fallback
+        console.log('[SW] Network failed, trying cache:', event.request.url);
         return caches.match(event.request)
           .then((response) => {
             if (response) {
+              // Notify client we're serving from cache
+              self.clients.matchAll().then(clients => {
+                clients.forEach(client => {
+                  client.postMessage({ type: 'SERVING_FROM_CACHE', url: event.request.url });
+                });
+              });
               return response;
             }
             
@@ -102,17 +79,17 @@ self.addEventListener('fetch', (event) => {
               return caches.match('/index.html');
             }
             
-            // Return offline message
-            return new Response('Offline - Resource not cached', {
+            // Return error
+            return new Response('Network error and no cache', {
               status: 503,
-              statusText: 'Offline'
+              statusText: 'Service Unavailable'
             });
           });
       })
   );
 });
 
-// Message event - handle updates and status checks
+// Message event - handle updates
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') {
     self.skipWaiting();
@@ -123,11 +100,6 @@ self.addEventListener('message', (event) => {
     caches.keys().then((names) => {
       names.forEach(name => caches.delete(name));
     });
-  }
-  
-  // Handle status check
-  if (event.data === 'checkStatus') {
-    event.ports[0].postMessage({ online: isOnline });
   }
   
   if (event.data && event.data.type === 'SKIP_WAITING') {
