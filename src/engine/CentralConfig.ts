@@ -92,7 +92,7 @@ export const PHYSICS = {
   },
   FRICTION: {
     AIR_RESISTANCE: 0.95,
-    BOUNDARY_BOUNCE: 100,
+    BOUNDARY_BOUNCE: 50, // Reduced from 100 to prevent jittering near edges
   },
 } as const;
 
