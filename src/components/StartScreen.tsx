@@ -37,40 +37,21 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
     });
     
     // Check if app is already installed
+    // ALWAYS register service worker for PWA installability
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          console.log('Service Worker registered');
+          registration.update();
+        })
+        .catch(err => console.error('Service Worker registration failed:', err));
+    }
+    
+    // Check if already installed as PWA
     if (window.matchMedia('(display-mode: standalone)').matches || 
         window.matchMedia('(display-mode: fullscreen)').matches ||
         (window.navigator as unknown as Record<string, unknown>).standalone) {
       setIsInstalled(true);
-      
-      // Register service worker ONLY for installed PWA
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('Service Worker registered for installed PWA');
-            registration.update();
-          })
-          .catch(err => console.error('Service Worker registration failed:', err));
-      }
-    } else {
-      // NOT installed as PWA - UNREGISTER any service workers to ensure fresh content!
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          registrations.forEach(registration => {
-            registration.unregister();
-            console.log('Service Worker unregistered - using online version');
-          });
-        });
-        
-        // Clear all caches too
-        if ('caches' in window) {
-          caches.keys().then(names => {
-            names.forEach(name => {
-              caches.delete(name);
-              console.log('Cache cleared:', name);
-            });
-          });
-        }
-      }
     }
     
     // Listen for install prompt
