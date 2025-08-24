@@ -20,6 +20,8 @@ declare global {
       enableAutopilot?: () => void;
       disableAutopilot?: () => void;
       isAutopilotEnabled?: () => boolean;
+      getScore?: () => number;
+      getWave?: () => number;
     };
   }
 }
@@ -141,6 +143,55 @@ export function DevConsole() {
           console.info('[DEV] Autopilot enabled');
         }
         break;
+      case 'submitScore':
+        submitTestScore();
+        break;
+    }
+  };
+  
+  const submitTestScore = async () => {
+    console.info('[DEV] Testing leaderboard submission...');
+    
+    // Get current game state
+    const engine = window.gameEngine;
+    if (!engine) {
+      console.error('[DEV] No game engine available');
+      return;
+    }
+    
+    const score = engine.getScore ? engine.getScore() : Math.floor(Math.random() * 10000);
+    const wave = engine.getWave ? engine.getWave() : Math.floor(Math.random() * 30) + 1;
+    const gameId = `dev_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Import and use leaderboard service
+    try {
+      const { leaderboardService } = await import('../services/LeaderboardService');
+      console.info(`[DEV] Submitting score: ${score}, wave: ${wave}, gameId: ${gameId}`);
+      
+      const success = await leaderboardService.submitScore(score, wave, gameId);
+      
+      if (success) {
+        console.info('[DEV] ✅ Score submitted successfully!');
+        console.info('[DEV] Check leaderboard at: https://floktoid.franzai.com/leaderboard');
+        
+        // Verify it appears
+        setTimeout(async () => {
+          const data = await leaderboardService.getLeaderboard();
+          const username = localStorage.getItem('floktoid_username') || 'Unknown';
+          const found = data.last24h?.find((e: any) => e.gameId === gameId);
+          if (found) {
+            console.info('[DEV] ✅ VERIFIED: Score appears in leaderboard!', found);
+          } else {
+            console.error('[DEV] ❌ Score NOT found in leaderboard after submission');
+            console.error('[DEV] Username:', username);
+            console.error('[DEV] Last 24h entries:', data.last24h);
+          }
+        }, 2000);
+      } else {
+        console.error('[DEV] ❌ Score submission failed');
+      }
+    } catch (error) {
+      console.error('[DEV] Error during submission:', error);
     }
   };
   
@@ -230,6 +281,15 @@ export function DevConsole() {
                   }`}
                 >
                   {autopilotEnabled ? 'AUTO ON' : 'AUTO OFF'}
+                </button>
+                
+                <div className="border-t border-cyan-500/30 my-2" />
+                
+                <button
+                  onClick={() => spawnEnemy('submitScore')}
+                  className="block w-full bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-600 hover:to-purple-400 text-white text-xs font-bold px-3 py-2 rounded border-2 border-purple-300 transition-all hover:scale-105 shadow-lg"
+                >
+                  TEST SUBMIT
                 </button>
               </div>
             </div>

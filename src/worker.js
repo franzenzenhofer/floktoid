@@ -48,6 +48,7 @@ async function handleScoreSubmit(request, env, corsHeaders) {
   try {
     const { username, score, wave, gameId } = await request.json();
     
+    // Keep original username but validate it
     if (!username || typeof score !== 'number') {
       return new Response(JSON.stringify({ error: 'Invalid data' }), {
         status: 400,
@@ -71,28 +72,38 @@ async function handleScoreSubmit(request, env, corsHeaders) {
     
     // Check if this game already has an entry
     if (gameId) {
-      // List all scores for this user to find existing game entry
-      const userScores = await env.LEADERBOARD.list({ prefix: `score:${username}:` });
-      
-      for (const key of userScores.keys) {
-        const existingData = await env.LEADERBOARD.get(key.name);
-        if (existingData) {
-          const parsed = JSON.parse(existingData);
-          if (parsed.gameId === gameId) {
-            // Found existing entry for this game
-            if (score <= parsed.score) {
-              // New score is not higher, ignore it
-              console.log(`Ignoring lower score ${score} for game ${gameId}, keeping ${parsed.score}`);
-              return new Response(JSON.stringify({ success: true, message: 'Score not improved' }), {
-                headers: { 'Content-Type': 'application/json', ...corsHeaders }
-              });
-            } else {
-              // Delete the old lower score
-              console.log(`Replacing score ${parsed.score} with higher ${score} for game ${gameId}`);
-              await env.LEADERBOARD.delete(key.name);
+      try {
+        // List all scores for this user to find existing game entry
+        const userScores = await env.LEADERBOARD.list({ prefix: `score:${username}:` });
+        
+        for (const key of userScores.keys) {
+          try {
+            const existingData = await env.LEADERBOARD.get(key.name);
+            if (existingData) {
+              const parsed = JSON.parse(existingData);
+              if (parsed.gameId === gameId) {
+                // Found existing entry for this game
+                if (score <= parsed.score) {
+                  // New score is not higher, ignore it
+                  console.log(`Ignoring lower score ${score} for game ${gameId}, keeping ${parsed.score}`);
+                  return new Response(JSON.stringify({ success: true, message: 'Score not improved' }), {
+                    headers: { 'Content-Type': 'application/json', ...corsHeaders }
+                  });
+                } else {
+                  // Delete the old lower score
+                  console.log(`Replacing score ${parsed.score} with higher ${score} for game ${gameId}`);
+                  await env.LEADERBOARD.delete(key.name);
+                }
+              }
             }
+          } catch (err) {
+            console.error(`Error processing existing score ${key.name}:`, err);
+            // Continue with other entries
           }
         }
+      } catch (err) {
+        console.error(`Error listing scores for ${username}:`, err);
+        // Continue with submission anyway
       }
     }
     
@@ -111,8 +122,17 @@ async function handleScoreSubmit(request, env, corsHeaders) {
     
     // Update all-time high if needed
     const allTimeKey = `alltime:${username}`;
-    const existing = await env.LEADERBOARD.get(allTimeKey);
-    const existingScore = existing ? JSON.parse(existing).score : 0;
+    let existingScore = 0;
+    
+    try {
+      const existing = await env.LEADERBOARD.get(allTimeKey);
+      if (existing) {
+        existingScore = JSON.parse(existing).score || 0;
+      }
+    } catch (err) {
+      console.error(`Error reading all-time score for ${username}:`, err);
+      // Continue with 0 as existing score
+    }
     
     if (score > existingScore) {
       await env.LEADERBOARD.put(allTimeKey, JSON.stringify({
