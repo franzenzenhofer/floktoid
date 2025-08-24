@@ -102,21 +102,22 @@ export function Game() {
           engine.onWaveUpdate = (newWave) => {
             setWave(newWave);
             
-            // AUTO-SAVE at start of each new wave (not wave 1)
+            // KISS: Save when wave completes (new wave starts means previous completed)
             if (session && session.isActive() && newWave > 1) {
-              // Small delay to let wave initialize properly
-              setTimeout(() => {
-                const engineState = engine.getGameStateForSave();
-                const saveState: SavedGame = {
-                  gameId: session.getGameId(),
-                  score: engine.getScore(),
-                  wave: engine.getWave(), // Use actual current wave from engine
-                  timestamp: Date.now(),
-                  stolenDots: engineState.stolenDots
-                };
-                SavedGameState.save(saveState);
-                console.log('[AUTO-SAVE] Saved game at start of wave', engine.getWave());
-              }, 100);
+              const currentScore = engine.getScore();
+              const engineState = engine.getGameStateForSave();
+              
+              // Save state at completed wave
+              const saveState: SavedGame = {
+                gameId: session.getGameId(),
+                score: currentScore,
+                wave: newWave, // Save current wave we're starting
+                timestamp: Date.now(),
+                stolenDots: engineState.stolenDots
+              };
+              
+              SavedGameState.save(saveState);
+              console.log(`[WAVE-COMPLETE-SAVE] Wave ${newWave-1} complete, starting wave ${newWave}, score: ${currentScore}`);
             }
           };
           engine.onEnergyStatus = (critical: boolean) => setEnergyCritical(critical);
@@ -127,6 +128,19 @@ export function Game() {
             
             if (session) {
               session.updateProgress(finalScore, finalWave);
+              
+              // SAVE on game over
+              const engineState = engine.getGameStateForSave();
+              const saveState: SavedGame = {
+                gameId: session.getGameId(),
+                score: finalScore,
+                wave: finalWave,
+                timestamp: Date.now(),
+                stolenDots: engineState.stolenDots
+              };
+              SavedGameState.save(saveState);
+              console.log(`[GAME-OVER-SAVE] Final save - Wave: ${finalWave}, Score: ${finalScore}`);
+              
               session.endGame();
               
               // Final submission with game ID
@@ -145,19 +159,23 @@ export function Game() {
           engine.start();
           engineRef.current = engine;
           
-          // Save on page unload (browser close/refresh)
+          // Save on page unload (browser close/refresh) - ALWAYS SAVE
           const handleBeforeUnload = () => {
             if (session && session.isActive()) {
+              const currentScore = engine.getScore();
+              const currentWave = engine.getWave();
               const engineState = engine.getGameStateForSave();
+              
               const saveState: SavedGame = {
                 gameId: session.getGameId(),
-                score: engine.getScore(),
-                wave: engine.getWave(),
+                score: currentScore,
+                wave: currentWave,
                 timestamp: Date.now(),
                 stolenDots: engineState.stolenDots
               };
+              
               SavedGameState.save(saveState);
-              console.log('[UNLOAD-SAVE] Saved game on page unload');
+              console.log(`[UNLOAD-SAVE] Saved on page unload - Wave: ${currentWave}, Score: ${currentScore}`);
             }
           };
           window.addEventListener('beforeunload', handleBeforeUnload);
@@ -265,25 +283,26 @@ export function Game() {
       setWave(1);
       setEnergyCritical(false);
     }
-    // Save game state ONLY if game is active (not game over)
+    // KISS: Home button ALWAYS saves if playing
     else if (gameState === 'playing' && engineRef.current && gameSessionRef.current) {
       const engine = engineRef.current;
       const session = gameSessionRef.current;
+      const currentScore = engine.getScore();
+      const currentWave = engine.getWave();
       
-      // Only save if game is still running (not game over)
+      // ALWAYS SAVE when home button clicked (user wants to continue later)
       if (session.isActive()) {
         const engineState = engine.getGameStateForSave();
         const saveState: SavedGame = {
           gameId: session.getGameId(),
-          score: engine.getScore(),
-          wave: engine.getWave(),
+          score: currentScore,
+          wave: currentWave,
           timestamp: Date.now(),
-          // KISS: Just save the essentials
           stolenDots: engineState.stolenDots
         };
         
         SavedGameState.save(saveState);
-        console.log('[GAME] Saved game state for continuation');
+        console.log(`[HOME-BUTTON-SAVE] Saved game - Wave: ${currentWave}, Score: ${currentScore}`);
       }
     }
     

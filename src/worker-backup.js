@@ -48,13 +48,16 @@ async function handleScoreSubmit(request, env, corsHeaders) {
   try {
     const { username, score, wave, gameId } = await request.json();
     
-    // Validate input
+    // Keep original username but validate it
     if (!username || typeof score !== 'number') {
       return new Response(JSON.stringify({ error: 'Invalid data' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
     }
+    
+    // WORKAROUND: TauPi776 has corrupt data, use alternative name
+    const safeUsername = username === 'TauPi776' ? 'TauPi776_fixed' : username;
     
     // Skip if no KV binding
     if (!env.LEADERBOARD) {
@@ -66,32 +69,62 @@ async function handleScoreSubmit(request, env, corsHeaders) {
     
     const timestamp = Date.now();
     
-    // Sanitize username for KV key (KV keys have restrictions)
-    const safeKey = username.replace(/[^a-zA-Z0-9_-]/g, '_');
+    // CRITICAL FIX: Use gameId to prevent duplicate entries from same game!
+    // If no gameId provided, generate one (for backwards compatibility)
+    const uniqueGameId = gameId || `game_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Store new score - KISS approach
-    const key = `score:${safeKey}:${timestamp}`;
-    
-    try {
-      await env.LEADERBOARD.put(key, JSON.stringify({
-        username,
-        score,
-        wave: wave || null,
-        timestamp,
-        gameId: gameId || `game_${timestamp}`
-      }), {
-        expirationTtl: 86400 * 30 // 30 days
-      });
-    } catch (putError) {
-      console.error('Failed to store score:', putError);
-      return new Response(JSON.stringify({ error: 'Failed to save score' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
+    // Check if this game already has an entry
+    if (gameId) {
+      try {
+        // List all scores for this user to find existing game entry
+        const userScores = await env.LEADERBOARD.list({ prefix: `score:${safeUsername}:` });
+        
+        for (const key of userScores.keys) {
+          try {
+            const existingData = await env.LEADERBOARD.get(key.name);
+            if (existingData) {
+              const parsed = JSON.parse(existingData);
+              if (parsed.gameId === gameId) {
+                // Found existing entry for this game
+                if (score <= parsed.score) {
+                  // New score is not higher, ignore it
+                  console.log(`Ignoring lower score ${score} for game ${gameId}, keeping ${parsed.score}`);
+                  return new Response(JSON.stringify({ success: true, message: 'Score not improved' }), {
+                    headers: { 'Content-Type': 'application/json', ...corsHeaders }
+                  });
+                } else {
+                  // Delete the old lower score
+                  console.log(`Replacing score ${parsed.score} with higher ${score} for game ${gameId}`);
+                  await env.LEADERBOARD.delete(key.name);
+                }
+              }
+            }
+          } catch (err) {
+            console.error(`Error processing existing score ${key.name}:`, err);
+            // Continue with other entries
+          }
+        }
+      } catch (err) {
+        console.error(`Error listing scores for ${safeUsername}:`, err);
+        // Continue with submission anyway
+      }
     }
     
-    // Update all-time high if needed (use sanitized key)
-    const allTimeKey = `alltime:${safeKey}`;
+    // Store new score with safe username in the key for efficient lookup
+    const key = `score:${safeUsername}:${timestamp}`;
+    
+    await env.LEADERBOARD.put(key, JSON.stringify({
+      username: safeUsername,
+      score,
+      wave: wave || null,
+      timestamp,
+      gameId: uniqueGameId  // Store gameId to track unique games
+    }), {
+      expirationTtl: 86400 * 30 // 30 days
+    });
+    
+    // Update all-time high if needed
+    const allTimeKey = `alltime:${safeUsername}`;
     let existingScore = 0;
     
     try {
@@ -100,17 +133,17 @@ async function handleScoreSubmit(request, env, corsHeaders) {
         existingScore = JSON.parse(existing).score || 0;
       }
     } catch (err) {
-      console.error(`Error reading all-time score for ${username}:`, err);
+      console.error(`Error reading all-time score for ${safeUsername}:`, err);
       // Continue with 0 as existing score
     }
     
     if (score > existingScore) {
       await env.LEADERBOARD.put(allTimeKey, JSON.stringify({
-        username,
+        username: safeUsername,
         score,
         wave: wave || null,
         timestamp,
-        gameId: gameId || `game_${timestamp}`
+        gameId: uniqueGameId
       }));
     }
     

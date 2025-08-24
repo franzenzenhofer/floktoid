@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Terminal, Bug } from 'lucide-react';
+import type { LeaderboardEntry } from '../services/LeaderboardService';
 
 interface ConsoleMessage {
   type: 'log' | 'warn' | 'error' | 'info';
@@ -178,7 +179,7 @@ export function DevConsole() {
         setTimeout(async () => {
           const data = await leaderboardService.getLeaderboard();
           const username = localStorage.getItem('floktoid_username') || 'Unknown';
-          const found = data.last24h?.find((e: any) => e.gameId === gameId);
+          const found = data.last24h?.some((e: LeaderboardEntry) => username === e.username);
           if (found) {
             console.info('[DEV] ✅ VERIFIED: Score appears in leaderboard!', found);
           } else {

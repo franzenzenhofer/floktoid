@@ -16,11 +16,14 @@ export class GameSession {
       this.gameId = existingGameId;
       this.highestScore = existingScore || 0;
       this.highestWave = existingWave || 1;
-      this.lastSubmittedScore = 0; // Reset submission tracking
+      // Don't reset to 0! Set to current score to prevent immediate resubmission
+      this.lastSubmittedScore = this.highestScore;
       console.log(`[GAME SESSION] Resumed game ${this.gameId} at score ${this.highestScore}, wave ${this.highestWave}`);
     } else {
       // Generate unique game ID using timestamp + random
       this.gameId = `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // For new games, set lastSubmittedScore to 1000 (starting score) to prevent immediate submission
+      this.lastSubmittedScore = 1000;
       console.log(`[GAME SESSION] New game started with ID: ${this.gameId}`);
     }
   }
@@ -70,6 +73,11 @@ export class GameSession {
    * Only submit if score improved significantly (every 1000 points)
    */
   shouldSubmitToLeaderboard(): boolean {
+    // Don't submit the starting score (1000) or if no real progress
+    if (this.highestScore <= 1000) {
+      return false;
+    }
+    
     // Submit if score increased by at least 1000 since last submission
     // This prevents spamming the leaderboard with tiny updates
     const threshold = 1000;
