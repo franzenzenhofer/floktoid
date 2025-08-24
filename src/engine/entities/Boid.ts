@@ -80,39 +80,54 @@ export class Boid {
     y: number, 
     speedMultiplier: number,
     initialVelocity?: { vx: number; vy: number },
-    waveNumber = 1
+    waveNumber = 1,
+    forceShooter = false,
+    forceMiner = false
   ) {
     this.app = app;
     this.x = x;
     this.y = y;
     
     // SUPER DRY: Special types are MUTUALLY EXCLUSIVE!
-    // Roll once to determine special type
-    const specialRoll = Math.random();
-    
-    // 10% chance each, but ONLY ONE type per bird!
-    // Shooters only appear from wave 6+
-    // Miners only appear from wave 11+
-    if (specialRoll < SPECIAL_BIRD_CHANCE) {
-      // Super Navigator (0-10%)
-      this.isSuperNavigator = true;
-      this.isShooter = false;
-      this.isMiner = false;
-    } else if (specialRoll < SPECIAL_BIRD_CHANCE * 2 && waveNumber >= 2) {
-      // Shooter (10-20%) - ONLY from wave 2+
+    // Handle forced types first (for guaranteed spawns on first waves)
+    if (forceShooter && waveNumber >= 2) {
       this.isSuperNavigator = false;
       this.isShooter = true;
       this.isMiner = false;
-    } else if (specialRoll < SPECIAL_BIRD_CHANCE * 3 && waveNumber >= 11) {
-      // Miner (20-30%) - ONLY from wave 11+
+      console.log('[SPAWN] Forced shooter on wave', waveNumber);
+    } else if (forceMiner && waveNumber >= 11) {
       this.isSuperNavigator = false;
       this.isShooter = false;
       this.isMiner = true;
+      console.log('[SPAWN] Forced miner on wave', waveNumber);
     } else {
-      // Normal bird (70% or more if special types not available)
-      this.isSuperNavigator = false;
-      this.isShooter = false;
-      this.isMiner = false;
+      // Roll once to determine special type
+      const specialRoll = Math.random();
+      
+      // 10% chance each, but ONLY ONE type per bird!
+      // Shooters only appear from wave 2+
+      // Miners only appear from wave 11+
+      if (specialRoll < SPECIAL_BIRD_CHANCE) {
+        // Super Navigator (0-10%)
+        this.isSuperNavigator = true;
+        this.isShooter = false;
+        this.isMiner = false;
+      } else if (specialRoll < SPECIAL_BIRD_CHANCE * 2 && waveNumber >= 2) {
+        // Shooter (10-20%) - ONLY from wave 2+
+        this.isSuperNavigator = false;
+        this.isShooter = true;
+        this.isMiner = false;
+      } else if (specialRoll < SPECIAL_BIRD_CHANCE * 3 && waveNumber >= 11) {
+        // Miner (20-30%) - ONLY from wave 11+
+        this.isSuperNavigator = false;
+        this.isShooter = false;
+        this.isMiner = true;
+      } else {
+        // Normal bird (70% or more if special types not available)
+        this.isSuperNavigator = false;
+        this.isShooter = false;
+        this.isMiner = false;
+      }
     }
     
     // Debug logging for verification

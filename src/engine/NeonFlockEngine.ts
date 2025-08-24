@@ -366,6 +366,7 @@ export class NeonFlockEngine {
   public spawnBird(x?: number, y?: number) {
     try {
       let boid: Boid;
+      const currentWave = this.waveManager.getWave();
       
       // Check if we should spawn a boss (like we check for shooters/navigators)
       if (this.waveManager.getBossesToSpawn() > 0) {
@@ -381,14 +382,32 @@ export class NeonFlockEngine {
         this.waveManager.decrementBossesToSpawn();
         console.log(`[SPAWN] Boss bird spawned with ${this.waveManager.getBossHealthForWave()} HP, ${this.waveManager.getBossesToSpawn()} bosses left`);
       } else {
-        // Spawn normal bird (might be shooter/navigator)
+        // Check if we need to guarantee special types on their first waves
+        let forceShooter = false;
+        let forceMiner = false;
+        
+        // Wave 2: Guarantee at least one shooter
+        if (currentWave === 2 && this.waveManager.getBirdsToSpawn() <= 1) {
+          const hasShooter = this.boids.some(b => b.isShooter);
+          if (!hasShooter) forceShooter = true;
+        }
+        
+        // Wave 11: Guarantee at least one miner
+        if (currentWave === 11 && this.waveManager.getBirdsToSpawn() <= 1) {
+          const hasMiner = this.boids.some(b => b.isMiner);
+          if (!hasMiner) forceMiner = true;
+        }
+        
+        // Spawn normal bird (might be shooter/navigator/miner)
         boid = new Boid(
           this.app,
           x ?? Math.random() * this.app.screen.width,
           y ?? -20,
           this.waveManager.getSpeedMultiplier(),
           undefined,
-          this.waveManager.getWave()
+          currentWave,
+          forceShooter,
+          forceMiner
         );
       }
       
@@ -423,15 +442,24 @@ export class NeonFlockEngine {
 
   private maybeSpawnShredder() {
     // Shredders only spawn from wave 6+
-    if (this.waveManager.getWave() < 6) return;
+    const currentWave = this.waveManager.getWave();
+    if (currentWave < 6) {
+      return; // Too early for shredders
+    }
+    
+    // GUARANTEE at least one shredder on wave 6
+    const guaranteeSpawn = currentWave === 6 && this.shredders.length === 0 && 
+                          this.waveManager.getBirdsToSpawn() <= 1;
     
     const A = this.asteroids.length;
     const P = calculateShredderSpawnProbability(A);
     if (this.shredders.length >= SHREDDER.MAX_CONCURRENT) return;
-    if (Math.random() < P) {
+    
+    if (guaranteeSpawn || Math.random() < P) {
       // Just spawn it like any other ship - no special effects!
       const shredder = new Shredder(this.app);
       this.shredders.push(shredder);
+      console.log(`[SHREDDER] Spawned on wave ${currentWave} (P=${P.toFixed(3)}, A=${A}, guaranteed=${guaranteeSpawn})`);
     }
   }
   
