@@ -295,7 +295,7 @@ export class MessageDisplay {
     console.log('[BOSS ANNOUNCEMENT] Starting boss announcement');
     
     // Boss message: Center of screen, magenta color, special animation
-    const text = 'BOSS LEVEL!';
+    const text = 'BOSS LEVEL';
     const color = 0xFF00FF; // Magenta
     const x = this.app.screen.width / 2;
     const y = this.app.screen.height / 2; // CENTER of screen!

@@ -79,7 +79,8 @@ export class Boid {
     x: number, 
     y: number, 
     speedMultiplier: number,
-    initialVelocity?: { vx: number; vy: number }
+    initialVelocity?: { vx: number; vy: number },
+    waveNumber = 1
   ) {
     this.app = app;
     this.x = x;
@@ -90,23 +91,25 @@ export class Boid {
     const specialRoll = Math.random();
     
     // 10% chance each, but ONLY ONE type per bird!
+    // Shooters only appear from wave 6+
+    // Miners only appear from wave 11+
     if (specialRoll < SPECIAL_BIRD_CHANCE) {
       // Super Navigator (0-10%)
       this.isSuperNavigator = true;
       this.isShooter = false;
       this.isMiner = false;
-    } else if (specialRoll < SPECIAL_BIRD_CHANCE * 2) {
-      // Shooter (10-20%)
+    } else if (specialRoll < SPECIAL_BIRD_CHANCE * 2 && waveNumber >= 2) {
+      // Shooter (10-20%) - ONLY from wave 2+
       this.isSuperNavigator = false;
       this.isShooter = true;
       this.isMiner = false;
-    } else if (specialRoll < SPECIAL_BIRD_CHANCE * 3) {
-      // Miner (20-30%)
+    } else if (specialRoll < SPECIAL_BIRD_CHANCE * 3 && waveNumber >= 11) {
+      // Miner (20-30%) - ONLY from wave 11+
       this.isSuperNavigator = false;
       this.isShooter = false;
       this.isMiner = true;
     } else {
-      // Normal bird (70%)
+      // Normal bird (70% or more if special types not available)
       this.isSuperNavigator = false;
       this.isShooter = false;
       this.isMiner = false;

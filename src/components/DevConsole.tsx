@@ -120,6 +120,14 @@ export function DevConsole() {
         engine.spawnStarBase?.();
         console.info('[DEV] Spawned StarBase');
         break;
+      case 'starbase7':
+        engine.spawnStarBaseWave7?.();
+        console.info('[DEV] Spawned StarBase Wave 7 (6 HP)');
+        break;
+      case 'starbase17':
+        engine.spawnStarBaseWave17?.();
+        console.info('[DEV] Spawned StarBase Wave 17 (8 HP)');
+        break;
       case 'autopilot':
         if (autopilotEnabled) {
           engine.disableAutopilot?.();
@@ -195,6 +203,18 @@ export function DevConsole() {
                   className="block w-full bg-gradient-to-r from-yellow-900 to-yellow-700 hover:from-yellow-700 hover:to-yellow-500 text-white text-xs font-bold px-3 py-2 rounded border-2 border-yellow-400 transition-all hover:scale-105 hover:border-yellow-300 shadow-lg"
                 >
                   STARBASE
+                </button>
+                <button
+                  onClick={() => spawnEnemy('starbase7')}
+                  className="block w-full bg-gradient-to-r from-yellow-800 to-yellow-600 hover:from-yellow-600 hover:to-yellow-400 text-white text-xs font-bold px-3 py-2 rounded border-2 border-yellow-300 transition-all hover:scale-105 hover:border-yellow-200 shadow-lg"
+                >
+                  STARBASE 7
+                </button>
+                <button
+                  onClick={() => spawnEnemy('starbase17')}
+                  className="block w-full bg-gradient-to-r from-orange-800 to-orange-600 hover:from-orange-600 hover:to-orange-400 text-white text-xs font-bold px-3 py-2 rounded border-2 border-orange-300 transition-all hover:scale-105 hover:border-orange-200 shadow-lg"
+                >
+                  STARBASE 17
                 </button>
                 
                 <div className="border-t border-cyan-500/30 my-2" />

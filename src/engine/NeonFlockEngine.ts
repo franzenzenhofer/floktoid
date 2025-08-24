@@ -386,7 +386,9 @@ export class NeonFlockEngine {
           this.app,
           x ?? Math.random() * this.app.screen.width,
           y ?? -20,
-          this.waveManager.getSpeedMultiplier()
+          this.waveManager.getSpeedMultiplier(),
+          undefined,
+          this.waveManager.getWave()
         );
       }
       
@@ -420,6 +422,9 @@ export class NeonFlockEngine {
   }
 
   private maybeSpawnShredder() {
+    // Shredders only spawn from wave 6+
+    if (this.waveManager.getWave() < 6) return;
+    
     const A = this.asteroids.length;
     const P = calculateShredderSpawnProbability(A);
     if (this.shredders.length >= SHREDDER.MAX_CONCURRENT) return;
@@ -855,7 +860,8 @@ export class NeonFlockEngine {
             spawn.x,
             spawn.y,
             this.waveManager.getSpeedMultiplier(),
-            { vx: spawn.vx, vy: spawn.vy }  // Pass velocity properly to constructor
+            { vx: spawn.vx, vy: spawn.vy },  // Pass velocity properly to constructor
+            this.waveManager.getWave()
           );
           
           // Validate the boid is properly initialized
@@ -1637,12 +1643,32 @@ export class NeonFlockEngine {
       
       if (caught) continue;
       
-      // Check if dot reached bottom
-      const targetY = this.app.screen.height * GameConfig.BASE_Y;
-      if (dot.y >= targetY - 10) {
+      // Check if dot reached its destination
+      let shouldRestore = false;
+      
+      if (dot.isReturningToPosition && dot.targetX !== undefined && dot.targetY !== undefined) {
+        // For dots returning to position (from StarBase), check if reached target
+        const distToTarget = Math.sqrt(
+          (dot.x - dot.targetX) * (dot.x - dot.targetX) + 
+          (dot.y - dot.targetY) * (dot.y - dot.targetY)
+        );
+        
+        if (distToTarget < 10) {
+          shouldRestore = true;
+          console.log(`[DOT] StarBase dot reached target position (${dot.targetX}, ${dot.targetY})`);
+        }
+      } else {
+        // For normal falling dots, check if reached bottom
+        const targetY = this.app.screen.height * GameConfig.BASE_Y;
+        if (dot.y >= targetY - 10) {
+          shouldRestore = true;
+        }
+      }
+      
+      if (shouldRestore) {
         // Restore the energy dot
         dot.originalDot.restore();
-        this.particleSystem.createPickup(dot.x, targetY, dot.originalDot.hue);
+        this.particleSystem.createPickup(dot.x, dot.y, dot.originalDot.hue);
         
         // Remove falling dot and trail safely
         if (dot.sprite.parent) {
@@ -1926,6 +1952,32 @@ export class NeonFlockEngine {
     shredder.y = -50;
     this.shredders.push(shredder);
     console.log('[DEV] Spawned shredder');
+  }
+  
+  /**
+   * Spawn a StarBase for wave 7 (for testing)
+   */
+  public spawnStarBaseWave7(): void {
+    // Temporarily set wave to 7
+    const originalWave = this.waveManager.getWave();
+    this.waveManager.setWave(7);
+    this.spawnStarBase();
+    // Restore original wave
+    this.waveManager.setWave(originalWave);
+    console.log('[DEV] Spawned StarBase with Wave 7 settings (6 HP)');
+  }
+  
+  /**
+   * Spawn a StarBase for wave 17 (for testing)
+   */
+  public spawnStarBaseWave17(): void {
+    // Temporarily set wave to 17
+    const originalWave = this.waveManager.getWave();
+    this.waveManager.setWave(17);
+    this.spawnStarBase();
+    // Restore original wave
+    this.waveManager.setWave(originalWave);
+    console.log('[DEV] Spawned StarBase with Wave 17 settings (8 HP)');
   }
   
   /**

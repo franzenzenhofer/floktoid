@@ -20,7 +20,7 @@ export class BossBird extends Boid {
     health: number = 5, // Default health
     _canShoot: boolean = true // Bosses are ALWAYS shooters
   ) {
-    super(app, x, y, speedMultiplier);
+    super(app, x, y, speedMultiplier, undefined, 99); // Pass wave 99 to ensure bosses can always shoot
     
     // Set health
     this.health = health;
