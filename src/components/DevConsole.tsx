@@ -15,6 +15,8 @@ declare global {
       spawnBoss?: () => void;
       spawnShredder?: () => void;
       spawnStarBase?: () => void;
+      spawnStarBaseWave7?: () => void;
+      spawnStarBaseWave17?: () => void;
       enableAutopilot?: () => void;
       disableAutopilot?: () => void;
       isAutopilotEnabled?: () => boolean;
