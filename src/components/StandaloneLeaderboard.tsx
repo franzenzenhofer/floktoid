@@ -104,6 +104,7 @@ export function StandaloneLeaderboard() {
                         <div className="text-white font-mono">{entry.score.toLocaleString()}</div>
                         <div className="text-xs text-gray-400">Wave {entry.wave || '-'}</div>
                         <div className="text-xs text-gray-500">{formatDate(entry.timestamp)}</div>
+                        <div className="text-xs text-gray-600">ID: {entry.gameId ? entry.gameId.slice(-8) : '-'}</div>
                       </div>
                     </div>
                   ))
@@ -145,6 +146,7 @@ export function StandaloneLeaderboard() {
                         <div className="text-white font-mono">{entry.score.toLocaleString()}</div>
                         <div className="text-xs text-gray-400">Wave {entry.wave || '-'}</div>
                         <div className="text-xs text-gray-500">{formatDate(entry.timestamp)}</div>
+                        <div className="text-xs text-gray-600">ID: {entry.gameId ? entry.gameId.slice(-8) : '-'}</div>
                       </div>
                     </div>
                   ))

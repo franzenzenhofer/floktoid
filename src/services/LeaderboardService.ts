@@ -9,6 +9,7 @@ export interface LeaderboardEntry {
   score: number;
   wave?: number;
   timestamp?: number;
+  gameId?: string;
 }
 
 export interface LeaderboardData {
