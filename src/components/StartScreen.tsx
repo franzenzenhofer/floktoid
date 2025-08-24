@@ -1,14 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { VERSION_INFO } from '../version';
 import { UsernameGenerator } from '../utils/UsernameGenerator';
 import { leaderboardService, type LeaderboardEntry } from '../services/LeaderboardService';
 import type { SavedGame } from '../utils/SavedGameState';
 
-// PWA install prompt event type
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
 
 interface StartScreenProps {
   onStart: (devMode?: boolean) => void;
@@ -22,10 +17,7 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
   const [username] = useState(() => UsernameGenerator.getSessionUsername());
   const [topPlayer, setTopPlayer] = useState<LeaderboardEntry | null>(null);
   const [allTimeTopPlayer, setAllTimeTopPlayer] = useState<LeaderboardEntry | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [canInstall, setCanInstall] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   
   useEffect(() => {
     // Fetch leaderboard data on mount
@@ -37,17 +29,6 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
       }
     });
     
-    // Check if app is already installed
-    // ALWAYS register service worker for PWA installability
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then(registration => {
-          console.log('Service Worker registered');
-          registration.update();
-        })
-        .catch(err => console.error('Service Worker registration failed:', err));
-    }
-    
     // Listen for online/offline events - use browser's built-in detection
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -57,81 +38,12 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
     // Check current status
     setIsOnline(navigator.onLine);
     
-    // Check if already installed as PWA
-    if (window.matchMedia('(display-mode: standalone)').matches || 
-        window.matchMedia('(display-mode: fullscreen)').matches ||
-        (window.navigator as unknown as Record<string, unknown>).standalone) {
-      setIsInstalled(true);
-    }
-    
-    // Listen for install prompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      deferredPromptRef.current = e as BeforeInstallPromptEvent;
-      setCanInstall(true);
-    };
-    
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    
-    // Listen for app installed
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setCanInstall(false);
-      deferredPromptRef.current = null;
-    };
-    
-    window.addEventListener('appinstalled', handleAppInstalled);
-    
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
   
-  const handleInstallClick = async () => {
-    if (!deferredPromptRef.current) {
-      // No install prompt available yet, but inform user how to install
-      alert('To install FLOKTOID as an app:\n\n' +
-            'Chrome/Edge: Click the install icon in the address bar (⊕ or ⬇️)\n' +
-            'Firefox: Not supported yet\n' +
-            'Safari iOS: Tap Share → Add to Home Screen\n' +
-            'Samsung Internet: Menu → Add page to → Home screen\n\n' +
-            'Or try refreshing the page and clicking Install again.');
-      return;
-    }
-    
-    // Show install prompt
-    deferredPromptRef.current.prompt();
-    
-    // Wait for user response
-    const { outcome } = await deferredPromptRef.current.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('PWA installed');
-      
-      // NOW register service worker for offline support AFTER install
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('Service Worker registered for offline support');
-            registration.update();
-          })
-          .catch(err => console.error('Service Worker registration failed:', err));
-      }
-    }
-    
-    deferredPromptRef.current = null;
-    setCanInstall(false);
-  };
-  
-  const handleUninstallClick = () => {
-    // PWAs can't be uninstalled programmatically, show instructions
-    alert('To uninstall:\n\n' +
-          'Desktop: Click the three dots menu → Uninstall FLOKTOID\n' +
-          'Mobile: Long press the app icon → Remove/Uninstall');
-  };
   return (
     <div className="min-h-screen bg-black overflow-y-auto">
       <div className="flex flex-col items-center px-4 py-6">
@@ -227,43 +139,6 @@ export function StartScreen({ onStart, onContinue, savedGame, highScore }: Start
               className="text-gray-600 hover:text-cyan-400 text-xs sm:text-sm underline transition-colors"
             >
               GitHub
-            </a>
-          </div>
-          {/* PWA Section - Better mobile spacing */}
-          <div className="pt-3 space-y-3 border-t border-gray-700 mt-3">
-            <div className="bg-blue-900/20 p-3 rounded border border-blue-400">
-              {isInstalled ? (
-                <button
-                  onClick={handleUninstallClick}
-                  className="text-red-400 hover:text-red-200 text-base sm:text-lg underline font-bold transition-colors block mx-auto px-4 py-2"
-                >
-                  UNINSTALL PWA
-                </button>
-              ) : canInstall ? (
-                <button
-                  onClick={handleInstallClick}
-                  className="text-blue-400 hover:text-white text-base sm:text-lg underline font-bold transition-colors animate-pulse block mx-auto bg-blue-600/30 px-6 py-2 rounded"
-                  style={{ textDecorationThickness: '2px', textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}
-                >
-                  INSTALL AS APP
-                </button>
-              ) : (
-                <div className="text-yellow-300 text-sm sm:text-base px-2">
-                  {navigator.userAgent.includes('CriOS') || navigator.userAgent.includes('FxiOS') ? (
-                    <div>Safari → Share → Add to Home</div>
-                  ) : (
-                    <div>Menu (⋮) → Install App</div>
-                  )}
-                </div>
-              )}
-            </div>
-            <a
-              href="/pwa-diagnostic"
-              target="_blank"
-              className="text-cyan-300 hover:text-white text-sm sm:text-base underline font-bold transition-colors block bg-cyan-900/30 px-4 py-2 rounded border border-cyan-400"
-              style={{ textShadow: '0 0 10px rgba(6, 182, 212, 0.8)' }}
-            >
-              PWA INSTALLATION ANALYSIS
             </a>
           </div>
         </div>
