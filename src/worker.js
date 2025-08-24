@@ -69,39 +69,7 @@ async function handleScoreSubmit(request, env, corsHeaders) {
     // Sanitize username for KV key (KV keys have restrictions)
     const safeKey = username.replace(/[^a-zA-Z0-9_-]/g, '_');
     
-    // DEDUPLICATION: Check if this gameId already exists
-    if (gameId) {
-      // Try to find and update existing entry for this game
-      const gameKey = `game:${gameId}`;
-      const existingGame = await env.LEADERBOARD.get(gameKey);
-      
-      if (existingGame) {
-        const existing = JSON.parse(existingGame);
-        // Only update if new score is higher
-        if (score <= existing.score) {
-          console.log(`Game ${gameId} already has higher score ${existing.score}, skipping`);
-          return new Response(JSON.stringify({ success: true, updated: false }), {
-            headers: { 'Content-Type': 'application/json', ...corsHeaders }
-          });
-        }
-        // Delete old score entry
-        const oldKey = `score:${safeKey}:${existing.timestamp}`;
-        await env.LEADERBOARD.delete(oldKey).catch(() => {});
-      }
-      
-      // Store game reference
-      await env.LEADERBOARD.put(gameKey, JSON.stringify({
-        username,
-        score,
-        wave: wave || null,
-        timestamp,
-        gameId
-      }), {
-        expirationTtl: 86400 * 30 // 30 days
-      });
-    }
-    
-    // Store score entry with timestamp
+    // Store new score - KISS approach
     const key = `score:${safeKey}:${timestamp}`;
     
     try {
