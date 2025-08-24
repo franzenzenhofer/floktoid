@@ -102,7 +102,7 @@ export function Game() {
           engine.onWaveUpdate = (newWave) => {
             setWave(newWave);
             
-            // KISS: Save when wave completes (new wave starts means previous completed)
+            // KISS: Save AND submit when wave completes
             if (session && session.isActive() && newWave > 1) {
               const currentScore = engine.getScore();
               const engineState = engine.getGameStateForSave();
@@ -118,6 +118,19 @@ export function Game() {
               
               SavedGameState.save(saveState);
               console.log(`[WAVE-COMPLETE-SAVE] Wave ${newWave-1} complete, starting wave ${newWave}, score: ${currentScore}`);
+              
+              // ALSO SUBMIT TO LEADERBOARD on wave complete!
+              session.updateProgress(currentScore, newWave);
+              leaderboardService.submitScore(
+                session.getHighestScore(),
+                session.getHighestWave(),
+                session.getGameId()
+              ).then(() => {
+                console.log(`[WAVE-COMPLETE-SUBMIT] Submitted to leaderboard - Score: ${currentScore}, Wave: ${newWave}`);
+                session.markSubmitted();
+              }).catch(error => {
+                console.error('Failed to submit on wave complete:', error);
+              });
             }
           };
           engine.onEnergyStatus = (critical: boolean) => setEnergyCritical(critical);
@@ -303,6 +316,18 @@ export function Game() {
         
         SavedGameState.save(saveState);
         console.log(`[HOME-BUTTON-SAVE] Saved game - Wave: ${currentWave}, Score: ${currentScore}`);
+        
+        // ALSO SUBMIT TO LEADERBOARD!
+        session.updateProgress(currentScore, currentWave);
+        leaderboardService.submitScore(
+          session.getHighestScore(),
+          session.getHighestWave(),
+          session.getGameId()
+        ).then(() => {
+          console.log(`[HOME-BUTTON-SUBMIT] Submitted to leaderboard - Score: ${currentScore}, Wave: ${currentWave}`);
+        }).catch(error => {
+          console.error('Failed to submit score on home button:', error);
+        });
       }
     }
     
