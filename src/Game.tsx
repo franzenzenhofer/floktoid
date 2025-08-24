@@ -242,7 +242,8 @@ export function Game() {
       gameSessionRef.current = null;
     }
     
-    // DON'T clear saved game - user should be able to continue their saved game!
+    // Clear any saved game when restarting - ensure clean state like handleStart
+    SavedGameState.clear();
     // Reset all game state for fresh start
     setScore(0);
     setWave(1);
